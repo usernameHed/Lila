@@ -19,18 +19,18 @@ export const MATCH_COLORS = ['#4cc9f0', '#80ed99', '#ff70a6', '#c77dff', '#fffff
 /** Above this many matches, one color for all players and no loot markers: the map stays readable. */
 export const MANY_MATCHES = MATCH_COLORS.length;
 
-/** Map icons (src/lib/icons.ts): a skull for a death, a skull over crossed bones for a kill. */
-export type MarkerShape = 'skullBones' | 'skull' | 'diamond' | 'storm';
+/** Map icons (src/lib/icons.ts): a crosshair for a kill, a skull over crossed bones for a player's death, a dead monster for a bot's. */
+export type MarkerShape = 'crosshair' | 'skullBones' | 'skull' | 'monster' | 'diamond' | 'storm';
 
 export const EVENT_STYLE: Record<EventType, { label: string; color: string; shape: MarkerShape; size: number }> = {
-  killBot: { label: 'Player killed a bot', color: '#ff4d6d', shape: 'skullBones', size: 6 },
-  killPlayer: { label: 'Player killed a player', color: '#ff0a54', shape: 'skullBones', size: 8 },
-  diedToBot: { label: 'Player killed by a bot', color: '#f1f1f1', shape: 'skull', size: 7 },
-  diedToPlayer: { label: 'Player killed by a player', color: '#ff0a54', shape: 'skull', size: 8 },
+  killBot: { label: 'Player killed a bot', color: '#ff4d6d', shape: 'crosshair', size: 6 },
+  killPlayer: { label: 'Player killed a player', color: '#ff0a54', shape: 'crosshair', size: 8 },
+  diedToBot: { label: 'Player killed by a bot', color: '#f1f1f1', shape: 'skullBones', size: 7 },
+  diedToPlayer: { label: 'Player killed by a player', color: '#ff0a54', shape: 'skullBones', size: 8 },
   storm: { label: 'Player died to the storm', color: '#b388ff', shape: 'storm', size: 8 },
   loot: { label: 'Player looted an item', color: '#ffd166', shape: 'diamond', size: 5 },
-  botKill: { label: 'Bot killed someone', color: '#f4a261', shape: 'skullBones', size: 4.5 },
-  botDeath: { label: 'Bot died', color: '#f4a261', shape: 'skull', size: 4.5 },
+  botKill: { label: 'Bot killed someone', color: '#f4a261', shape: 'crosshair', size: 4.5 },
+  botDeath: { label: 'Bot death', color: '#f4a261', shape: 'monster', size: 5 },
 };
 
 /** Draw order: loot under everything, then bot events, then the human combat events that matter most. */

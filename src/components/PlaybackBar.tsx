@@ -14,8 +14,6 @@ interface Props {
   events: MatchEvent[];
   /** The event pointed at anywhere: its tick is highlighted and pulses. */
   active: MatchEvent | null;
-  /** A group of icons hovered on the map: its members' ticks are highlighted. */
-  activeGroup?: readonly MatchEvent[] | null;
   /** Legend row hovered: all its ticks are highlighted. */
   hoverKind?: string | null;
   /** Kinds hidden in the legend: no ticks for them. */
@@ -35,8 +33,7 @@ export function isTyping(el: EventTarget | null): boolean {
 }
 
 /** Play / pause, a scrubber with a tick for every fight and death, and the playback speed. Space plays. */
-export function PlaybackBar({ t, duration, playing, speed, events, active, activeGroup = null, hoverKind = null, hidden, onPoint, onToggle, onPause, onSeek, onSpeed }: Props) {
-  const inGroup = activeGroup ? new Set(activeGroup) : null;
+export function PlaybackBar({ t, duration, playing, speed, events, active, hoverKind = null, hidden, onPoint, onToggle, onPause, onSeek, onSpeed }: Props) {
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       if (e.code !== 'Space' || isTyping(e.target)) return;
@@ -88,7 +85,7 @@ export function PlaybackBar({ t, duration, playing, speed, events, active, activ
             ticks.map((e, i) => (
               <span
                 key={i}
-                className={e === active ? 'active' : e[1] === hoverKind || inGroup?.has(e) ? 'lit' : hoverKind || inGroup ? 'dim' : ''}
+                className={e === active ? 'active' : e[1] === hoverKind ? 'lit' : hoverKind ? 'dim' : ''}
                 style={{ left: `${(e[0] / duration) * 100}%`, background: EVENT_STYLE[e[1]].color }}
                 onMouseEnter={() => onPoint(e)}
                 onMouseLeave={() => onPoint(null)}

@@ -253,14 +253,14 @@ export function ReplayStage(props: StageProps) {
     setPointedGroup(null);
   }, [key]);
   const active = pointed ?? pinned;
-  useEffect(() => onPointedKind(active ? active.event[1] : pointedGroup ? pointedGroup[0][1] : null), [active, pointedGroup, onPointedKind]);
+  useEffect(() => onPointedKind(active ? active.event[1] : null), [active, onPointedKind]);
   // The rest fades back, eased, while something is pointed at; what was pointed at stays bright while it fades in.
-  const dim = useEase(!!hover || !!active || !!pointedGroup);
+  const dim = useEase(!!hover || !!active); // a hovered group only shows its count: nothing fades
   const fading = dim > 0;
   const shownHover = useLast(hover, fading);
   const shownActive = useLast(active, fading);
   const shownGroup = useLast(pointedGroup, fading);
-  const phase = usePulse(!!hover || !!active || !!pointedGroup);
+  const phase = usePulse(!!hover || !!active);
 
   const focusMatch = focus ? shown.find((m) => m.id === focus.match) : undefined;
   const story = useMemo(
@@ -414,7 +414,6 @@ export function ReplayStage(props: StageProps) {
         speed={play.speed}
         events={events}
         active={active?.event ?? null}
-        activeGroup={pointedGroup}
         hoverKind={hover}
         hidden={hiddenSet}
         onPoint={pointAt}

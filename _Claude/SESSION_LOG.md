@@ -15,6 +15,12 @@ about 300 lines, move the oldest entries word for word to `SESSION_HISTORY.md` (
 
 ---
 
+## 2026-11-18 (desktop session): group count, new kill / death / bot death icons
+
+- Ugo: group hover = only the count inside the icon (drawn a bit larger), no fade, no legend or timeline effect.
+  Icons: crosshair = kills (player and bot), skull over crossed bones (bigger skull) = player deaths, dead monster
+  (horns, X eyes) = "Bot death" (renamed from "Bot died"). Checked large and at map size.
+
 ## 2026-11-18 (desktop session): app install, old icons back, pinch zoom, lighter Overview and Data
 
 - Ugo: new icons rejected -> previous ones back, kills = skull over crossed bones. Phone: pinch + drag + / - buttons

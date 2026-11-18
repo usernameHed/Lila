@@ -67,7 +67,7 @@ export function playerStory(match: Match, index: number, uvUnits: number, mapSca
     meters,
     heightMin: Math.min(...hs) / 10,
     heightMax: Math.max(...hs) / 10,
-    end: death ? death.label.replace(/^(Player|Bot) /, '') : p.bot ? 'Still alive when its log ends' : 'Survived (no death logged)',
+    end: death ? (death.type === 'botDeath' ? 'died' : death.label.replace(/^(Player|Bot) /, '')) : p.bot ? 'Still alive when its log ends' : 'Survived (no death logged)',
     opponents: [...new Set(fights.map((f) => f.other))],
     pvpMissing,
   };

@@ -35,7 +35,7 @@ export interface ReplayOptions {
   phase?: number; // animation clock (ms) for the pulse
   /** 0 -> 1, eased: how far the rest has faded back because something is hovered (never fully hidden). */
   dim?: number;
-  /** A group of icons under the mouse: its members are shown where they really are, with their count. */
+  /** A group of icons under the mouse: its count is written inside it. */
   activeGroup?: readonly MatchEvent[] | null;
   pathWidth?: number; // path thickness factor (1 = default)
   pathAlpha?: number; // path opacity factor (1 = default)
@@ -153,7 +153,7 @@ export const groupRadius = (g: Group<MatchEvent>, scale: number) => EVENT_STYLE[
 
 /**
  * Event icons. Nothing is ever hidden by a hover: the rest fades back (eased, by `o.dim`) while what is pointed at
- * (a legend kind, one event, a group) stays bright and pulses. A hovered group shows its members where they are.
+ * (a legend kind, one event, a group) stays bright and pulses. A hovered group shows its count inside.
  */
 function drawEvents(ctx: CanvasRenderingContext2D, all: MatchEvent[], uvUnits: number, size: number, t: number, playing: boolean, scale: number, o: ReplayOptions) {
   const px = (u: number, v: number) => uvToPixel(u, v, uvUnits, size);
@@ -205,39 +205,20 @@ function drawEvents(ctx: CanvasRenderingContext2D, all: MatchEvent[], uvUnits: n
     }
   ctx.globalAlpha = 1;
 
-  // A hovered group, like a map of homes for rent: its members appear at their real spots, tied to the group.
-  if (group) {
-    const members = [...group];
-    const c = members.reduce((a, e) => { const p = px(e[2], e[3]); return { x: a.x + p.x / members.length, y: a.y + p.y / members.length }; }, { x: 0, y: 0 });
-    const spots = members.map((e) => ({ e, ...px(e[2], e[3]) }));
-    const reach = Math.max(18, ...spots.map((s) => Math.hypot(s.x - c.x, s.y - c.y))) + 12;
-    ctx.beginPath();
-    ctx.arc(c.x, c.y, reach, 0, Math.PI * 2);
-    ctx.fillStyle = 'rgba(255,255,255,0.07)';
-    ctx.fill();
-    ctx.setLineDash([4, 4]);
-    ctx.lineWidth = 1.5;
-    ctx.strokeStyle = 'rgba(255,255,255,0.55)';
-    ctx.stroke();
-    ctx.setLineDash([]);
-    ctx.lineWidth = 1;
-    ctx.strokeStyle = 'rgba(255,255,255,0.35)';
-    ctx.beginPath();
-    for (const s of spots) {
-      ctx.moveTo(c.x, c.y);
-      ctx.lineTo(s.x, s.y);
+  // A hovered group: its icon as usual, with how many it holds written inside. Nothing else changes.
+  if (group)
+    for (const g of groups) {
+      if (!inGroup(g)) continue;
+      const style = EVENT_STYLE[g.kind as EventType];
+      // A little larger while hovered, so the number sits inside the icon.
+      const r = Math.max(11, style.size * scale * groupScale(g.items.length) * 1.5);
+      stampMarker(ctx, style.shape, style.color, g.x, g.y, r);
+      drawCount(ctx, g.x, g.y, g.items.length, r);
     }
-    ctx.stroke();
-    for (const s of spots) {
-      const style = EVENT_STYLE[s.e[1]];
-      stampMarker(ctx, style.shape, style.color, s.x, s.y, style.size * scale * (s.e === o.activeEvent ? 1.5 : 1.1));
-    }
-    drawCount(ctx, c.x, c.y - reach, members.length);
-  }
 
   // One event pointed at (map, timeline, card): biggest, pulsing ring, faded if it has not happened yet.
   const e = o.activeEvent;
-  if (e && !(group && group.has(e))) {
+  if (e) {
     const style = EVENT_STYLE[e[1]];
     const { x, y } = px(e[2], e[3]);
     const r = style.size * scale * 1.4;
@@ -259,19 +240,18 @@ function ring(ctx: CanvasRenderingContext2D, x: number, y: number, r: number, co
   ctx.globalAlpha = 1;
 }
 
-/** A group's count, in a small dark pill at its top-right. */
-function drawCount(ctx: CanvasRenderingContext2D, x: number, y: number, n: number) {
+/** A group's count, written in the middle of its icon (white on a dark edge, readable on any color). */
+function drawCount(ctx: CanvasRenderingContext2D, x: number, y: number, n: number, r: number) {
   const text = n > 999 ? `${Math.round(n / 1000)}k` : String(n);
   ctx.save();
-  ctx.font = '600 10px Inter, system-ui, sans-serif';
-  const w = ctx.measureText(text).width + 8;
-  ctx.fillStyle = 'rgba(8,9,12,0.85)';
-  ctx.beginPath();
-  ctx.roundRect(x - w / 2, y - 7, w, 14, 7);
-  ctx.fill();
-  ctx.fillStyle = '#fff';
+  ctx.font = `800 ${Math.max(9, Math.round(r * (text.length > 2 ? 0.62 : text.length > 1 ? 0.8 : 0.95)))}px Inter, system-ui, sans-serif`;
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
+  ctx.lineJoin = 'round';
+  ctx.lineWidth = 3.5;
+  ctx.strokeStyle = 'rgba(8,9,12,0.9)';
+  ctx.strokeText(text, x, y + 0.5);
+  ctx.fillStyle = '#fff';
   ctx.fillText(text, x, y + 0.5);
   ctx.restore();
 }
