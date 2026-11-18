@@ -254,7 +254,14 @@ export function OverviewSide() {
       <h2>On this page</h2>
       <nav className="toc">
         {OVERVIEW_SECTIONS.map(([id, label]) => (
-          <button key={id} onClick={() => document.getElementById(id)?.scrollIntoView({ behavior: 'smooth', block: 'start' })}>
+          <button
+            key={id}
+            onClick={() => {
+              const el = document.getElementById(id);
+              if (el instanceof HTMLDetailsElement) el.open = true; // folded sections open when picked here
+              el?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            }}
+          >
             {label}
           </button>
         ))}

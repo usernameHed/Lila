@@ -30,7 +30,7 @@ On a 16:9 screen (1366x768 to 1920x1080) everything fits without scrolling:
   same events (e.g. "Player killed by a bot" and "Position when killed") pulse together. Sliders for icon size,
   path width and path opacity, and Grouping: nearby icons of the same kind merge into one bigger icon; hover it and
   its members show where they really are, with their count (and their ticks light up on the timeline).
-  Icons are map stamps (skull and crossbones for a kill, a bot skull for a bot, a bolt for the storm).
+  Icons: a skull for a death, the same skull over crossed bones for a kill, a diamond for loot and the storm.
   Paths keep the same peak brightness whatever the number of matches shown.
 - **Hover never hides**: what is pointed at stays bright and pulses, the rest fades back halfway, eased in and out.
 - **Everything is linked**: hover an event on the map, its tick on the timeline or its row in a player's card,
@@ -40,8 +40,8 @@ On a 16:9 screen (1366x768 to 1920x1080) everything fits without scrolling:
 - **Heatmap panel**: traffic, loot, power positions (kills per minute spent), raised kills (from 3 m above the
   ground), line of fire, kills and deaths (bots / players / both), storm deaths; one color per kind or one color;
   toon bands with vector outlines, sharp at any zoom.
-- **2D**: the map fills the stage, opens just past its dark border; scroll to zoom (8x) into the side space, drag
-  to pan, double-click to reset.
+- **2D**: the map fills the stage, opens just past its dark border; scroll, pinch or + / - to zoom (8x) into the side
+  space, drag to pan, double-click to reset. Each map has a small picture in the map list and on the Data page.
 - **3D**: an estimated terrain (from where players walked), paths, events and the heatmap at their real height;
   drag to orbit, middle or right drag to move, scroll to zoom, height x1 to x8; hover and click work as in 2D.
 - **Line of fire**: killer-to-victim arrows for the 36 recorded pairs, plus 6 inferred (lighter).
@@ -53,7 +53,9 @@ On a 16:9 screen (1366x768 to 1920x1080) everything fits without scrolling:
 - **Works offline** after the first visit: a service worker keeps every file (app, maps, data, about 10 MB) in the
   browser; a new version downloads only the files that changed. A loading screen while files arrive, and a Reload
   screen instead of a blank page if a piece fails.
-- **Phone to wide screen**: fits a 16:9 screen with no scrolling; works on a phone or tablet.
+- **Installs as an app** (Chrome, Edge, Safari, phones): its own window and icon, a popup offers it on a computer
+  (as on Ugo's dashboard, "Not now" hides it 30 days); it updates itself, with the green Update button.
+- **Any screen**: fits a 16:9 screen with no scrolling; on a phone, drag and pinch the map, or use + and -.
 - **Shareable views**: the URL holds the whole view. **Update button** when a new version is deployed.
 
 ## Tech stack

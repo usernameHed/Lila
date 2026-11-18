@@ -5,8 +5,8 @@ import { useEffect, useRef, useState } from 'react';
 import { loadBuiltinIndex } from '../lib/data';
 import { BUILTIN_ID, deleteUpload, describe, listUploads, saveUpload, selectSource, type SourceInfo } from '../lib/sources';
 import { useSourceId } from './useSourceId';
-import { MAP_LABEL, formatDay } from '../lib/style';
-import type { MapId } from '../lib/types';
+import { formatDay } from '../lib/style';
+import { MapBadge } from './MapBadge';
 import type { LoadMessage } from '../workers/loadData';
 
 interface Job {
@@ -42,16 +42,17 @@ async function filesOf(dt: DataTransfer): Promise<{ path: string; file: File }[]
   return out;
 }
 
+/** What a dataset holds, in short: its maps (labels with their picture), matches and days. */
 function Stats({ s }: { s: SourceInfo }) {
   const days = s.days.length ? `${formatDay(s.days[0])}${s.days.length > 1 ? ` to ${formatDay(s.days[s.days.length - 1])}` : ''}` : '';
   return (
     <div className="ds-stats">
-      <span><b>{s.matches.toLocaleString('en')}</b> matches</span>
-      <span><b>{s.players.toLocaleString('en')}</b> players</span>
-      <span><b>{s.rows.toLocaleString('en')}</b> events</span>
-      {s.files !== undefined && <span><b>{s.files.toLocaleString('en')}</b> files</span>}
-      <span>{days}</span>
-      <span>{s.maps.map((m) => MAP_LABEL[m as MapId] ?? m).join(' · ')}</span>
+      {s.maps.map((m) => (
+        <MapBadge key={m} map={m} />
+      ))}
+      <span>
+        <b>{s.matches.toLocaleString('en')}</b> matches · {days}
+      </span>
     </div>
   );
 }
@@ -66,7 +67,7 @@ export function DataPage({ onShow }: { onShow: () => void }) {
   const folder = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
-    loadBuiltinIndex().then((index) => setBuiltin(describe(BUILTIN_ID, "LILA BLACK, LILA's sample (Feb 10-14, 2026)", 'builtin', { index, matches: {}, heat: {}, terrain: {} }, 1243)));
+    loadBuiltinIndex().then((index) => setBuiltin(describe(BUILTIN_ID, "LILA's sample", 'builtin', { index, matches: {}, heat: {}, terrain: {} }, 1243)));
     listUploads().then(setUploads);
   }, []);
 
@@ -113,7 +114,7 @@ export function DataPage({ onShow }: { onShow: () => void }) {
       <header>
         <div>
           <strong>{s.name}</strong>
-          <span className="ds-kind">{s.kind === 'builtin' ? 'Built in · the data of this assignment' : `In this browser · added ${new Date(s.createdAt ?? 0).toLocaleString('en-GB', { dateStyle: 'medium', timeStyle: 'short' })}`}</span>
+          <span className="ds-kind">{s.kind === 'builtin' ? 'Built in' : `Added ${new Date(s.createdAt ?? 0).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })}, kept in this browser`}</span>
         </div>
         {active === s.id ? (
           <span className="ds-current">Showing now</span>
@@ -126,7 +127,7 @@ export function DataPage({ onShow }: { onShow: () => void }) {
       <Stats s={s} />
       {s.kind === 'upload' && (
         <button className="ds-remove" onClick={() => remove(s)}>
-          Remove from this browser
+          Remove
         </button>
       )}
     </article>
@@ -148,24 +149,18 @@ export function DataPage({ onShow }: { onShow: () => void }) {
         load(await filesOf(e.dataTransfer));
       }}
     >
-      <header className="ov-hero">
-        <p className="eyebrow">Data</p>
-        <h1>Look at any LILA BLACK telemetry</h1>
-        <p className="lede">
-          Drop another export (new days, another build, a playtest) and the whole tool runs on it: replays, heatmaps, 3D,
-          filters. It is processed here, in your browser, with the same pipeline as the built-in data; nothing is uploaded
-          anywhere.
-        </p>
+      <header className="data-head">
+        <h1>Data</h1>
+        <p className="muted">Drop another LILA BLACK export and the whole tool runs on it. Processed in your browser, never uploaded.</p>
       </header>
 
       <div className={`dropzone ${drag ? 'drag' : ''} ${job && !job.error ? 'busy' : ''}`} onClick={() => !job && input.current?.click()} role="button" tabIndex={0}>
         <div className="dz-icon" aria-hidden>
           ⇪
         </div>
-        <strong>{drag ? 'Drop it here' : 'Drop a dataset here'}</strong>
+        <strong>{drag ? 'Drop it here' : 'Drop a zip or a folder here'}</strong>
         <span>
-          <code>player_data.zip</code>, its folder, or <code>.nakama-0</code> parquet files (one per player per match, in day folders like
-          <code> February_10</code>)
+          Like <code>player_data.zip</code>, or its parquet files
         </span>
         <span className="dz-buttons">
           <button onClick={(e) => (e.stopPropagation(), input.current?.click())}>Choose files or a zip</button>
@@ -182,7 +177,7 @@ export function DataPage({ onShow }: { onShow: () => void }) {
       </div>
 
       <section>
-        <h2>Datasets</h2>
+        <h2>Shown in the tool</h2>
         <div className="ds-list">
           {job && (
             <article className={`ds-card loading ${job.error ? 'failed' : ''}`}>

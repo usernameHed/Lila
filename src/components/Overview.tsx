@@ -1,5 +1,6 @@
 // The landing page: what the tool is for, what it shows, what to do about it, and how it was built, in one scroll.
 // Everything a reviewer or a level designer needs without opening the repository. Links open the live views.
+import { InstallButton } from './InstallOffer';
 import type { Index } from '../lib/types';
 
 const REPO = 'https://github.com/usernameHed/Lila';
@@ -59,8 +60,7 @@ export function Overview({ index }: { index: Index | null }) {
         <p className="eyebrow">LILA BLACK · Player journey visualizer</p>
         <h1>See where players move, fight, loot and die, on the map.</h1>
         <p className="lede">
-          Level designers had raw telemetry and no way to see it. This tool turns 5 days of production data into replays and
-          heatmaps on each minimap, in 2D and 3D, with a link for every view.
+          5 days of LILA BLACK production telemetry as replays and heatmaps on each minimap, in 2D and 3D.
         </p>
         <div className="stats">
           <Stat value={index ? String(index.matches.length) : '…'} label="matches" />
@@ -70,23 +70,28 @@ export function Overview({ index }: { index: Index | null }) {
           <Stat value="5" label="days (Feb 10-14)" />
         </div>
         <ul className="basics" aria-label="Built as a tool">
+          <li className="basics-app">
+            <strong>Installs as an app</strong>
+            <span>Own window and icon; updates itself.</span>
+            <InstallButton />
+          </li>
           <li>
             <strong>Works offline</strong>
-            <span>After the first visit, every map and match is kept in the browser: it opens with no connection.</span>
+            <span>Everything kept after the first visit.</span>
           </li>
           <li>
             <a href="#mode=data">
               <strong>Your own data</strong>
-              <span>Drop another LILA BLACK export in the Data tab: processed in the browser, nothing uploaded.</span>
+              <span>Drop any export in the Data tab.</span>
             </a>
           </li>
           <li>
             <strong>Undo and redo</strong>
-            <span>Every setting, with the arrows at the top left or Cmd/Ctrl+Z and Shift+Cmd/Ctrl+Z.</span>
+            <span>Every setting, Cmd/Ctrl+Z.</span>
           </li>
           <li>
-            <strong>Phone to wide screen</strong>
-            <span>Fits a 16:9 screen with no scrolling, and works on a phone or tablet.</span>
+            <strong>Any screen</strong>
+            <span>No scrolling on 16:9; pinch on a phone.</span>
           </li>
         </ul>
       </header>
@@ -96,42 +101,22 @@ export function Overview({ index }: { index: Index | null }) {
         <div className="cards">
           <a className="card" href="#mode=replay&map=AmbroseValley">
             <strong>Watch a match</strong>
-            <span>Play it at 10-60x, scrub the timeline, see every kill, death and loot. Space plays and pauses.</span>
+            <span>Play, scrub, see every kill, death and loot.</span>
           </a>
           <a className="card" href="#mode=replay&map=AmbroseValley&match=all">
             <strong>All 566 matches at once</strong>
-            <span>Every player on Ambrose Valley on one clock: where everyone is at minute 8.</span>
+            <span>Every player on one clock.</span>
           </a>
           <a className="card" href="#mode=replay&map=AmbroseValley&under=1&layer=traffic,kills&hide=humanPath,botPath">
             <strong>Kill zones over traffic</strong>
-            <span>Heatmaps you can stack (right panel): traffic, loot, kills, deaths, storm deaths, power positions, lines of fire.</span>
+            <span>Stacked heatmaps, right panel.</span>
           </a>
           <a className="card" href="#mode=replay&map=Lockdown&view=3d&under=1&layer=traffic&match=all">
             <strong>3D, with terrain</strong>
-            <span>Height from the data, a terrain estimated from where players walked, the heatmap on the ground.</span>
-          </a>
-          <a className="card" href="#mode=replay&map=AmbroseValley&match=all&players=once">
-            <strong>Players who never came back</strong>
-            <span>The 84 Ambrose Valley matches that were a player's only one: where they went, where they died.</span>
-          </a>
-          <a className="card" href="#mode=replay&map=Lockdown&under=1&layer=traffic,storm&hide=humanPath,botPath">
-            <strong>Where the storm catches players</strong>
-            <span>Storm deaths over traffic on Lockdown.</span>
-          </a>
-          <a className="card" href="#mode=replay&map=AmbroseValley&under=1&layer=power,raised&hide=humanPath,botPath">
-            <strong>Power positions</strong>
-            <span>Spots that win 3-5x more fights per minute, and kills made from rooftops and ledges.</span>
-          </a>
-          <a className="card" href="#mode=replay&map=AmbroseValley&end=player&match=all">
-            <strong>The only player vs player fights</strong>
-            <span>3 matches. Each time: a kill and a death at the same second and spot, and the other player is not in the data at all (searched).</span>
-          </a>
-          <a className="card" href="#mode=replay&map=Lockdown&match=ead4c72d-0e3b-49b4-a91b-a9a21bed8012">
-            <strong>Click a player</strong>
-            <span>In any replay, click a path: its whole story, fights and events, past and future path.</span>
+            <span>Real heights, estimated ground.</span>
           </a>
         </div>
-        <p className="hint-line">Tips: click a row to show it alone, tick its box to add it · hover the legend to spot a kind on the map · every view is a link you can share.</p>
+        <p className="hint-line">Click a player on the map for their whole story · hover the legend to spot a kind · every view is a link you can share.</p>
       </section>
 
       <section id="findings">
@@ -178,8 +163,8 @@ export function Overview({ index }: { index: Index | null }) {
         <p className="muted small">A 5-day, partial sample: these are correlations to test, not proof.</p>
       </section>
 
-      <section id="details">
-        <h2>Data we had to get right</h2>
+      <details id="details" className="ov-more">
+        <summary>Data we had to get right</summary>
         <ul className="checks">
           <li><b>Coordinates.</b> <code>u = (x − originX) / scale</code>, <code>v = (z − originZ) / scale</code>, image y flipped; <code>y</code> is height. Checked three ways: the README's worked example (pixel 78, 890) as a test, all 89,104 rows inside their map, paths on roads. The minimaps are 4320, 2160 and 9000 px, not 1024: mapping in UV makes it harmless.</li>
           <li><b>Timestamps are seconds, typed as milliseconds.</b> Read as ms, matches last under 1 s; as seconds, 13 s to 15 min.</li>
@@ -192,10 +177,10 @@ export function Overview({ index }: { index: Index | null }) {
           <li><b>Player vs player is 3 events.</b> In all 3, the only human recorded has a Kill and a Killed at the same second and the same spot, at the end of the match: a trade or a self-kill; the other player's file is missing. Kept visible on their own (filter "Fought a player").</li>
           <li><b>The terrain is an estimate.</b> Ground height per 9 m cell comes from where players and bots walked (the low end of the heights seen there); walls and buildings are not in the data.</li>
         </ul>
-      </section>
+      </details>
 
-      <section id="build">
-        <h2>How it is built</h2>
+      <details id="build" className="ov-more">
+        <summary>How it is built</summary>
         <div className="flow">
           <span>1,243 parquet files</span>
           <span>Python pipeline (pyarrow), once</span>
@@ -216,10 +201,10 @@ export function Overview({ index }: { index: Index | null }) {
             <tr><td>3D only, or always loaded</td><td>2D first, 3D on demand</td><td>Designers read top-down maps first; 3D answers "which floor"</td></tr>
           </tbody>
         </table>
-      </section>
+      </details>
 
-      <section id="next">
-        <h2>What to log next</h2>
+      <details id="next" className="ov-more">
+        <summary>What to log next</summary>
         <p>Today a kill holds only the killer's position and the time: <b>no victim, no aim</b>. With these, the tool answers much more:</p>
         <ul className="checks">
           <li><b>Kills and deaths</b>: the other side's id and position, weapon, distance, line of sight → a line of fire for every fight.</li>
@@ -230,7 +215,7 @@ export function Overview({ index }: { index: Index | null }) {
           <li><b>Level geometry</b> (collision mesh or navmesh export) → real line of sight with walls and cover, and whether each power position can be reached from several routes.</li>
           <li><b>Loot value</b>, every bot logged, test accounts flagged.</li>
         </ul>
-      </section>
+      </details>
 
       <footer className="ov-footer">
         Built by Ugo Belfiore with Claude, for LILA Games. Source, pipeline and docs:{' '}

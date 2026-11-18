@@ -15,6 +15,13 @@ about 300 lines, move the oldest entries word for word to `SESSION_HISTORY.md` (
 
 ---
 
+## 2026-11-18 (desktop session): app install, old icons back, pinch zoom, lighter Overview and Data
+
+- Ugo: new icons rejected -> previous ones back, kills = skull over crossed bones. Phone: pinch + drag + / - buttons
+  (MapCanvas, tested with touch events). Installable app (manifest, icons from `pipeline/app_icons.py`, dashboard's
+  install popup, Install button in the Overview basics). Map thumbnails (`build_thumbs`, 96 px) in the map list and as
+  labels on the Data page. Overview: 4 cards, details folded; Data page trimmed. Ugo's Mac VPN blocked the sites; up.
+
 ## 2026-11-18 (desktop session): offline, group hover, eased fade, new icons, path sliders
 
 - Ugo: site blank / maps 2-3 stuck. Cause: a tab open across a deploy asks for deleted files, nothing caught it. Fix:

@@ -11,6 +11,8 @@ import { loadIndex } from './lib/data';
 import { BUILTIN_ID, listUploads, restoreSource } from './lib/sources';
 import { Icon } from './components/Icon';
 import { Loader } from './components/Loader';
+import { MapThumb } from './components/MapBadge';
+import { InstallOffer } from './components/InstallOffer';
 import { minimap } from './components/MapCanvas';
 import { record, redo, start, undo, type History } from './lib/history';
 import type { LegendKey } from './lib/draw';
@@ -165,8 +167,9 @@ export function App() {
               <h2>Map</h2>
               <div className="segmented">
                 {(Object.keys(MAP_LABEL) as MapId[]).map((id) => (
-                  <button key={id} className={id === view.map ? 'on' : ''} onClick={() => update({ map: id })}>
-                    {MAP_LABEL[id]}
+                  <button key={id} className={`with-thumb ${id === view.map ? 'on' : ''}`} onClick={() => update({ map: id })}>
+                    <MapThumb map={id} />
+                    <span className="grow-label">{MAP_LABEL[id]}</span>
                     <span className="count">{index?.matches.filter((m) => m.map === id).length ?? ''}</span>
                   </button>
                 ))}
@@ -250,6 +253,7 @@ export function App() {
           onHover={setHover}
         />
       )}
+      <InstallOffer />
     </div>
   );
 }

@@ -149,7 +149,7 @@ export function eventGroups(events: MatchEvent[], uvUnits: number, size: number,
 }
 
 /** On-screen radius of a group's icon. */
-export const groupRadius = (g: Group<MatchEvent>, scale: number) => EVENT_STYLE[g.kind as EventType].size * scale * groupScale(g.items.length) * 1.3;
+export const groupRadius = (g: Group<MatchEvent>, scale: number) => EVENT_STYLE[g.kind as EventType].size * scale * groupScale(g.items.length) * 1.2;
 
 /**
  * Event icons. Nothing is ever hidden by a hover: the rest fades back (eased, by `o.dim`) while what is pointed at
@@ -179,7 +179,7 @@ function drawEvents(ctx: CanvasRenderingContext2D, all: MatchEvent[], uvUnits: n
       ctx.strokeStyle = style.color;
       ctx.lineWidth = 2;
       ctx.globalAlpha = 1 - age;
-      ctx.arc(g.x, g.y, r * 1.3 + 4 + age * 10, 0, Math.PI * 2);
+      ctx.arc(g.x, g.y, r + 4 + age * 10, 0, Math.PI * 2);
       ctx.stroke();
       ctx.globalAlpha = 1;
     }
@@ -192,7 +192,7 @@ function drawEvents(ctx: CanvasRenderingContext2D, all: MatchEvent[], uvUnits: n
     if (!isLit(g) || inGroup(g) || single(g)) continue;
     const style = EVENT_STYLE[g.kind as EventType];
     const r = style.size * scale * groupScale(g.items.length);
-    ring(ctx, g.x, g.y, r * 1.3 + 3 + k * 12, style.color, 2, 1 - k);
+    ring(ctx, g.x, g.y, r + 3 + k * 12, style.color, 2, 1 - k);
     stampMarker(ctx, style.shape, style.color, g.x, g.y, r * (1.15 + 0.15 * k));
   }
   if (o.hover)
@@ -242,7 +242,7 @@ function drawEvents(ctx: CanvasRenderingContext2D, all: MatchEvent[], uvUnits: n
     const { x, y } = px(e[2], e[3]);
     const r = style.size * scale * 1.4;
     const future = e[0] > t;
-    ring(ctx, x, y, r * 1.3 + 3 + k * 18, style.color, 3, (1 - k) * (future ? 0.5 : 1));
+    ring(ctx, x, y, r + 3 + k * 18, style.color, 3, (1 - k) * (future ? 0.5 : 1));
     ctx.globalAlpha = future ? 0.4 : 1;
     stampMarker(ctx, style.shape, style.color, x, y, r * (1 + 0.15 * k));
     ctx.globalAlpha = 1;
@@ -286,7 +286,7 @@ function stampMarker(ctx: CanvasRenderingContext2D, shape: MarkerShape, color: s
   const q = Math.max(1, Math.round(r * 2)) / 2; // half-pixel steps: few cached sizes
   const key = `${shape}|${color}|${q}|${dpr}`;
   let img = sprites.get(key);
-  const half = q * 1.45 + 3; // room for the badge and its ring
+  const half = q * 1.6 + 4; // room for the bones and the outline
   if (!img) {
     img = document.createElement('canvas');
     img.width = img.height = Math.ceil(half * 2 * dpr);

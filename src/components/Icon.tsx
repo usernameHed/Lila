@@ -2,6 +2,7 @@
 const P: Record<string, string> = {
   undo: 'M9 14L4 9l5-5M4 9h10a6 6 0 0 1 0 12h-3',
   redo: 'M15 14l5-5-5-5M20 9H10a6 6 0 0 0 0 12h3',
+  download: 'M12 4v11M7 10l5 5 5-5M5 20h14',
 };
 
 export function Icon({ name, size = 18 }: { name: keyof typeof P; size?: number }) {

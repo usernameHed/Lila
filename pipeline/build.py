@@ -5,7 +5,7 @@ Output: public/data/index.json            maps, days and one summary row per mat
         public/data/matches/<match>.json  one file per match: players' paths and events, in map UV
         public/data/heat/<map>.json       per-day heatmap grids (traffic, kills, deaths, storm, loot)
         public/data/bundles/<map>_<day>.json  every match of one map and day, for multi-match replay
-        public/minimaps/<map>.jpg         the minimaps, 2048 x 2048 JPEG
+        public/minimaps/<map>.jpg         the minimaps, 2048 x 2048 JPEG (and thumbs/<map>.jpg, 96 px)
 
 Coordinates are stored as map UV (0-1, see MAPS) times 10,000, rounded: 1 unit = 0.1 m on the largest map,
 far below what a minimap pixel shows, and integers keep the JSON small. Time is ms since the match's first event
@@ -464,6 +464,23 @@ def build_minimaps() -> None:
         with Image.open(source) as img:
             img.convert("RGB").resize((MINIMAP_SIZE, MINIMAP_SIZE), Image.LANCZOS).save(
                 MINIMAPS_OUT / f"{map_id}.jpg", quality=80, optimize=True, progressive=True
+            )
+    build_thumbs()
+
+
+THUMB_SIZE = 96  # shown at 48 px (sharp on 2x screens), a few KB each
+
+
+def build_thumbs() -> None:
+    """Small map pictures for lists and labels (public/minimaps/thumbs/), cropped past the dark border."""
+    out = MINIMAPS_OUT / "thumbs"
+    out.mkdir(parents=True, exist_ok=True)
+    for path in sorted(MINIMAPS_OUT.glob("*.jpg")):
+        with Image.open(path) as img:
+            w, h = img.size
+            m = int(w * 0.08)
+            img.crop((m, m, w - m, h - m)).resize((THUMB_SIZE, THUMB_SIZE), Image.LANCZOS).save(
+                out / path.name, quality=82, optimize=True
             )
 
 

@@ -164,26 +164,80 @@ export function MapCanvas({ map, draw, dim = 0, uvUnits = 10_000, onPick, onHove
     return { u: (px / cam.s) * uvUnits, v: (1 - py / cam.s) * uvUnits, tolerance: (PICK_PX / cam.s) * uvUnits, size: cam.s };
   };
 
+  // Fingers and mouse: one pointer drags the map, two pinch (zoom around their middle, and move with it).
+  const pointers = useRef(new Map<number, { x: number; y: number }>());
+  const pinch = useRef<{ d: number; mx: number; my: number; cam: Cam } | null>(null);
+  const local = (e: React.PointerEvent) => {
+    const r = (e.currentTarget as HTMLElement).getBoundingClientRect();
+    return { x: e.clientX - r.left, y: e.clientY - r.top };
+  };
+  const startPinch = () => {
+    const [a, b] = [...pointers.current.values()];
+    if (!a || !b || !cam) return;
+    pinch.current = { d: Math.hypot(a.x - b.x, a.y - b.y) || 1, mx: (a.x + b.x) / 2, my: (a.y + b.y) / 2, cam };
+  };
+
   const onPointerDown = (e: React.PointerEvent) => {
     if (!cam) return;
-    drag.current = { x: e.clientX, y: e.clientY, cam, moved: false };
-    (e.target as HTMLElement).setPointerCapture(e.pointerId);
+    pointers.current.set(e.pointerId, local(e));
+    try {
+      (e.target as HTMLElement).setPointerCapture(e.pointerId);
+    } catch {
+      // a pointer the browser no longer tracks: the gesture still works without capture
+    }
+    if (pointers.current.size === 2) {
+      drag.current = null;
+      startPinch();
+    } else if (pointers.current.size === 1) drag.current = { x: e.clientX, y: e.clientY, cam, moved: false };
   };
   const onPointerMove = (e: React.PointerEvent) => {
+    if (pointers.current.has(e.pointerId)) pointers.current.set(e.pointerId, local(e));
+    const p = pinch.current;
+    if (p && pointers.current.size >= 2) {
+      const [a, b] = [...pointers.current.values()];
+      const k = Math.hypot(a.x - b.x, a.y - b.y) / p.d;
+      const mx = (a.x + b.x) / 2;
+      const my = (a.y + b.y) / 2;
+      const s = clamp({ ...p.cam, s: p.cam.s * k }).s;
+      const f = s / p.cam.s;
+      setCam(clamp({ s, x: mx - (p.mx - p.cam.x) * f, y: my - (p.my - p.cam.y) * f }));
+      return;
+    }
     const d = drag.current;
-    if (!d) return onHover?.(toPick(e));
+    if (!d) return e.pointerType === 'mouse' ? onHover?.(toPick(e)) : undefined;
     const dx = e.clientX - d.x;
     const dy = e.clientY - d.y;
-    if (Math.abs(dx) + Math.abs(dy) > 4) d.moved = true;
+    if (Math.abs(dx) + Math.abs(dy) > (e.pointerType === 'mouse' ? 4 : 8)) d.moved = true;
     if (d.moved) setCam(clamp({ ...d.cam, x: d.cam.x + dx, y: d.cam.y + dy }));
   };
   const onPointerUp = (e: React.PointerEvent) => {
+    pointers.current.delete(e.pointerId);
+    if (pinch.current) {
+      // One finger left after a pinch: it goes on dragging from here, it never counts as a tap.
+      pinch.current = null;
+      const [rest] = [...pointers.current.values()];
+      drag.current = rest && cam ? { x: e.clientX, y: e.clientY, cam, moved: true } : null;
+      return;
+    }
     const d = drag.current;
     drag.current = null;
     if (!d || d.moved || !onPick) return;
     const p = toPick(e);
     if (p) onPick(p);
   };
+  const onPointerCancel = (e: React.PointerEvent) => {
+    pointers.current.delete(e.pointerId);
+    pinch.current = null;
+    drag.current = null;
+  };
+  /** The + and - buttons: zoom around the middle of the canvas. */
+  const zoomBy = (k: number) =>
+    setCam((c) => {
+      if (!c) return c;
+      const s = clamp({ ...c, s: c.s * k }).s;
+      const f = s / c.s;
+      return clamp({ s, x: view.w / 2 - (view.w / 2 - c.x) * f, y: view.h / 2 - (view.h / 2 - c.y) * f });
+    });
 
   const zoomed = cam && Math.abs(cam.s - base) > 1;
   return (
@@ -191,10 +245,11 @@ export function MapCanvas({ map, draw, dim = 0, uvUnits = 10_000, onPick, onHove
       <canvas
         ref={canvas}
         style={{ width: view.w, height: view.h, cursor: drag.current?.moved ? 'grabbing' : pointer ? 'pointer' : 'grab', touchAction: 'none' }}
-        aria-label="Map: scroll to zoom, drag to pan, click a player or an event for details"
+        aria-label="Map: scroll or pinch to zoom, drag to pan, click a player or an event for details"
         onPointerDown={onPointerDown}
         onPointerMove={onPointerMove}
         onPointerUp={onPointerUp}
+        onPointerCancel={onPointerCancel}
         onPointerLeave={() => onHover?.(null)}
         onDoubleClick={() => setCam(fit(view.w, view.h))}
       />
@@ -207,6 +262,10 @@ export function MapCanvas({ map, draw, dim = 0, uvUnits = 10_000, onPick, onHove
           </div>
         </div>
       )}
+      <div className="map-zoom">
+        <button onClick={() => zoomBy(1.5)} aria-label="Zoom in" title="Zoom in (or scroll, or pinch)">+</button>
+        <button onClick={() => zoomBy(1 / 1.5)} aria-label="Zoom out" title="Zoom out">−</button>
+      </div>
       {zoomed && cam && (
         <button className="map-reset" onClick={() => setCam(fit(view.w, view.h))}>
           {(cam.s / base).toFixed(1)}x · Reset view
