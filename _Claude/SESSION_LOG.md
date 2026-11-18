@@ -9,7 +9,9 @@ about 300 lines, move the oldest entries word for word to `SESSION_HISTORY.md` (
   map and day filters, shareable URLs.
 - Due 2026-11-23 (assumed: received 2026-11-18).
 - Still open: INSIGHTS.md, ARCHITECTURE.md, walkthrough, design pass (references first), hover details on
-  markers, auto-deploy (workflow ready, needs the `CLOUDFLARE_API_TOKEN` repo secret from Ugo, Chrome not connected).
+  markers.
+- Auto-deploy: push to `main` deploys (repo secret `CLOUDFLARE_API_TOKEN` = Cloudflare token "LILA GitHub deploy",
+  Ugo's account, zone belfiore.me, added by Ugo 2026-11-18).
 
 ---
 
