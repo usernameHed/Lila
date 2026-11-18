@@ -23,6 +23,7 @@ export interface ReplayOptions {
   hidden?: ReadonlySet<LegendKey>; // legend rows turned off
   hover?: LegendKey | null; // legend row under the mouse: its markers pulse, the rest fade
   activeEvent?: MatchEvent | null; // one event pointed at (map, timeline, card): it pulses
+  iconScale?: number; // size of the event icons (1 = default)
   phase?: number; // animation clock (ms) for the pulse
 }
 
@@ -44,8 +45,8 @@ export function drawMatches(ctx: CanvasRenderingContext2D, matches: Match[], uvU
   // Past events, plus the future ones of the hovered kind and the pointed-at event (drawn faded).
   const events = matches
     .flatMap((m) => m.events)
-    .filter((e) => (e[0] <= t || e[1] === o.hover || e === o.activeEvent) && !hidden.has(e[1]) && !(many && e[1] === 'loot' && o.hover !== 'loot' && e !== o.activeEvent));
-  drawEvents(ctx, events, uvUnits, size, t, playing, many ? 0.55 : 1, o);
+    .filter((e) => (e[0] <= t || e[1] === o.hover || e === o.activeEvent) && !hidden.has(e[1]));
+  drawEvents(ctx, events, uvUnits, size, t, playing, (many ? 0.55 : 1) * (o.iconScale ?? 1), o);
   // Killer-to-victim lines last: short (median ~9 m), they would hide under the markers.
   if (!hidden.has('fights')) {
     const fade = o.hover && o.hover !== 'fights' ? 0.25 : 1;
@@ -70,10 +71,10 @@ function drawPaths(ctx: CanvasRenderingContext2D, match: Match, uvUnits: number,
     if (!n) continue;
     const color = p.bot ? PATH_COLOR.bot : look.human;
     ctx.beginPath();
-    ctx.lineWidth = (p.bot ? 1.25 : 2.25) * (look.faint ? 0.5 : 1);
+    ctx.lineWidth = (p.bot ? 2 : 2.25) * (look.faint ? 0.5 : 1);
     ctx.strokeStyle = color;
-    ctx.setLineDash(p.bot ? [4, 3] : []);
-    ctx.globalAlpha = (p.bot ? 0.7 : 0.95) * (look.faint ? 0.22 : 1) * (look.fade ?? 1);
+    ctx.setLineDash(p.bot ? [6, 4] : []);
+    ctx.globalAlpha = (p.bot ? 0.9 : 0.95) * (look.faint ? 0.22 : 1) * (look.fade ?? 1);
     for (let i = 0; i < n * 3; i += 3) {
       const { x, y } = px(p.path[i + 1], p.path[i + 2]);
       if (i === 0) ctx.moveTo(x, y);

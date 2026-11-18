@@ -25,7 +25,9 @@ On a 16:9 screen (1366x768 to 1920x1080) everything fits without scrolling:
   order by day, longest, shortest, most kills, most loot. By day, matches are grouped: fold a day, tick it to select
   all its matches; one line per match (duration, how it ended, kills ✕, loot ◆).
 - **Legend**: On / Off for the whole replay (Off = the heatmap alone); click a row to show or hide it (paths
-  included), All / None; hover a row and those markers pulse on the map, future ones shown see-through.
+  included), All / None; hover a row and those markers pulse on the map and their ticks light up on the timeline
+  (future ones shown see-through). Every legend and heatmap row explains itself in a tooltip; rows showing the
+  same events (e.g. "Player killed by a bot" and "Position when killed") pulse together. Icon size slider.
 - **Everything is linked**: hover an event on the map, its tick on the timeline or its row in a player's card,
   and it pulses in all of them and in the legend. Click a player or an event for its card (how it ended,
   distance, height range, fights, every event; click one to jump there). Everyone that player fought is

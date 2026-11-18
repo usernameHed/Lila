@@ -37,6 +37,7 @@ export interface Map3DProps {
   activeEvent: MatchEvent | null;
   onPointEvent: (e: MatchEvent | null) => void;
   onPickEvent: (e: MatchEvent) => void;
+  iconScale: number;
 }
 
 /** Size of the ground texture: minimap + heatmap painted together. */
@@ -125,7 +126,9 @@ function place(map: MapConfig, uvUnits: number, u: number, v: number, hDm: numbe
 }
 
 export default function Map3D(props: Map3DProps) {
-  const { map, matches, uvUnits, t, hidden, mono, exaggeration, terrain, overlay, focus, focusOpponents, onFocus, hoverKind, activeEvent, onPointEvent, onPickEvent } = props;
+  const { map, matches, uvUnits, t, hidden, mono, exaggeration, terrain, overlay, focus, focusOpponents, onFocus, hoverKind, activeEvent, onPointEvent, onPickEvent, iconScale } = props;
+  const iconRef = useRef(iconScale);
+  iconRef.current = iconScale;
   const hoverRef = useRef(hoverKind);
   hoverRef.current = hoverKind;
   const activeRef = useRef(activeEvent);
@@ -212,13 +215,13 @@ export default function Map3D(props: Map3DProps) {
       const ae = activeRef.current;
       for (const [type, layer] of built.current.events) {
         const m = layer.points.material as THREE.PointsMaterial;
-        m.size = (layer.size ?? 10) * (hk === type ? 1.3 + 0.35 * k : 1);
+        m.size = (layer.size ?? 10) * iconRef.current * (hk === type ? 1.3 + 0.35 * k : 1);
         m.opacity = hk || ae ? (hk === type ? 1 : 0.25) : 1;
         if (layer.future) (layer.future.material as THREE.PointsMaterial).size = m.size;
       }
       const mk = activeMarker.current;
       if (mk?.visible) {
-        (mk.material as THREE.PointsMaterial).size = 30 + 22 * k;
+        (mk.material as THREE.PointsMaterial).size = (30 + 22 * k) * iconRef.current;
         (mk.material as THREE.PointsMaterial).opacity = 1 - 0.4 * k;
       }
       controls.update();
@@ -339,11 +342,7 @@ export default function Map3D(props: Map3DProps) {
       canvas.width = canvas.height = TEXTURE_PX;
       const g = canvas.getContext('2d')!;
       g.drawImage(img, 0, 0, TEXTURE_PX, TEXTURE_PX);
-      if (overlay) {
-        g.fillStyle = 'rgba(8, 9, 12, 0.4)';
-        g.fillRect(0, 0, TEXTURE_PX, TEXTURE_PX);
-        overlay(g, TEXTURE_PX);
-      }
+      overlay?.(g, TEXTURE_PX); // no darkening: where there is no heat, the map stays as it is
       const texture = new THREE.CanvasTexture(canvas);
       texture.colorSpace = THREE.SRGBColorSpace;
       texture.anisotropy = three.current.renderer.capabilities.getMaxAnisotropy();
@@ -404,9 +403,9 @@ export default function Map3D(props: Map3DProps) {
         geo.setColors(colors);
         const material = new LineMaterial({
           vertexColors: true,
-          linewidth: (p.bot ? 1.5 : 3) * (many ? 0.5 : 1),
+          linewidth: (p.bot ? 2.5 : 3) * (many ? 0.5 : 1),
           transparent: true,
-          opacity: (p.bot ? 0.7 : 1) * (many ? 0.35 : 1),
+          opacity: (p.bot ? 0.9 : 1) * (many ? 0.35 : 1),
           dashed: p.bot,
           dashSize: 6,
           gapSize: 4,
@@ -431,7 +430,6 @@ export default function Map3D(props: Map3DProps) {
     for (const m of matches)
       for (const e of m.events) {
         const [time, type, u, v, , h] = e;
-        if (many && type === 'loot') continue;
         if (!byType.has(type)) byType.set(type, []);
         byType.get(type)!.push({ t: time, v: place(map, uvUnits, u, v, h ?? map.hMin * 10), ref: e });
       }

@@ -14,6 +14,10 @@ interface Props {
   events: MatchEvent[];
   /** The event pointed at anywhere: its tick is highlighted and pulses. */
   active: MatchEvent | null;
+  /** Legend row hovered: all its ticks are highlighted. */
+  hoverKind?: string | null;
+  /** Kinds hidden in the legend: no ticks for them. */
+  hidden?: ReadonlySet<string>;
   onPoint: (e: MatchEvent | null) => void;
   onToggle: () => void;
   onPause: () => void;
@@ -29,7 +33,7 @@ export function isTyping(el: EventTarget | null): boolean {
 }
 
 /** Play / pause, a scrubber with a tick for every fight and death, and the playback speed. Space plays. */
-export function PlaybackBar({ t, duration, playing, speed, events, active, onPoint, onToggle, onPause, onSeek, onSpeed }: Props) {
+export function PlaybackBar({ t, duration, playing, speed, events, active, hoverKind = null, hidden, onPoint, onToggle, onPause, onSeek, onSpeed }: Props) {
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       if (e.code !== 'Space' || isTyping(e.target)) return;
@@ -43,9 +47,12 @@ export function PlaybackBar({ t, duration, playing, speed, events, active, onPoi
     return () => window.removeEventListener('keydown', onKey, true);
   }, [onToggle]);
 
-  // One tick per fight or death; past a few hundred they would only blur into a bar, so none are drawn.
-  const fights = events.filter((e) => e[1] !== 'loot');
-  const ticks = fights.length <= 300 ? fights : [];
+  // One tick per fight or death (not loot, unless loot is hovered); past a few hundred they would blur into a bar,
+  // so then only the hovered kind's ticks are drawn. The pointed-at event always gets its tick, pulsing.
+  const shown = events.filter((e) => !hidden?.has(e[1]));
+  const fights = shown.filter((e) => e[1] !== 'loot');
+  const lit = hoverKind ? shown.filter((e) => e[1] === hoverKind) : [];
+  const ticks = [...(fights.length <= 300 ? fights.filter((e) => e[1] !== hoverKind) : []), ...lit];
 
   return (
     <div className="playback">
@@ -74,7 +81,7 @@ export function PlaybackBar({ t, duration, playing, speed, events, active, onPoi
             ticks.map((e, i) => (
               <span
                 key={i}
-                className={e === active ? 'active' : ''}
+                className={e === active ? 'active' : e[1] === hoverKind ? 'lit' : hoverKind ? 'dim' : ''}
                 style={{ left: `${(e[0] / duration) * 100}%`, background: EVENT_STYLE[e[1]].color }}
                 onMouseEnter={() => onPoint(e)}
                 onMouseLeave={() => onPoint(null)}

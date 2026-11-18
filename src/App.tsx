@@ -149,6 +149,7 @@ export function App() {
             terrain={view.terrain}
             onView={update}
             onOnlyMatch={(id) => update({ matches: [id] })}
+            iconScale={view.iconScale}
           />
         )}
       </main>

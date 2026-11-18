@@ -49,10 +49,14 @@ interface Props {
   onToggle: (k: LegendKey) => void;
   onAll: (show: boolean) => void;
   onHover: (k: LegendKey | null) => void;
+  /** Rows to pulse because their partner in the heatmap card is hovered or was just ticked. */
+  linked: LegendKey[];
+  /** Show (or hide, with null) the explanation of a row next to it. */
+  onTip: (k: LegendKey | null, el?: HTMLElement) => void;
 }
 
 /** Click a row to show or hide that kind; hover it to spot it on the map (future ones shown faded). */
-export function Legend({ counts, hidden, active, onToggle, onAll, onHover }: Props) {
+export function Legend({ counts, hidden, active, onToggle, onAll, onHover, linked, onTip }: Props) {
   return (
     <>
       <div className="all-none">
@@ -70,11 +74,17 @@ export function Legend({ counts, hidden, active, onToggle, onAll, onHover }: Pro
           return (
             <li
               key={k}
-              className={`${on ? '' : 'off'} ${counts[k] || isPath ? '' : 'none'} ${active === k ? 'pulse' : ''}`}
-              onMouseEnter={() => on && onHover(k)}
-              onMouseLeave={() => onHover(null)}
+              className={`${on ? '' : 'off'} ${counts[k] || isPath ? '' : 'none'} ${active === k || linked.includes(k) ? 'pulse' : ''}`}
+              onMouseEnter={(e) => {
+                if (on) onHover(k);
+                onTip(k, e.currentTarget);
+              }}
+              onMouseLeave={() => {
+                onHover(null);
+                onTip(null);
+              }}
             >
-              <button className="legend-row" onClick={() => onToggle(k)} aria-pressed={on} title={on ? 'Hide on the map' : 'Show on the map'}>
+              <button className="legend-row" onClick={() => onToggle(k)} aria-pressed={on}>
                 <span className="legend-box" style={{ borderColor: color(k) }}>
                   {on && <Icon k={k} />}
                 </span>

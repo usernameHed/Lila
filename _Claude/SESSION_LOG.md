@@ -15,6 +15,13 @@ about 300 lines, move the oldest entries word for word to `SESSION_HISTORY.md` (
 
 ---
 
+## 2026-11-18 (desktop session): tooltips, linked rows, icon size, clearer map
+
+- Ugo: power positions / line of fire not understood -> tooltip on every row (`EXPLAIN` in style.ts). Linked rows
+  legend <-> heatmap (`lib/links.ts`) pulse on hover and for 2 s after a tick. Icon size slider (URL `icons`).
+- Bot paths thicker / more opaque; loot never auto-hidden; heatmap no longer darkens the map (2D, 3D); timeline:
+  all ticks of the hovered kind light up, the pointed one pulses. Cards keep their size when Off.
+
 ## 2026-11-18 (desktop session): right panel, fit 16:9
 
 - Ugo: legend to the right with the heatmap, same On / Off, more visible, panels in blue, no scrolling on 16:9.

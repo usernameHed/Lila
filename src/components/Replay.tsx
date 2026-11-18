@@ -131,6 +131,7 @@ interface StageProps {
   onView: (patch: { view3d?: boolean; exaggeration?: number; terrain?: boolean }) => void;
   /** Replay only this match (from the details card). */
   onOnlyMatch: (id: string) => void;
+  iconScale: number;
 }
 
 const Map3D = lazy(() => import('./Map3D'));
@@ -167,7 +168,7 @@ function usePulse(active: boolean): number {
 
 /** Every selected match on its map, all starting together at 0:00, with one playback. */
 export function ReplayStage(props: StageProps) {
-  const { summaries, uvUnits, mono, hidden, hover, onPointedKind, under, mapConfig, view3d, exaggeration, terrain, onView, onOnlyMatch } = props;
+  const { summaries, uvUnits, mono, hidden, hover, onPointedKind, under, mapConfig, view3d, exaggeration, terrain, onView, onOnlyMatch, iconScale } = props;
   const [loaded, setLoaded] = useState<Match[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -250,10 +251,10 @@ export function ReplayStage(props: StageProps) {
   const draw = useCallback(
     (ctx: CanvasRenderingContext2D, size: number) => {
       under?.(ctx, size);
-      if (shown.length) drawMatches(ctx, shown, uvUnits, size, t, play.playing, { mono, hidden: hiddenSet, hover, phase, activeEvent: active?.event ?? null });
+      if (shown.length) drawMatches(ctx, shown, uvUnits, size, t, play.playing, { mono, hidden: hiddenSet, hover, phase, activeEvent: active?.event ?? null, iconScale });
       if (focusMatch && focus) drawFocus(ctx, focusMatch, focus.player, uvUnits, size, t, active?.event ?? null, phase, story?.opponents ?? []);
     },
-    [shown, t, uvUnits, play.playing, mono, hiddenSet, hover, phase, under, focusMatch, focus, active, story],
+    [shown, t, uvUnits, play.playing, mono, hiddenSet, hover, phase, under, focusMatch, focus, active, story, iconScale],
   );
 
   if (!summaries.length) return <div className="empty">No match for these filters.</div>;
@@ -279,7 +280,7 @@ export function ReplayStage(props: StageProps) {
         {summaries.length > 1 && (
           <span className="stage-note">
             <strong>{summaries.length} matches</strong> together, each from its own 0:00.
-            {many && <span className="muted"> One color, loot hidden above {MANY_MATCHES}.</span>}
+            {many && <span className="muted"> One color for all above {MANY_MATCHES}.</span>}
             {loading && <span className="muted"> Loading…</span>}
           </span>
         )}
@@ -303,6 +304,7 @@ export function ReplayStage(props: StageProps) {
               hoverKind={hover}
               activeEvent={active?.event ?? null}
               onPointEvent={pointAt}
+              iconScale={iconScale}
               onPickEvent={(e) => {
                 const m = shown.find((x) => x.events.includes(e));
                 if (m) pickAt({ match: m.id, event: e }, null);
@@ -310,7 +312,7 @@ export function ReplayStage(props: StageProps) {
             />
           </Suspense>
         ) : (
-          <MapCanvas map={summaries[0].map} draw={draw} dim={under ? 0.4 : 0} uvUnits={uvUnits} onPick={onPick} onHover={onHoverMap} pointer={!!pointed} />
+          <MapCanvas map={summaries[0].map} draw={draw} dim={0} uvUnits={uvUnits} onPick={onPick} onHover={onHoverMap} pointer={!!pointed} />
         )}
         {story && focus && (
           <PlayerCard
@@ -342,6 +344,8 @@ export function ReplayStage(props: StageProps) {
         speed={play.speed}
         events={events}
         active={active?.event ?? null}
+        hoverKind={hover}
+        hidden={hiddenSet}
         onPoint={pointAt}
         onToggle={play.toggle}
         onPause={play.pause}

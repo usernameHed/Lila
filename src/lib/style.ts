@@ -64,3 +64,33 @@ export function formatDuration(ms: number): string {
   const s = Math.round(ms / 1000);
   return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`;
 }
+
+/**
+ * What each row means, in plain words: shown as a tooltip on hover (legend and heatmap). Written for a level
+ * designer who has never seen the data.
+ */
+export const EXPLAIN: Record<string, string> = {
+  // Legend
+  humanPath: 'Where the player walked. One line per player, drawn up to the current time of the replay.',
+  botPath: 'Where a bot walked (dashed). Bots are only recorded in 52 of the 796 matches.',
+  killBot: 'A player killed a bot here. The cross is where the player stood when shooting, not where the bot fell.',
+  killPlayer: 'A player killed another player here (where the shooter stood). Only 3 in the whole data.',
+  diedToBot: 'A player was killed by a bot here: where the player fell.',
+  diedToPlayer: 'A player was killed by another player here: where the player fell. Only 3 in the whole data.',
+  storm: 'A player died to the storm here. The storm only kills after minute 10.9 of a match.',
+  loot: 'A player picked up an item here.',
+  botKill: 'A bot killed someone here (where the bot stood). Only when the bot itself was recorded.',
+  botDeath: 'A bot died here. Only when the bot itself was recorded.',
+  fights:
+    'An arrow from the killer to the victim: who shot whom, and from where. Only for the 42 fights where both are in the data (36 recorded, 6 inferred, drawn lighter); most kills do not say who the victim was. Short arrows: most fights are close (about 9 m).',
+  // Heatmap
+  traffic: 'Where players spend time. The game records where each player is every ~5 s: brighter = more time spent there. Shows busy routes and ignored areas.',
+  heatLoot: 'Where items are picked up. Brighter = more pickups.',
+  power:
+    'Spots that win fights. For each area: kills made there divided by the time players spend there, compared with the map average. Light = as good as average, bright pink = 4x better or more. Good positions to fight from: check each one can be reached and contested from several routes. Today nearly all kills are against bots.',
+  raised: 'Kills made from 3 m or more above the ground around them: rooftops, towers, ledges. Overwatch and sniping spots.',
+  fire: 'The same arrows as "Killer to victim" in the legend: who shot whom, from where. 42 fights only: most kills do not record the victim.',
+  kills: 'Where players stand when they kill. Bots / Players / Both: who the victim was.',
+  deaths: 'Where players die to bots or to other players (the storm has its own row). Bots / Players / Both: who killed them.',
+  heatStorm: 'Where the storm catches players.',
+};

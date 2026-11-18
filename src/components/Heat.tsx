@@ -114,12 +114,16 @@ interface ListProps extends HeatOptions {
   heat: HeatData | null;
   days: string[];
   onToggle: (l: HeatLayer) => void;
+  /** Kinds to pulse because their partner in the legend is hovered or was just ticked. */
+  linked?: HeatLayer[];
+  /** Show (or hide, with null) the explanation of a kind next to it. */
+  onTip?: (k: HeatLayer | null, el?: HTMLElement) => void;
   onWho: (kind: 'kills' | 'deaths', who: Who) => void;
 }
 
 /** Every kind in its color: click a row (or its box) to show or hide it; kills and deaths also pick bots, players
  * or both. */
-export function LayerList({ heat, days, onToggle, onWho, ...o }: ListProps) {
+export function LayerList({ heat, days, onToggle, onWho, linked = [], onTip, ...o }: ListProps) {
   return (
     <div className="segmented layers">
       {KINDS.map((id) => {
@@ -128,17 +132,21 @@ export function LayerList({ heat, days, onToggle, onWho, ...o }: ListProps) {
         const color = o.mono ? MONO_RGB : rgb;
         const who = id === 'kills' ? o.kills : o.deaths;
         return (
-          <div key={id} className={`layer ${on ? 'on' : ''}`}>
+          <div
+            key={id}
+            className={`layer ${on ? 'on' : ''} ${linked.includes(id) ? 'pulse' : ''}`}
+            onMouseEnter={(e) => onTip?.(id, e.currentTarget)}
+            onMouseLeave={() => onTip?.(null)}
+          >
             <div className="layer-row">
               <button
                 className="swatch-box"
                 onClick={() => onToggle(id)}
                 aria-pressed={on}
                 aria-label={`${on ? 'Hide' : 'Add'} ${label}`}
-                title={on ? 'Hide this kind' : 'Add this kind to the map'}
                 style={on ? { background: rgbCss(color), borderColor: rgbCss(color) } : { borderColor: rgbCss(color, 0.7) }}
               />
-              <button className="layer-name" onClick={() => onToggle(id)} aria-pressed={on} title={hint}>
+              <button className="layer-name" onClick={() => onToggle(id)} aria-pressed={on} aria-label={`${label}: ${hint}`}>
                 {label}
                 <span className="count">{count(heat, id, split ? who : 'both', days)?.toLocaleString('en') ?? ''}</span>
               </button>

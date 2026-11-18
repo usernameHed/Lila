@@ -31,6 +31,8 @@ export interface View {
   heatUnder: boolean;
   /** Draw the replay itself (paths, events, lines of fire); off = the heatmap alone. */
   replayOn: boolean;
+  /** Size of the event icons on the map (1 = default). */
+  iconScale: number;
   /** Replay: 3D view (height from the data's y) instead of the flat map. */
   view3d: boolean;
   /** 3D: vertical exaggeration (1-8). */
@@ -41,7 +43,7 @@ export interface View {
 
 export const ALL = 'all';
 
-export const DEFAULT_VIEW: View = { mode: 'overview', map: 'AmbroseValley', day: 'all', matches: [], layers: ['traffic'], kills: 'both', deaths: 'both', mono: false, heatMono: false, players: 'all', others: 'any', ended: 'any', length: 'any', sort: 'day', hidden: [], heatUnder: false, replayOn: true, view3d: false, exaggeration: 4, terrain: true };
+export const DEFAULT_VIEW: View = { mode: 'overview', map: 'AmbroseValley', day: 'all', matches: [], layers: ['traffic'], kills: 'both', deaths: 'both', mono: false, heatMono: false, players: 'all', others: 'any', ended: 'any', length: 'any', sort: 'day', hidden: [], heatUnder: false, replayOn: true, iconScale: 1, view3d: false, exaggeration: 4, terrain: true };
 
 const MAPS: MapId[] = ['AmbroseValley', 'GrandRift', 'Lockdown'];
 const LAYERS: HeatLayer[] = ['traffic', 'loot', 'power', 'raised', 'fire', 'kills', 'deaths', 'storm']; // drawing order
@@ -74,6 +76,7 @@ export function parseView(hash: string): View {
     hidden: legacyHeat ? ['humanPath', 'botPath'] : (q.get('hide') ?? '').split(',').filter((k) => /^[a-zA-Z]{2,20}$/.test(k)),
     heatUnder: legacyHeat || q.get('under') === '1',
     replayOn: q.get('replay') !== '0',
+    iconScale: Math.min(2, Math.max(0.6, Math.round((Number(q.get('icons')) || 1) * 10) / 10)),
     view3d: q.get('view') === '3d',
     terrain: q.get('ground') !== 'flat',
     exaggeration: Math.min(8, Math.max(1, Math.round(Number(q.get('ex')) || DEFAULT_VIEW.exaggeration))),
@@ -114,6 +117,7 @@ export function viewHash(v: View): string {
   if (v.sort !== 'day') q.set('sort', v.sort);
   if (v.hidden.length) q.set('hide', v.hidden.join(','));
   if (!v.replayOn) q.set('replay', '0');
+  if (v.iconScale !== 1) q.set('icons', String(v.iconScale));
   if (v.view3d) q.set('view', '3d');
   if (v.view3d && v.exaggeration !== DEFAULT_VIEW.exaggeration) q.set('ex', String(v.exaggeration));
   if (v.view3d && !v.terrain) q.set('ground', 'flat');

@@ -1,3 +1,6 @@
+import { useEffect, useState } from 'react';
+import { heatOf, legendOf } from '../lib/links';
+import { EXPLAIN } from '../lib/style';
 // The panels around the map: left (which matches, legend), right (heatmap), and the Overview's table of contents.
 // App owns the state; these only show it.
 import type { LegendKey } from '../lib/draw';
@@ -132,9 +135,26 @@ interface RightProps {
 
 const ON_OFF: [string, string][] = [['on', 'On'], ['off', 'Off']];
 
+/** Explanation key of a heatmap kind (loot and storm share their legend twin's name otherwise). */
+const heatTip = (h: HeatLayer) => (h === 'loot' ? 'heatLoot' : h === 'storm' ? 'heatStorm' : h);
+
 /** On the right of the map: what the replay draws (legend), and the heatmap under it. Each can be turned off. */
 export function RightPanel(p: RightProps) {
   const { view, update } = p;
+  // Explanation shown next to the hovered row, to the left of the panel (over the map).
+  const [tip, setTip] = useState<{ text: string; rect: DOMRect } | null>(null);
+  const showTip = (key: string | null, el?: HTMLElement) => setTip(key && el && EXPLAIN[key] ? { text: EXPLAIN[key], rect: el.getBoundingClientRect() } : null);
+  // The row whose twin in the other card should pulse: the hovered one, or the one just ticked (for 2 s).
+  const [hot, setHot] = useState<{ legend?: LegendKey; heat?: HeatLayer } | null>(null);
+  const [flash, setFlash] = useState<{ legend?: LegendKey; heat?: HeatLayer } | null>(null);
+  useEffect(() => {
+    if (!flash) return;
+    const id = setTimeout(() => setFlash(null), 2000);
+    return () => clearTimeout(id);
+  }, [flash]);
+  const linkedHeat = [hot?.legend, flash?.legend].map((k) => (k ? heatOf(k) : null)).filter((h): h is HeatLayer => !!h);
+  const linkedLegend = [hot?.heat, flash?.heat].flatMap((h) => (h ? legendOf(h) : []));
+
   return (
     <aside className="right-panel">
       <section className="panel-card">
@@ -144,8 +164,28 @@ export function RightPanel(p: RightProps) {
         </header>
         {/* Off: the content stays, dimmed and inert, so the panel keeps its size (nothing jumps). */}
         <div className={`panel-body ${view.replayOn ? '' : 'off'}`} aria-hidden={!view.replayOn} inert={!view.replayOn || undefined}>
-          <p className="panel-hint">{view.replayOn ? 'Hover a row to spot it on the map · click to show or hide' : 'Off: paths and events hidden, the heatmap alone'}</p>
-          <Legend counts={p.counts} hidden={p.hidden} active={p.pointedKind} onToggle={p.onLegendToggle} onAll={p.onLegendAll} onHover={p.onHover} />
+          <p className="panel-hint">{view.replayOn ? 'Hover a row to spot it and read what it is · click to show or hide' : 'Off: paths and events hidden, the heatmap alone'}</p>
+          <Legend
+            counts={p.counts}
+            hidden={p.hidden}
+            active={p.pointedKind}
+            linked={linkedLegend}
+            onToggle={(k) => {
+              p.onLegendToggle(k);
+              setFlash({ legend: k });
+            }}
+            onAll={p.onLegendAll}
+            onHover={(k) => {
+              p.onHover(k);
+              setHot(k ? { legend: k } : null);
+            }}
+            onTip={(k, el) => showTip(k, el)}
+          />
+          <label className="icon-size" title="Size of the icons on the map (kills, deaths, loot...)">
+            Icon size
+            <input type="range" min={0.6} max={2} step={0.1} value={view.iconScale} onChange={(e) => update({ iconScale: Number(e.target.value) })} />
+            <span>{Math.round(view.iconScale * 100)}%</span>
+          </label>
         </div>
       </section>
       <section className="panel-card">
@@ -154,18 +194,40 @@ export function RightPanel(p: RightProps) {
           <Choice big label="Heatmap" options={ON_OFF} value={view.heatUnder ? 'on' : 'off'} onChange={(v) => update({ heatUnder: v === 'on' })} />
         </header>
         <div className={`panel-body ${view.heatUnder ? '' : 'off'}`} aria-hidden={!view.heatUnder} inert={!view.heatUnder || undefined}>
-            <div className="all-none">
-              <button onClick={() => update({ layers: [...ALL_LAYERS] })} disabled={view.layers.length === ALL_LAYERS.length}>
-                All
-              </button>
-              <button onClick={() => update({ layers: [] })} disabled={!view.layers.length}>
-                None
-              </button>
-              <Choice label="Heatmap colors" options={[['each', 'Per kind'], ['mono', 'One color']]} value={view.heatMono ? 'mono' : 'each'} onChange={(c) => update({ heatMono: c === 'mono' })} />
-            </div>
-            <LayerList heat={p.heat} days={p.days} layers={view.layers} kills={view.kills} deaths={view.deaths} mono={view.heatMono} {...p.layers} />
+          <div className="all-none">
+            <button onClick={() => update({ layers: [...ALL_LAYERS] })} disabled={view.layers.length === ALL_LAYERS.length}>
+              All
+            </button>
+            <button onClick={() => update({ layers: [] })} disabled={!view.layers.length}>
+              None
+            </button>
+            <Choice label="Heatmap colors" options={[['each', 'Per kind'], ['mono', 'One color']]} value={view.heatMono ? 'mono' : 'each'} onChange={(c) => update({ heatMono: c === 'mono' })} />
+          </div>
+          <LayerList
+            heat={p.heat}
+            days={p.days}
+            layers={view.layers}
+            kills={view.kills}
+            deaths={view.deaths}
+            mono={view.heatMono}
+            linked={linkedHeat}
+            onTip={(h, el) => {
+              showTip(h ? heatTip(h) : null, el);
+              setHot(h ? { heat: h } : null);
+            }}
+            onToggle={(h) => {
+              p.layers.onToggle(h);
+              setFlash({ heat: h });
+            }}
+            onWho={p.layers.onWho}
+          />
         </div>
       </section>
+      {tip && (
+        <div className="row-tip" role="tooltip" style={{ right: window.innerWidth - tip.rect.left + 12, top: tip.rect.top + tip.rect.height / 2 }}>
+          {tip.text}
+        </div>
+      )}
     </aside>
   );
 }
