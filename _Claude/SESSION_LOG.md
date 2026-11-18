@@ -23,7 +23,8 @@ about 300 lines, move the oldest entries word for word to `SESSION_HISTORY.md` (
 - Found: the 3 PvP events are Kill + Killed at the same second and spot at match end (trade or self-kill); they had
   been paired as a fight of a player with themself: fixed (36 recorded + 6 inferred = 42 lines).
 - Ugo: toon edges not clean -> anti-aliased (distance to the band edge in pixels); 3D terrain "bent" -> unwalked cells
-  had sunk (filled from the map's lowest point): now flood-filled from the nearest walked cells.
+  had sunk (filled from the map's lowest point): now flood-filled from the nearest walked cells. Then (Ugo, x8 offset):
+  the 2 m terrain sink was scaled by the exaggeration (16 m at x8): removed, depth polygon offset instead.
 
 ## 2026-11-18 (desktop session): click a player, 2D zoom, deeper pairs
 

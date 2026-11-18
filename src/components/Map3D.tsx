@@ -35,9 +35,6 @@ export interface Map3DProps {
 /** Size of the ground texture: minimap + heatmap painted together. */
 const TEXTURE_PX = 2048;
 
-/** The estimated terrain is smoothed: sink it 2 m so it never covers the paths it was built from. */
-const TERRAIN_SINK = 2;
-
 interface PathLine {
   match: string;
   player: number;
@@ -85,7 +82,7 @@ function terrainGeometry(map: MapConfig, t: Terrain): THREE.PlaneGeometry {
   for (let i = 0; i < pos.count; i++) {
     const row = Math.floor(i / g); // PlaneGeometry rows go from top (north) to bottom
     const col = i % g;
-    pos.setZ(i, t.h[row * g + col] / 10 - map.hMin - TERRAIN_SINK);
+    pos.setZ(i, t.h[row * g + col] / 10 - map.hMin);
     uv.setXY(i, (pos.getX(i) + S / 2) / S, (pos.getY(i) + S / 2) / S);
   }
   geo.computeVertexNormals();
@@ -135,7 +132,12 @@ export default function Map3D({ map, matches, uvUnits, t, hidden, byHeight, mono
     controls.update();
 
     // Lit material, so slopes of the estimated terrain shade; the texture is painted by the overlay effect below.
-    const ground = new THREE.Mesh(new THREE.PlaneGeometry(S, S), new THREE.MeshLambertMaterial({ color: 0xffffff }));
+    // Polygon offset: the ground is drawn slightly behind in depth, so paths lying on it always show, without
+    // moving it (a height offset would be multiplied by the exaggeration: 2 m became 16 m at x8).
+    const ground = new THREE.Mesh(
+      new THREE.PlaneGeometry(S, S),
+      new THREE.MeshLambertMaterial({ color: 0xffffff, polygonOffset: true, polygonOffsetFactor: 4, polygonOffsetUnits: 8 }),
+    );
     scene.add(new THREE.HemisphereLight(0xffffff, 0x404040, 1.6));
     const sun = new THREE.DirectionalLight(0xffffff, 1.4);
     sun.position.set(-S * 0.6, S * 0.9, -S * 0.3); // low-ish from the north-west: relief reads like a shaded map

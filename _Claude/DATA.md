@@ -76,7 +76,8 @@ px = u * imageWidth              py = (1 - v) * imageHeight     (image origin to
   little time left out). Nearly all kills are against bots: it shows where fights are won, i.e. bot placement today.
 - **Terrain**: estimated per map on a 96 grid (10th percentile height per cell, 21-36% of cells walked, the rest
   filled from the nearest walked cells by a ring-by-ring flood fill, 2 smoothing passes; the first version filled
-  from the map's lowest point and sank unwalked areas into bowls). Shown 2 m lower in 3D so paths stay on top.
+  from the map's lowest point and sank unwalked areas into bowls). Not lowered in 3D: a height offset gets
+  multiplied by the exaggeration (2 m showed as 16 m at x8); the ground uses a depth (polygon) offset instead..
 - **Height (`y`)**: meters, about 40 m of range per map with clusters (ground, upper floors, hills): Ambrose Valley
   100-163 m, Lockdown 33-71 m, Grand Rift 8-47 m. Index keeps each map's 1st-99th percentile as `hMin` / `hMax`.
 - **No storm data**: no storm event or edge position. Inference tested and rejected (late-match drift 55-67% one
