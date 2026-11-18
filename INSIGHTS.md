@@ -1,7 +1,8 @@
 # Three things the data says about LILA BLACK
 
-All numbers: 796 matches, Feb 10-14, 2026. Each one is reproducible with `python3 pipeline/insights.py`, and
-every link below opens the matching view in the tool.
+All numbers: 796 matches, Feb 10-14, 2026. Each one is reproducible with `python3 pipeline/insights.py` (charts:
+`pipeline/figures.py`), and every link below opens the matching view in the tool. What to do with these, and a
+fourth finding about players, are in [PRODUCT.md](PRODUCT.md).
 
 ---
 
@@ -12,6 +13,11 @@ every link below opens the matching view in the tool.
 over the playable area, not piled up at one edge, as you would expect from a storm that pushes across the map.
 
 **The evidence.**
+
+![Player deaths by minute](docs/figures/storm_timing.png)
+
+![Storm deaths on each map](docs/figures/storm_map.png)
+
 - 0 storm deaths before minute 10.9; all 39 happen between minutes 10.9 and 14.8, each one the last event of its match.
 - Of the 134 matches that last 11 minutes or more, 38 end in a storm death (28%).
 - Storm victims had looted a median of **18 items**, close to survivors (21.5) and more than twice
@@ -35,6 +41,9 @@ rarely the player's fault if they did not know where to go; it is a map that did
 **What caught my eye.** Watching replays, the only other dots on the map are bots, and every red marker is a bot kill.
 
 **The evidence.**
+
+![Who players kill, and what kills them](docs/figures/combat.png)
+
 - 794 of 796 matches carry exactly one human journey; 2 carry two.
 - Humans killed **2,240 bots and 3 humans**: 99.9% of kills are bots.
 - Of 445 human deaths, **90.6% are to bots**, 8.8% to the storm, 0.7% (3) to other humans.
@@ -63,6 +72,10 @@ middle, while the [loot heatmap](https://lila.belfiore.me/#mode=heat&map=Ambrose
 over many POIs, with strong spots in the south.
 
 **The evidence** (map cut in 3 x 3 regions):
+
+![Ambrose Valley: kills and loot](docs/figures/ambrose_heat.png)
+
+![Share of time, loot and deaths by region](docs/figures/ambrose_regions.png)
 
 | Region | Share of time spent | Share of loot | Share of deaths | Deaths per unit of time |
 |---|---|---|---|---|
