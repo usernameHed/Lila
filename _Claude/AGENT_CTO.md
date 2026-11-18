@@ -6,7 +6,8 @@ Details in `README.md` and `ARCHITECTURE.md`. Data facts in `_Claude/DATA.md`. T
 
 - **Data pipeline**: Python 3 + pyarrow (`pipeline/build.py`), run once offline. Reads the 1,243 parquet files,
   decodes events, groups by match, converts world (x, z) to map UV (0-1), writes small static JSON:
-  `public/data/index.json` (maps, days, matches) and `public/data/matches/<match>.json` (one file per match).
+  `public/data/index.json` (maps, days, matches), `public/data/matches/<match>.json` (one file per match) and
+  `public/data/heat/<map>.json` (per-day 128 x 128 grids for each heatmap layer).
   Minimaps downscaled to 2048 px JPEG in `public/minimaps/`.
 - **App**: Vite + React + TypeScript (`src/`), rendering on a 2D canvas (thousands of points, fast), no backend.
 - **Hosting**: Cloudflare Worker `lila` with static assets (`wrangler.jsonc`), Ugo's own account. Static only:
@@ -20,10 +21,12 @@ only loads what one view needs. Trade-offs are listed in `ARCHITECTURE.md`.
 | Area | Files |
 |---|---|
 | Pipeline | `pipeline/build.py` (raw parquet to JSON), `pipeline/requirements.txt` |
-| Map config and coordinate mapping | `src/lib/maps.ts` (scale, origin, image), `src/lib/coords.ts` |
+| Coordinate mapping | `src/lib/coords.ts` (map config comes from `index.json`) |
+| Playback clock, heatmap math, URL view | `src/lib/timeline.ts`, `src/lib/heat.ts`, `src/lib/view.ts` (all tested) |
+| Canvas drawing, labels and colors | `src/lib/draw.ts`, `src/lib/style.ts` |
 | Data loading and cache | `src/lib/data.ts` |
-| Screens and parts | `src/App.tsx`, `src/components/` |
-| Deploy | `wrangler.jsonc`, `npm run deploy` |
+| Screens and parts | `src/App.tsx`, `src/components/` (Replay, Heat, PlaybackBar, MapCanvas, Legend) |
+| Deploy | `wrangler.jsonc`, `npm run deploy`; push to `main` deploys via `.github/workflows/deploy.yml` once the secret exists |
 
 ## Rules
 

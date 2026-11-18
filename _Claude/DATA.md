@@ -42,10 +42,23 @@ px = u * imageWidth              py = (1 - v) * imageHeight     (image origin to
   seconds, 13 s to 15 min (median 6.4 min), which fits an extraction shooter. It is not wall clock either: as
   Unix seconds it lands on late Dec 2025, not Feb 2026. So the match clock is `(ts - first ts of the match)`
   in seconds, with a 1 s resolution. The day of a match is its folder.
-- **Matches are mostly one human's journey.** 779 of 796 matches have exactly one human file, 16 have none
-  (bots only), 1 has two. Only 52 matches carry bot files at all (744 have none). So "watching a match" mostly
-  means one human plus, sometimes, the bots around them; most bots are only seen through the humans'
-  `BotKill` / `BotKilled` events.
+- **Bot or human: the movement event wins over the id.** 17 files have a numeric (bot-like) id but emit
+  `Position`, `Loot` and human-style `BotKill`, never `BotPosition`: mostly user `1429`, in 13 matches over all
+  5 days (also `1379`, `1402`), very likely a test or internal account. Classified as humans. Rule in the
+  pipeline: `BotPosition` = bot, `Position` = human, the id only when a user has no movement. No user emits both.
+  With this rule every match has a human, and bots never loot.
+- **The same event means different things by emitter.** A human's `BotKill` = "I killed a bot"; a bot's
+  `BotKill` = "this bot killed someone". Events are stored as categories from the emitter's point of view:
+  `killBot`, `killPlayer`, `diedToBot`, `diedToPlayer`, `storm`, `loot` (humans), `botKill`, `botDeath` (bots).
+  Heatmaps use the human point of view only (kills = killBot + killPlayer, deaths = diedTo* + storm).
+- **Matches are one human's journey.** 794 of 796 matches have exactly one human, 2 have two. Only 52 matches
+  carry bot files. So a match replay shows one human plus, sometimes, the bots around them; most bots are only
+  seen through the human's kill and death events.
+- **Sampling**: positions every 5 s (median), 10 s at p90, 1 s clock resolution. Playback interpolates linearly
+  between samples. 175 position samples come after the player's death (out of 51k): kept, harmless.
 
-- To check next: duplicate rows, a match split across two day folders, players with events after death,
-  `Loot` and `KilledByStorm` emitted by bots or not, how often positions are sampled.
+- **One duplicated journey.** Match `ac049b28` crosses midnight: its human file is in both `February_10` and
+  `February_11`, identical row for row (its bots are only in `February_11`). The pipeline reads each file name
+  once (first day wins), so the match is dated Feb 10 and its 88 rows are not counted twice. Raw rows 89,104,
+  rows used 89,016.
+- Checked: no match is on two maps; 210 duplicate position samples (same t, u, v), harmless.

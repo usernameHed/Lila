@@ -2,7 +2,23 @@
 
 export type MapId = 'AmbroseValley' | 'GrandRift' | 'Lockdown';
 
-export type EventType = 'Kill' | 'Killed' | 'BotKill' | 'BotKilled' | 'KilledByStorm' | 'Loot';
+/** Event categories from the emitter's point of view (see pipeline/build.py CATEGORY and _Claude/DATA.md). */
+export type EventType =
+  | 'killPlayer'
+  | 'killBot'
+  | 'diedToPlayer'
+  | 'diedToBot'
+  | 'storm'
+  | 'loot'
+  | 'botKill'
+  | 'botDeath';
+
+export type HeatLayer = 'traffic' | 'kills' | 'deaths' | 'storm' | 'loot';
+
+export interface HeatData {
+  grid: number; // cells per side, row 0 at the top of the image
+  layers: Record<HeatLayer, Record<string, number[]>>; // layer -> day -> flat [cell, count, cell, count, ...]
+}
 
 export interface MapConfig {
   id: MapId;

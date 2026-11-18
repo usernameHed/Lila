@@ -3,6 +3,7 @@
 Input : data/raw/player_data/February_*/<user_id>_<match_id>.nakama-0  (one parquet file per player per match)
 Output: public/data/index.json            maps, days and one summary row per match
         public/data/matches/<match>.json  one file per match: players' paths and events, in map UV
+        public/data/heat/<map>.json       per-day heatmap grids (traffic, kills, deaths, storm, loot)
         public/minimaps/<map>.jpg         the minimaps, 2048 x 2048 JPEG
 
 Coordinates are stored as map UV (0-1, see MAPS) times 10,000, rounded: 1 unit = 0.1 m on the largest map,
@@ -37,6 +38,29 @@ MAPS = {
 }
 UV_UNITS = 10_000
 POSITION_EVENTS = {"Position", "BotPosition"}
+HEAT_GRID = 128  # heatmap cells per side: 16 px on the 2048 px minimap, about 7 m on Ambrose Valley
+
+# What an event means depends on whose file it is in: a human's BotKill is "I killed a bot", a bot's BotKill is
+# "this bot killed someone". So events are stored as a category from the emitter's point of view.
+CATEGORY = {
+    (False, "Kill"): "killPlayer",
+    (False, "BotKill"): "killBot",
+    (False, "Killed"): "diedToPlayer",
+    (False, "BotKilled"): "diedToBot",
+    (False, "KilledByStorm"): "storm",
+    (False, "Loot"): "loot",
+    (True, "BotKill"): "botKill",
+    (True, "BotKilled"): "botDeath",
+}
+
+# Heatmap layers (human point of view) and the categories feeding them. "traffic" = human position samples.
+HEAT_LAYERS = {
+    "traffic": set(),
+    "kills": {"killPlayer", "killBot"},
+    "deaths": {"diedToPlayer", "diedToBot", "storm"},
+    "storm": {"storm"},
+    "loot": {"loot"},
+}
 DAY_DIR = re.compile(r"^February_(\d+)$")
 BOT_ID = re.compile(r"^\d+$")
 
@@ -54,7 +78,12 @@ def decode(event) -> str:
 
 
 def read_files():
-    """Yield (day, rows) per parquet file, rows as dicts with the event decoded and ts in ms."""
+    """Yield (day, rows) per parquet file, rows as dicts with the event decoded and the clock in seconds.
+
+    A file name (one player in one match) found again in a later day folder is skipped: the one case in the
+    data (a match crossing midnight, Feb 10-11) is the same journey exported twice, row for row.
+    """
+    seen: set[str] = set()
     for day_dir in sorted(RAW.iterdir()):
         match = DAY_DIR.match(day_dir.name)
         if not day_dir.is_dir() or not match:
@@ -63,6 +92,10 @@ def read_files():
         for path in sorted(day_dir.iterdir()):
             if path.name.startswith("."):
                 continue
+            if path.name in seen:
+                print(f"Skipped duplicate file {day_dir.name}/{path.name}")
+                continue
+            seen.add(path.name)
             table = pq.read_table(path)
             cols = table.to_pydict()
             rows = [
@@ -101,9 +134,11 @@ def build() -> None:
         old.unlink()
 
     summaries = []
+    heat: dict = defaultdict(lambda: defaultdict(lambda: defaultdict(lambda: defaultdict(int))))
     for match_id, m in sorted(matches.items()):
-        summary = write_match(match_id, m)
+        summary = write_match(match_id, m, heat)
         summaries.append(summary)
+    write_heat(heat)
 
     days = sorted({s["day"] for s in summaries})
     index = {
@@ -117,33 +152,79 @@ def build() -> None:
     print(f"{len(summaries)} matches, {sum(s['rows'] for s in summaries)} rows -> {OUT}")
 
 
-def write_match(match_id: str, m: dict) -> dict:
+def heat_cell(u: int, v: int) -> int:
+    """Grid cell of a UV point, row 0 at the top of the image (v flipped), clamped to the grid."""
+    col = min(HEAT_GRID - 1, u * HEAT_GRID // UV_UNITS)
+    row = min(HEAT_GRID - 1, (UV_UNITS - v) * HEAT_GRID // UV_UNITS)
+    return row * HEAT_GRID + col
+
+
+def write_heat(heat) -> None:
+    """public/data/heat/<map>.json: {grid, layers: {layer: {day: [cell, count, cell, count, ...]}}}."""
+    (OUT / "heat").mkdir(parents=True, exist_ok=True)
+    for map_id in MAPS:
+        layers = {
+            layer: {
+                day: [n for cell, count in sorted(cells.items()) for n in (cell, count)]
+                for day, cells in sorted(heat[map_id][layer].items())
+            }
+            for layer in HEAT_LAYERS
+        }
+        write_json(OUT / "heat" / f"{map_id}.json", {"grid": HEAT_GRID, "layers": layers})
+
+
+def classify_bots(rows: list[dict]) -> dict[str, bool]:
+    """Bot or human, per user. The movement event decides: BotPosition = bot, Position = human. Only a user with
+    no movement at all falls back to the README's rule (numeric id = bot). Why: 17 files with numeric ids
+    (mostly user 1429, across all 5 days) emit Position and loot like humans and never BotPosition."""
+    moves: dict[str, set] = defaultdict(set)
+    for r in rows:
+        moves[r["user"]].add(r["event"])
+    result = {}
+    for user, events in moves.items():
+        if "BotPosition" in events and "Position" in events:
+            raise ValueError(f"User {user} emits both Position and BotPosition")
+        if "BotPosition" in events:
+            result[user] = True
+        elif "Position" in events:
+            result[user] = False
+        else:
+            result[user] = bool(BOT_ID.match(user))
+    return result
+
+
+def write_match(match_id: str, m: dict, heat) -> dict:
     rows = sorted(m["rows"], key=lambda r: (r["sec"], r["user"]))
     t0 = rows[0]["sec"]
     players: dict[str, dict] = {}
     events = []
     counts: dict[str, int] = defaultdict(int)
+    # A match lives in one day folder; if it ever spans two, the earliest day wins.
+    day = sorted(m["days"])[0]
+    map_heat = heat[m["map"]]
 
+    bots = classify_bots(rows)
     for r in rows:
         p = players.get(r["user"])
         if p is None:
-            p = players[r["user"]] = {
-                "index": len(players),
-                "id": r["user"],
-                "bot": bool(BOT_ID.match(r["user"])),
-                "path": [],
-            }
+            p = players[r["user"]] = {"index": len(players), "id": r["user"], "bot": bots[r["user"]], "path": []}
         u, v = to_uv(r["map"], r["x"], r["z"])
         t = (r["sec"] - t0) * 1000
-        counts[r["event"]] += 1
         if r["event"] in POSITION_EVENTS:
             p["path"].extend((t, u, v))
-        else:
-            events.append([t, r["event"], u, v, p["index"]])
+            if not p["bot"]:
+                map_heat["traffic"][day][heat_cell(u, v)] += 1
+            continue
+        category = CATEGORY.get((p["bot"], r["event"]))
+        if category is None:
+            raise ValueError(f"Unexpected event {r['event']} from {'bot' if p['bot'] else 'human'} {r['user']}")
+        counts[category] += 1
+        events.append([t, category, u, v, p["index"]])
+        for layer, cats in HEAT_LAYERS.items():
+            if category in cats:
+                map_heat[layer][day][heat_cell(u, v)] += 1
 
     short_id = match_id.removesuffix(".nakama-0")
-    # A match lives in one day folder; if it ever spans two, the earliest day wins.
-    day = sorted(m["days"])[0]
     player_list = [{k: v for k, v in p.items() if k != "index"} for p in players.values()]
     write_json(
         OUT / "matches" / f"{short_id}.json",
@@ -157,7 +238,7 @@ def write_match(match_id: str, m: dict) -> dict:
         "humans": sum(not p["bot"] for p in player_list),
         "bots": sum(p["bot"] for p in player_list),
         "rows": len(rows),
-        "events": {k: v for k, v in sorted(counts.items()) if k not in POSITION_EVENTS},
+        "events": dict(sorted(counts.items())),
     }
 
 

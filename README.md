@@ -5,9 +5,17 @@ maps, built from 5 days of production telemetry (Feb 10-14, 2026).
 
 **Live: https://lila.belfiore.me**
 
-> Work in progress (assignment for LILA Games, Product Engineer, Gaming). Done so far: map, day and match
-> filters, every player's path on the right minimap, humans and bots told apart, event markers.
-> Coming: match playback, heatmaps (kills, deaths, traffic), `ARCHITECTURE.md`, `INSIGHTS.md`.
+> Work in progress (assignment for LILA Games, Product Engineer, Gaming). `ARCHITECTURE.md` and `INSIGHTS.md`
+> are coming.
+
+## What it does
+
+- **Match replay**: pick a map, a day and a match; every player's path is drawn on the minimap (players solid
+  blue, bots dashed orange) with a marker for each kill, death, storm death and loot. Play it at 10x, 30x or
+  60x (Space plays and pauses), or scrub the timeline, which carries a tick for every fight and death.
+- **Heatmaps**: where players spend time, kill, die, get caught by the storm and loot, per map, for one day or
+  all five.
+- **Shareable views**: the URL holds the mode, map, day, match and layer, so a link opens exactly that view.
 
 ## Tech stack
 
@@ -47,6 +55,9 @@ npm run check     # type check + tests
 npm run deploy    # build + deploy to Cloudflare (needs a Wrangler login)
 ```
 
+A push to `main` deploys by itself (`.github/workflows/deploy.yml`) once the repository secret
+`CLOUDFLARE_API_TOKEN` exists (a Cloudflare token from the "Edit Cloudflare Workers" template).
+
 No environment variables are needed: the app is fully static.
 
 ## Repository map
@@ -54,8 +65,8 @@ No environment variables are needed: the app is fully static.
 | Path | What |
 |---|---|
 | `pipeline/build.py` | Parquet to JSON: decodes events, groups by match, maps world coordinates to map UV |
-| `public/data/` | `index.json` (maps, days, matches) and `matches/<id>.json` (paths and events) |
+| `public/data/` | `index.json` (maps, days, matches), `matches/<id>.json` (paths and events), `heat/<map>.json` (per-day grids) |
 | `public/minimaps/` | The three minimaps, 2048 x 2048 JPEG |
-| `src/lib/` | Pure logic: coordinate mapping, data loading, labels and colors (with tests) |
-| `src/components/` | The map canvas and the legend |
+| `src/lib/` | Pure logic: coordinate mapping, playback clock, heatmap binning and colors, URL view, drawing (with tests) |
+| `src/components/` | Map canvas, match replay, playback bar, heatmaps, legend |
 | `_Claude/`, `CLAUDE.md`, `.claude/agents/` | How this was built with Claude: brief, data notes, decisions, session log |

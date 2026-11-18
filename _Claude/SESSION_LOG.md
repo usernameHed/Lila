@@ -5,12 +5,20 @@ about 300 lines, move the oldest entries word for word to `SESSION_HISTORY.md` (
 
 ## Where things stand
 
-- Live: https://lila.belfiore.me (first version: map, day and match filters, paths and event markers).
+- Live: https://lila.belfiore.me: match replay with playback, heatmaps (traffic, kills, deaths, storm, loot),
+  map and day filters, shareable URLs.
 - Due 2026-11-23 (assumed: received 2026-11-18).
-- Still open: playback, heatmaps, design pass (references first), INSIGHTS.md, ARCHITECTURE.md, walkthrough,
-  auto-deploy from GitHub (needs a `CLOUDFLARE_API_TOKEN` repo secret from Ugo).
+- Still open: INSIGHTS.md, ARCHITECTURE.md, walkthrough, design pass (references first), hover details on
+  markers, auto-deploy (workflow ready, needs the `CLOUDFLARE_API_TOKEN` repo secret from Ugo, Chrome not connected).
 
 ---
+
+## 2026-11-18 (desktop session): playback, heatmaps, data fixes
+
+- Asked: go on with playback and heatmaps. Done: replay with play / scrub / speeds and fight ticks, heatmap mode
+  (per-day 128 grids from the pipeline, blur, 98th percentile scale), URL view state, GitHub deploy workflow; 12 tests.
+- Data found: bot or human by movement event (user 1429 etc. are humans with numeric ids), events mean different
+  things by emitter (now categories), one journey duplicated across Feb 10 and 11 (skipped). All in `DATA.md`.
 
 ## 2026-11-18 (desktop session): the ground
 
