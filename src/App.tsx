@@ -1,12 +1,13 @@
 import { useEffect, useMemo, useState } from 'react';
-import { HeatStage, LayerList, useHeat } from './components/Heat';
-import { Legend } from './components/Legend';
+import { HeatStage, LayerList, useHeat, useHeatDraw } from './components/Heat';
+import { LEGEND_KEYS, Legend } from './components/Legend';
+import type { LegendKey } from './lib/draw';
 import { Choice } from './components/Choice';
 import { MatchList, ReplayStage } from './components/Replay';
 import { UpdateButton } from './components/UpdateButton';
 import { loadIndex } from './lib/data';
 import { MAP_LABEL, formatDay } from './lib/style';
-import type { EventType, Index, MapId } from './lib/types';
+import type { EventType, HeatLayer, Index, MapId, Who } from './lib/types';
 import { ALL, parseView, resolveSelection, toggleLayer, toggleMatch, viewHash, type Mode, type View } from './lib/view';
 
 export function App() {
@@ -45,13 +46,32 @@ export function App() {
   const selected = useMemo(() => resolveSelection(view.matches, matches), [view.matches, matches]);
   const selectedIds = selected.map((m) => m.id);
   const counts = useMemo(() => {
-    const out: Partial<Record<EventType, number>> = {};
-    for (const m of selected) for (const [k, n] of Object.entries(m.events)) out[k as EventType] = (out[k as EventType] ?? 0) + (n ?? 0);
+    const out: Partial<Record<LegendKey, number>> = { fights: 0 };
+    for (const m of selected) {
+      for (const [k, n] of Object.entries(m.events)) out[k as EventType] = (out[k as EventType] ?? 0) + (n ?? 0);
+      out.fights = (out.fights ?? 0) + m.fights;
+    }
     return out;
   }, [selected]);
+  const [hover, setHover] = useState<LegendKey | null>(null);
+  const hidden = view.hidden as LegendKey[];
+  // Click a legend row: only that kind; click it again (already alone): everything back.
+  const onlyLegend = (k: LegendKey) => {
+    const alone = LEGEND_KEYS.every((x) => (x === k) !== hidden.includes(x));
+    update({ hidden: alone ? [] : LEGEND_KEYS.filter((x) => x !== k) });
+    setHover(null);
+  };
+  const toggleLegend = (k: LegendKey) => update({ hidden: hidden.includes(k) ? hidden.filter((x) => x !== k) : [...hidden, k] });
 
   const heat = useHeat(view.map);
-  const fights = useMemo(() => matches.reduce((n, m) => n + m.fights, 0), [matches]);
+  const heatOptions = { layers: view.layers, kills: view.kills, deaths: view.deaths, look: view.look };
+  // Under a replay the heatmap keeps one color per kind: the replay's one-color switch is about matches.
+  const underDraw = useHeatDraw(view.heatUnder ? heat : null, days, { ...heatOptions, mono: false }, index?.uvUnits ?? 10_000);
+  const layerHandlers = {
+    onToggle: (l: HeatLayer) => update({ layers: toggleLayer(view.layers, l) }),
+    onOnly: (l: HeatLayer) => update({ layers: [l] }),
+    onWho: (kind: 'kills' | 'deaths', who: Who) => update({ [kind]: who }),
+  };
 
   if (error) return <div className="fatal">Could not load the data: {error}</div>;
 
@@ -137,29 +157,28 @@ export function App() {
               </section>
             )}
             <section>
-              <h2>Legend</h2>
-              <Legend counts={counts} />
+              <h2>
+                Legend <span className="muted hint">hover to spot, click for only one</span>
+              </h2>
+              <Legend counts={counts} hidden={hidden} onToggle={toggleLegend} onOnly={onlyLegend} onHover={setHover} />
+            </section>
+            <section>
+              <h2>Heatmap under the replay</h2>
+              <Choice label="Heatmap under the replay" options={[['off', 'Off'], ['on', 'On']]} value={view.heatUnder ? 'on' : 'off'} onChange={(v) => update({ heatUnder: v === 'on' })} />
+              {view.heatUnder && (
+                <div className="under-layers">
+                  <LayerList heat={heat} days={days} {...heatOptions} mono={false} {...layerHandlers} />
+                </div>
+              )}
             </section>
           </>
         ) : (
           <section className="grow">
             <h2>Show <span className="muted hint">tick boxes to stack kinds</span></h2>
-            <LayerList
-              heat={heat}
-              days={days}
-              fights={fights}
-              layers={view.layers}
-              kills={view.kills}
-              deaths={view.deaths}
-              mono={view.mono}
-              look={view.look}
-              onToggle={(l) => update({ layers: toggleLayer(view.layers, l) })}
-              onOnly={(l) => update({ layers: [l] })}
-              onWho={(kind, who) => update({ [kind]: who })}
-            />
+            <LayerList heat={heat} days={days} {...heatOptions} mono={view.mono} {...layerHandlers} />
             <div className="heat-options">
               <h2>Look</h2>
-              <Choice label="Heatmap look" options={[['smooth', 'Smooth'], ['bands', 'Toon']]} value={view.look} onChange={(look) => update({ look })} />
+              <Choice label="Heatmap look" options={[['bands', 'Toon'], ['smooth', 'Smooth']]} value={view.look} onChange={(look) => update({ look })} />
               <h2>Colors</h2>
               <Choice label="Heatmap colors" options={[['each', 'One per kind'], ['mono', 'One color']]} value={view.mono ? 'mono' : 'each'} onChange={(c) => update({ mono: c === 'mono' })} />
             </div>
@@ -171,19 +190,16 @@ export function App() {
         {!index ? (
           <div className="empty">Loading…</div>
         ) : view.mode === 'replay' ? (
-          <ReplayStage summaries={selected} uvUnits={index.uvUnits} mono={view.mono} />
+          <ReplayStage summaries={selected} uvUnits={index.uvUnits} mono={view.mono} hidden={hidden} hover={hover} under={view.heatUnder ? underDraw : null} />
         ) : (
           <HeatStage
             map={view.map}
             heat={heat}
             days={days}
             matchCount={matches.length}
-            fights={fights}
-            layers={view.layers}
-            kills={view.kills}
-            deaths={view.deaths}
+            uvUnits={index.uvUnits}
+            {...heatOptions}
             mono={view.mono}
-            look={view.look}
           />
         )}
       </main>

@@ -24,6 +24,8 @@ export interface HeatData {
   // pipeline layer (traffic, loot, killsBot, killsPlayer, deathsBot, deathsPlayer, storm, fire)
   // -> day -> flat [cell, count, cell, count, ...]
   layers: Record<string, Record<string, number[]>>;
+  /** Killer-to-victim lines of this map: [day, killer u, killer v, victim u, victim v, killer is a bot]. */
+  fights: [string, number, number, number, number, boolean][];
 }
 
 /** A kill whose victim's death is also recorded: [t, killer u, killer v, victim u, victim v, killer, victim]. */

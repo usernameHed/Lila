@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { loadHeat } from '../lib/data';
-import { drawHeat } from '../lib/draw';
+import { uvToPixel } from '../lib/coords';
+import { drawFightLine, drawHeat, heatCanvas } from '../lib/draw';
 import { blur, normalize, render, strongest, sumDays, type Look } from '../lib/heat';
 import { HEAT_LAYERS, MONO_RGB, WHO_LABEL, rgbCss } from '../lib/style';
 import type { HeatData, HeatLayer, MapId, Who } from '../lib/types';
@@ -26,10 +27,13 @@ function sum(heat: HeatData, sources: string[], days: string[]): Float32Array {
   return out;
 }
 
+/** The killer-to-victim lines of the chosen days (too few for a heat grid: drawn as lines). */
+const fightsOf = (heat: HeatData, days: string[]) => heat.fights.filter((f) => days.includes(f[0]));
+
 /** Event count behind a kind for the chosen days (the line of fire counts fights, not cells). */
-function count(heat: HeatData | null, kind: HeatLayer, who: Who, days: string[], fights: number): number | null {
+function count(heat: HeatData | null, kind: HeatLayer, who: Who, days: string[]): number | null {
   if (!heat) return null;
-  if (kind === 'fire') return fights;
+  if (kind === 'fire') return fightsOf(heat, days).length;
   let n = 0;
   for (const s of sourcesOf(kind, who)) for (const d of days) {
     const cells = heat.layers[s]?.[d] ?? [];
@@ -59,10 +63,39 @@ export interface HeatOptions {
   look: Look;
 }
 
+/**
+ * Draws the chosen heatmap kinds over the map: one prepared picture per kind (or one for all in one-color mode),
+ * then the line of fire as arrows. Pictures are built once per change, so redrawing every frame is cheap
+ * (the replay can play on top).
+ */
+export function useHeatDraw(heat: HeatData | null, days: string[], o: HeatOptions, uvUnits: number) {
+  const pictures = useMemo(() => {
+    if (!heat) return [];
+    const kinds = KINDS.filter((l) => l !== 'fire' && o.layers.includes(l));
+    const grids = kinds.map((l) => {
+      const values = sum(heat, sourcesOf(l, l === 'kills' ? o.kills : o.deaths), days);
+      const total = values.reduce((a, b) => a + b, 0);
+      // Sparse kinds (storm deaths: 39 in all) get a wider blur, so single events stay visible.
+      return normalize(blur(values, heat.grid, total < 200 ? 3 : 2));
+    });
+    const out = o.mono ? (grids.length ? [render(strongest(grids), heat.grid, MONO_RGB, o.look)] : []) : grids.map((k, i) => render(k, heat.grid, HEAT_LAYERS[kinds[i]].rgb, o.look));
+    return out.map((p) => heatCanvas(p.pixels, p.size));
+  }, [heat, days, o.layers, o.kills, o.deaths, o.mono, o.look]);
+
+  const fights = useMemo(() => (heat && o.layers.includes('fire') ? fightsOf(heat, days) : []), [heat, days, o.layers]);
+
+  return useCallback(
+    (ctx: CanvasRenderingContext2D, size: number) => {
+      for (const p of pictures) drawHeat(ctx, p, size);
+      for (const [, ku, kv, vu, vv, bot] of fights) drawFightLine(ctx, uvToPixel(ku, kv, uvUnits, size), uvToPixel(vu, vv, uvUnits, size), bot);
+    },
+    [pictures, fights, uvUnits],
+  );
+}
+
 interface ListProps extends HeatOptions {
   heat: HeatData | null;
   days: string[];
-  fights: number;
   onToggle: (l: HeatLayer) => void;
   onOnly: (l: HeatLayer) => void;
   onWho: (kind: 'kills' | 'deaths', who: Who) => void;
@@ -70,7 +103,7 @@ interface ListProps extends HeatOptions {
 
 /** Every kind in its color: click a row to show it alone, its box to add or remove it; kills and deaths also
  * pick bots, players or both. */
-export function LayerList({ heat, days, fights, onToggle, onOnly, onWho, ...o }: ListProps) {
+export function LayerList({ heat, days, onToggle, onOnly, onWho, ...o }: ListProps) {
   return (
     <div className="segmented layers">
       {KINDS.map((id) => {
@@ -91,7 +124,7 @@ export function LayerList({ heat, days, fights, onToggle, onOnly, onWho, ...o }:
               />
               <button className="layer-name" onClick={() => onOnly(id)} title={`Show only ${hint}`}>
                 {label}
-                <span className="count">{count(heat, id, split ? who : 'both', days, fights)?.toLocaleString('en') ?? ''}</span>
+                <span className="count">{count(heat, id, split ? who : 'both', days)?.toLocaleString('en') ?? ''}</span>
               </button>
             </div>
             {split && on && (
@@ -106,28 +139,9 @@ export function LayerList({ heat, days, fights, onToggle, onOnly, onWho, ...o }:
 
 const ramp = (rgb: [number, number, number]) => `linear-gradient(90deg, ${rgbCss(rgb, 0.25)}, ${rgbCss(rgb, 1)})`;
 
-export function HeatStage({ map, heat, days, matchCount, fights, ...o }: HeatOptions & { map: MapId; heat: HeatData | null; days: string[]; matchCount: number; fights: number }) {
-  const pictures = useMemo(() => {
-    if (!heat) return [];
-    const kinds = KINDS.filter((l) => o.layers.includes(l));
-    const grids = kinds.map((l) => {
-      const values = sum(heat, sourcesOf(l, l === 'kills' ? o.kills : o.deaths), days);
-      const total = values.reduce((a, b) => a + b, 0);
-      // Sparse kinds (storm deaths: 39 in all) get a wider blur, so single events stay visible.
-      return normalize(blur(values, heat.grid, total < 200 ? 3 : 2));
-    });
-    if (o.mono) return grids.length ? [render(strongest(grids), heat.grid, MONO_RGB, o.look)] : [];
-    // One picture per kind, each in its color, stacked in drawing order (traffic at the bottom).
-    return grids.map((k, i) => render(k, heat.grid, HEAT_LAYERS[kinds[i]].rgb, o.look));
-  }, [heat, days, o.layers, o.kills, o.deaths, o.mono, o.look]);
-
-  const draw = useCallback(
-    (ctx: CanvasRenderingContext2D, size: number) => {
-      for (const p of pictures) drawHeat(ctx, p.pixels, p.size, size, o.look === 'smooth');
-    },
-    [pictures, o.look],
-  );
-
+export function HeatStage({ map, heat, days, matchCount, uvUnits, ...o }: HeatOptions & { map: MapId; heat: HeatData | null; days: string[]; matchCount: number; uvUnits: number }) {
+  const draw = useHeatDraw(heat, days, o, uvUnits);
+  const fights = heat && o.layers.includes('fire') ? fightsOf(heat, days).length : 0;
   const who = (l: HeatLayer) => (l === 'kills' ? o.kills : l === 'deaths' ? o.deaths : 'both');
   return (
     <>
@@ -144,7 +158,7 @@ export function HeatStage({ map, heat, days, matchCount, fights, ...o }: HeatOpt
         </span>
         <span className="muted">
           {matchCount} match{matchCount === 1 ? '' : 'es'}
-          {o.layers.includes('fire') && ` · ${fights} fights with both ends recorded`} · brighter = more
+          {o.layers.includes('fire') && ` · ${fights} fight line${fights === 1 ? '' : 's'}`} · brighter = more
         </span>
       </div>
     </>

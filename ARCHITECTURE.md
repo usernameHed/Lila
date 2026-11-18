@@ -23,7 +23,8 @@ player_data/February_XX/*.nakama-0  (1,243 parquet files)
        ├─ public/data/index.json          136 KB: maps, days, one summary row per match
        ├─ public/data/matches/<id>.json   796 files, ~5 KB each: paths [t, u, v...] + events
        ├─ public/data/bundles/<map>_<day>.json  15 files: every match of one map and day (largest 173 KB gzipped)
-       ├─ public/data/heat/<map>.json     per-day 128 x 128 grids: traffic, kills, deaths, storm, loot
+       ├─ public/data/heat/<map>.json     per-day 128 x 128 grids (traffic, loot, kills and deaths split by bots /
+       │                                  players, storm) + the map's killer-to-victim lines
        └─ public/minimaps/<map>.jpg       2048 x 2048, ~300 KB each
 browser
   ├─ loads index.json once: filters and match list work with no further request
@@ -76,6 +77,7 @@ pixelX = u * imageSize             pixelY = (1 - v) * imageSize        (images s
 | Heatmap from raw points in the browser | Per-day grids from the pipeline | Traffic is 51k points; grids of non-empty cells make one small file per map and still filter by day |
 | Max-scaled colors | 98th percentile + square root scale | One extreme hot spot would otherwise wash out every other area |
 | One shared color ramp | One hue per kind, opacity = intensity | Several kinds can be stacked and still told apart (kills over traffic, deaths over loot) |
-| Gradient only | Also a toon look: 4 flat bands with outlines, computed at 4x the grid | Bands read like contour lines: "how hot" at a glance, closer to a level designer's map |
+| Gradient only | Toon look by default: 4 flat bands with outlines, bicubic upscale to 8x the grid | Bands read like contour lines: "how hot" at a glance; bicubic keeps the edges curved, not pixelated |
+| Line of fire as a heat grid | Drawn as arrows | 39 lines blur into noise as a heatmap; as arrows each one reads |
 | One request per match for multi-replay | Map-day bundles above 5 matches | Never hundreds of requests; one match alone stays a 5 KB load. 566 matches replay at 60 fps |
 | Full-size minimaps | 2048 px JPEG | ~300 KB instead of 3-12 MB, still sharp on a retina laptop |

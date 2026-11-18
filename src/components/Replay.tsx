@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { loadMatches } from '../lib/data';
-import { drawMatches } from '../lib/draw';
+import { drawMatches, type LegendKey } from '../lib/draw';
 import { MANY_MATCHES, MATCH_COLORS, formatDay, formatDuration } from '../lib/style';
 import { matchEnd } from '../lib/timeline';
 import type { Match, MatchSummary } from '../lib/types';
@@ -63,7 +63,33 @@ export function MatchList({ matches, selected, mono, onOnly, onToggle }: ListPro
 }
 
 /** Every selected match on its map, all starting together at 0:00, with one playback. */
-export function ReplayStage({ summaries, uvUnits, mono }: { summaries: MatchSummary[]; uvUnits: number; mono: boolean }) {
+interface StageProps {
+  summaries: MatchSummary[];
+  uvUnits: number;
+  mono: boolean;
+  hidden: LegendKey[];
+  hover: LegendKey | null;
+  /** Draws a heatmap under the replay, or nothing. */
+  under: ((ctx: CanvasRenderingContext2D, size: number) => void) | null;
+}
+
+/** A clock for the legend hover pulse: ticks every frame only while something is hovered. */
+function usePulse(active: boolean): number {
+  const [phase, setPhase] = useState(0);
+  useEffect(() => {
+    if (!active) return;
+    let frame = 0;
+    const tick = (now: number) => {
+      setPhase(now);
+      frame = requestAnimationFrame(tick);
+    };
+    frame = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(frame);
+  }, [active]);
+  return phase;
+}
+
+export function ReplayStage({ summaries, uvUnits, mono, hidden, hover, under }: StageProps) {
   const [loaded, setLoaded] = useState<Match[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -91,13 +117,16 @@ export function ReplayStage({ summaries, uvUnits, mono }: { summaries: MatchSumm
     [current],
   );
   const play = usePlayback(duration, current ? key : null);
+  const phase = usePulse(!!hover);
+  const hiddenSet = useMemo(() => new Set(hidden), [hidden]);
   const events = useMemo(() => (current ?? []).flatMap((m) => m.events), [current]);
 
   const draw = useCallback(
     (ctx: CanvasRenderingContext2D, size: number) => {
-      if (shown.length) drawMatches(ctx, shown, uvUnits, size, current ? play.t : Infinity, play.playing, mono);
+      under?.(ctx, size);
+      if (shown.length) drawMatches(ctx, shown, uvUnits, size, current ? play.t : Infinity, play.playing, { mono, hidden: hiddenSet, hover, phase });
     },
-    [shown, current, uvUnits, play.t, play.playing, mono],
+    [shown, current, uvUnits, play.t, play.playing, mono, hiddenSet, hover, phase, under],
   );
 
   if (!summaries.length) return <div className="empty">No match for these filters.</div>;
@@ -112,7 +141,7 @@ export function ReplayStage({ summaries, uvUnits, mono }: { summaries: MatchSumm
           {loading && <span className="muted"> Loading…</span>}
         </div>
       )}
-      <MapCanvas map={summaries[0].map} draw={draw} />
+      <MapCanvas map={summaries[0].map} draw={draw} dim={under ? 0.4 : 0} />
       {error && <div className="empty">Could not load: {error}</div>}
       <PlaybackBar
         t={play.t}

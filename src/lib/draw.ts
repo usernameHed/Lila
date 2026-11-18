@@ -2,7 +2,7 @@
 import { uvToPixel } from './coords';
 import { EVENT_LAYER, EVENT_STYLE, FIRE_COLOR, MANY_MATCHES, MATCH_COLORS, PATH_COLOR, type MarkerShape } from './style';
 import { positionAt, samplesUntil } from './timeline';
-import type { Match, MatchEvent } from './types';
+import type { EventType, Match, MatchEvent } from './types';
 
 /** How long (match time) a fresh event keeps a ring around it during playback. */
 const FRESH_MS = 8000;
@@ -12,19 +12,38 @@ interface Look {
   faint: boolean; // many matches at once: thinner, lighter lines, no loot
 }
 
-/** Several matches on one clock: all start at t = 0 (each match's own clock). `mono`: one color for all. */
-export function drawMatches(ctx: CanvasRenderingContext2D, matches: Match[], uvUnits: number, size: number, t: number, playing: boolean, mono = false) {
+/** What a legend row can point at: an event type, or the killer-to-victim lines. */
+export type LegendKey = EventType | 'fights';
+
+export interface ReplayOptions {
+  mono?: boolean; // one color for every match
+  hidden?: ReadonlySet<LegendKey>; // legend rows turned off
+  hover?: LegendKey | null; // legend row under the mouse: its markers pulse, the rest fade
+  phase?: number; // animation clock (ms) for the pulse
+}
+
+/** Several matches on one clock: all start at t = 0 (each match's own clock). */
+export function drawMatches(ctx: CanvasRenderingContext2D, matches: Match[], uvUnits: number, size: number, t: number, playing: boolean, o: ReplayOptions = {}) {
   const many = matches.length > MANY_MATCHES;
+  const hidden = o.hidden ?? new Set<LegendKey>();
   matches.forEach((m, i) =>
-    drawPaths(ctx, m, uvUnits, size, t, playing, { human: many || mono ? PATH_COLOR.human : MATCH_COLORS[i], faint: many }),
+    drawPaths(ctx, m, uvUnits, size, t, playing, { human: many || o.mono ? PATH_COLOR.human : MATCH_COLORS[i], faint: many }),
   );
 
   // Events after every path, so no marker is hidden under another match's lines.
-  const events = matches.flatMap((m) => m.events).filter((e) => e[0] <= t && !(many && e[1] === 'loot'));
-  drawEvents(ctx, events, uvUnits, size, t, playing, many ? 0.55 : 1);
-  // Killer-to-victim lines last: short (median ~12 m), they would hide under the markers.
-  for (const m of matches) drawFights(ctx, m, uvUnits, size, t);
+  const events = matches.flatMap((m) => m.events).filter((e) => e[0] <= t && !hidden.has(e[1]) && !(many && e[1] === 'loot' && o.hover !== 'loot'));
+  drawEvents(ctx, events, uvUnits, size, t, playing, many ? 0.55 : 1, o);
+  // Killer-to-victim lines last: short (median ~9 m), they would hide under the markers.
+  if (!hidden.has('fights')) {
+    const fade = o.hover && o.hover !== 'fights' ? 0.25 : 1;
+    for (const m of matches)
+      for (const [time, ku, kv, vu, vv, killer] of m.fights ?? [])
+        if (time <= t) drawFightLine(ctx, uvToPixel(ku, kv, uvUnits, size), uvToPixel(vu, vv, uvUnits, size), m.players[killer]?.bot ?? false, fade, o.hover === 'fights' ? pulse(o.phase) : 0);
+  }
 }
+
+/** 0 -> 1 -> 0 every 900 ms: the hover pulse. */
+const pulse = (phase = 0) => 0.5 - 0.5 * Math.cos((phase / 900) * Math.PI * 2);
 
 /** The paths of one match up to time t, with each player's current position while it moves. */
 function drawPaths(ctx: CanvasRenderingContext2D, match: Match, uvUnits: number, size: number, t: number, playing: boolean, look: Look) {
@@ -59,52 +78,80 @@ function drawPaths(ctx: CanvasRenderingContext2D, match: Match, uvUnits: number,
   ctx.globalAlpha = 1;
 }
 
-/** Event markers; `scale` shrinks them when many matches share the map. */
-function drawEvents(ctx: CanvasRenderingContext2D, all: MatchEvent[], uvUnits: number, size: number, t: number, playing: boolean, scale: number) {
+/** Event markers; `scale` shrinks them when many matches share the map; the hovered type pulses. */
+function drawEvents(ctx: CanvasRenderingContext2D, all: MatchEvent[], uvUnits: number, size: number, t: number, playing: boolean, scale: number, o: ReplayOptions) {
   const px = (u: number, v: number) => uvToPixel(u, v, uvUnits, size);
-  const events = [...all].sort((a, b) => EVENT_LAYER[a[1]] - EVENT_LAYER[b[1]]);
+  const lit = (type: EventType) => o.hover === type;
+  // The hovered type is drawn last, on top of everything.
+  const events = [...all].sort((a, b) => Number(lit(a[1])) - Number(lit(b[1])) || EVENT_LAYER[a[1]] - EVENT_LAYER[b[1]]);
+  const k = pulse(o.phase);
   for (const [time, type, u, v] of events) {
     const { x, y } = px(u, v);
     const style = EVENT_STYLE[type];
-    if (playing && t - time < FRESH_MS && type !== 'loot') {
+    const r = style.size * scale;
+    if (o.hover) ctx.globalAlpha = lit(type) ? 1 : 0.2;
+    if (lit(type)) {
+      ctx.beginPath();
+      ctx.strokeStyle = style.color;
+      ctx.lineWidth = 2;
+      ctx.globalAlpha = 1 - k;
+      ctx.arc(x, y, r + 3 + k * 12, 0, Math.PI * 2);
+      ctx.stroke();
+      ctx.globalAlpha = 1;
+    } else if (playing && t - time < FRESH_MS && type !== 'loot' && !o.hover) {
       ctx.beginPath();
       ctx.strokeStyle = style.color;
       ctx.lineWidth = 2;
       ctx.globalAlpha = 1 - (t - time) / FRESH_MS;
-      ctx.arc(x, y, style.size * scale + 4 + ((t - time) / FRESH_MS) * 10, 0, Math.PI * 2);
+      ctx.arc(x, y, r + 4 + ((t - time) / FRESH_MS) * 10, 0, Math.PI * 2);
       ctx.stroke();
       ctx.globalAlpha = 1;
     }
-    drawMarker(ctx, style.shape, style.color, x, y, style.size * scale);
+    drawMarker(ctx, style.shape, style.color, x, y, lit(type) ? r * (1.25 + 0.25 * k) : r);
   }
+  ctx.globalAlpha = 1;
 }
 
-/** Killer to victim, for the kills whose victim's death is recorded too: a line with an arrow at the victim. */
-function drawFights(ctx: CanvasRenderingContext2D, match: Match, uvUnits: number, size: number, t: number) {
-  for (const [time, ku, kv, vu, vv, killer] of match.fights ?? []) {
-    if (time > t) continue;
-    const a = uvToPixel(ku, kv, uvUnits, size);
-    const b = uvToPixel(vu, vv, uvUnits, size);
-    const color = match.players[killer]?.bot ? PATH_COLOR.bot : FIRE_COLOR;
-    ctx.save();
-    ctx.strokeStyle = color;
-    ctx.fillStyle = color;
-    ctx.lineWidth = 2.5;
-    ctx.setLineDash([4, 3]);
-    ctx.beginPath();
-    ctx.moveTo(a.x, a.y);
-    ctx.lineTo(b.x, b.y);
-    ctx.stroke();
-    const angle = Math.atan2(b.y - a.y, b.x - a.x);
-    ctx.setLineDash([]);
-    ctx.beginPath();
-    ctx.moveTo(b.x, b.y);
-    ctx.lineTo(b.x - 9 * Math.cos(angle - 0.45), b.y - 9 * Math.sin(angle - 0.45));
-    ctx.lineTo(b.x - 9 * Math.cos(angle + 0.45), b.y - 9 * Math.sin(angle + 0.45));
-    ctx.closePath();
-    ctx.fill();
-    ctx.restore();
-  }
+/**
+ * Killer to victim: a dashed line on a dark outline, a dot at the killer, an arrow head at the victim.
+ * Orange when a player is the killer, the bot color when a bot is. `glow` (0-1) pulses it when hovered.
+ */
+export function drawFightLine(ctx: CanvasRenderingContext2D, a: { x: number; y: number }, b: { x: number; y: number }, botKiller: boolean, alpha = 1, glow = 0) {
+  const color = botKiller ? PATH_COLOR.bot : FIRE_COLOR;
+  const angle = Math.atan2(b.y - a.y, b.x - a.x);
+  const head = 11;
+  ctx.save();
+  ctx.globalAlpha = alpha;
+  ctx.lineCap = 'round';
+  // Outline first, so the line reads on any part of the minimap.
+  ctx.strokeStyle = 'rgba(0,0,0,0.75)';
+  ctx.lineWidth = 6 + glow * 6;
+  ctx.beginPath();
+  ctx.moveTo(a.x, a.y);
+  ctx.lineTo(b.x, b.y);
+  ctx.stroke();
+  ctx.strokeStyle = color;
+  ctx.fillStyle = color;
+  ctx.lineWidth = 3 + glow * 2;
+  ctx.setLineDash([6, 4]);
+  ctx.beginPath();
+  ctx.moveTo(a.x, a.y);
+  ctx.lineTo(b.x, b.y);
+  ctx.stroke();
+  ctx.setLineDash([]);
+  ctx.beginPath();
+  ctx.arc(a.x, a.y, 4, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.beginPath();
+  ctx.moveTo(b.x + Math.cos(angle) * 3, b.y + Math.sin(angle) * 3);
+  ctx.lineTo(b.x - head * Math.cos(angle - 0.5), b.y - head * Math.sin(angle - 0.5));
+  ctx.lineTo(b.x - head * Math.cos(angle + 0.5), b.y - head * Math.sin(angle + 0.5));
+  ctx.closePath();
+  ctx.lineWidth = 2;
+  ctx.strokeStyle = 'rgba(0,0,0,0.75)';
+  ctx.stroke();
+  ctx.fill();
+  ctx.restore();
 }
 
 function drawHead(ctx: CanvasRenderingContext2D, x: number, y: number, color: string, bot: boolean) {
@@ -117,17 +164,22 @@ function drawHead(ctx: CanvasRenderingContext2D, x: number, y: number, color: st
   ctx.stroke();
 }
 
-/** Heatmap pixels (n x n RGBA) stretched over the map; smoothed for the gradient look, crisp for toon bands. */
-export function drawHeat(ctx: CanvasRenderingContext2D, pixels: Uint8ClampedArray<ArrayBuffer>, n: number, size: number, smooth: boolean) {
+/** A heatmap picture (prepared once, see heatCanvas) stretched over the map. */
+export function drawHeat(ctx: CanvasRenderingContext2D, picture: HTMLCanvasElement, size: number) {
+  ctx.save();
+  ctx.imageSmoothingEnabled = true;
+  ctx.imageSmoothingQuality = 'high';
+  ctx.drawImage(picture, 0, 0, size, size);
+  ctx.restore();
+}
+
+/** RGBA pixels into a canvas, once: redrawing it every frame (replay over a heatmap) is then cheap. */
+export function heatCanvas(pixels: Uint8ClampedArray<ArrayBuffer>, n: number): HTMLCanvasElement {
   const off = document.createElement('canvas');
   off.width = n;
   off.height = n;
   off.getContext('2d')?.putImageData(new ImageData(pixels, n, n), 0, 0);
-  ctx.save();
-  ctx.imageSmoothingEnabled = smooth || n < size; // bands are 512 px: smoothing only blends their edges slightly
-  ctx.imageSmoothingQuality = 'high';
-  ctx.drawImage(off, 0, 0, size, size);
-  ctx.restore();
+  return off;
 }
 
 export function drawMarker(ctx: CanvasRenderingContext2D, shape: MarkerShape, color: string, x: number, y: number, r: number) {

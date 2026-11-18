@@ -17,11 +17,11 @@ html, body, #root { height: 100%; margin: 0; }
 body { background: var(--bg); color: var(--text); }
 button, select { font: inherit; color: inherit; }
 
-.app { display: grid; grid-template-columns: 300px 1fr; height: 100%; }
+.app { display: grid; grid-template-columns: 330px 1fr; height: 100%; }
 
 .side {
   display: flex; flex-direction: column; gap: 18px; min-height: 0;
-  padding: 18px 16px; background: var(--panel); border-right: 1px solid var(--line); overflow: hidden;
+  padding: 18px 16px; background: var(--panel); border-right: 1px solid var(--line); overflow-y: auto;
 }
 .side header h1 { margin: 0; font-size: 18px; letter-spacing: 0.08em; }
 .side .sub { margin: 2px 0 0; color: var(--muted); }
@@ -29,7 +29,7 @@ button, select { font: inherit; color: inherit; }
   margin: 0 0 8px; font-size: 11px; font-weight: 600; letter-spacing: 0.08em;
   text-transform: uppercase; color: var(--muted);
 }
-.side section.grow { flex: 1; min-height: 120px; display: flex; flex-direction: column; }
+.side section.grow { flex: 1 0 auto; min-height: 240px; max-height: 46vh; display: flex; flex-direction: column; }
 
 .count { margin-left: auto; padding-left: 8px; color: var(--muted); font-variant-numeric: tabular-nums; }
 
@@ -55,7 +55,18 @@ select {
 .matches .who, .matches .kills { color: var(--muted); font-size: 12px; }
 
 .legend { list-style: none; margin: 0; padding: 0; display: grid; gap: 4px; font-size: 13px; }
-.legend li { display: flex; align-items: center; gap: 8px; }
+.legend li { display: flex; align-items: center; gap: 4px; border-radius: 6px; }
+.legend li.static { gap: 8px; padding: 2px 0 2px 2px; }
+.legend li:not(.static):hover { background: #1d2026; }
+.legend .legend-box {
+  display: grid; place-items: center; width: 22px; height: 22px; padding: 0; flex: none;
+  border: 1.5px solid; border-radius: 5px; cursor: pointer;
+}
+.legend .legend-name {
+  display: flex; align-items: center; flex: 1; min-width: 0; padding: 3px 4px; gap: 6px;
+  background: transparent; border: 0; cursor: pointer; text-align: left;
+}
+.legend li.off .legend-name { color: var(--muted); text-decoration: line-through; }
 .swatch.line { width: 18px; height: 3px; border-radius: 2px; }
 .swatch.dashed { background: repeating-linear-gradient(90deg, currentColor 0 4px, transparent 4px 7px); }
 
@@ -163,3 +174,5 @@ select {
 .layers .layer .choice { margin: 0 10px 8px 32px; align-self: flex-start; }
 .heat-options { display: grid; gap: 6px; margin-top: 16px; justify-items: start; }
 .heat-options h2 { margin: 6px 0 0; }
+.under-layers { margin-top: 8px; }
+.under-layers .layer .choice { margin-left: 32px; }

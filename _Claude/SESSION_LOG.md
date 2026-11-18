@@ -15,6 +15,12 @@ about 300 lines, move the oldest entries word for word to `SESSION_HISTORY.md` (
 
 ---
 
+## 2026-11-18 (desktop session): interactive legend, heatmap under replay, toon default
+
+- Ugo: legend hover animates, row = only, box = toggle (URL `hide=`); heatmap under the replay (URL `under=1`);
+  toon by default and less pixelated (bicubic, 8x); he did not get the line of fire: now arrows in both modes
+  (heat file `fights`, no more fire grid), bigger, outlined, a legend row. Side panel scrolls, 330 px wide.
+
 ## 2026-11-18 (desktop session): PRODUCT.md, telemetry asks, "played once" filter
 
 - Ugo: the missing victim data is worth telling LILA; and why the tool, for which decisions, propose concrete things.

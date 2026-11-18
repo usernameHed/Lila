@@ -55,8 +55,8 @@ CATEGORY = {
     (True, "BotKilled"): "botDeath",
 }
 
-# Heatmap layers (human point of view) and the categories feeding them. "traffic" = human position samples,
-# "fire" = the line between killer and victim of each paired fight (see pair_fights). The app adds layers up:
+# Heatmap layers (human point of view) and the categories feeding them. "traffic" = human position samples.
+# Paired fights (see pair_fights) are too few (39) for a heat grid: they go to the heat file as lines. The app adds:
 # kills = killsBot + killsPlayer, deaths = deathsBot + deathsPlayer (storm deaths are their own kind).
 HEAT_LAYERS = {
     "traffic": set(),
@@ -66,7 +66,6 @@ HEAT_LAYERS = {
     "deathsBot": {"diedToBot"},
     "deathsPlayer": {"diedToPlayer"},
     "storm": {"storm"},
-    "fire": set(),
 }
 # A kill and its victim's death are two events in two files; same match, same second (the clock's resolution) = a pair.
 PAIR_WITHIN_MS = 1000
@@ -155,7 +154,12 @@ def build() -> None:
         write_json(OUT / "matches" / f"{data['id']}.json", data)
         bundles[(data["map"], data["day"])].append(data)
         summaries.append(summary)
-    write_heat(heat)
+    fights_by_map: dict[str, list] = defaultdict(list)
+    for items in bundles.values():
+        for d in items:
+            for _, ku, kv, vu, vv, killer, _ in d["fights"]:
+                fights_by_map[d["map"]].append([d["day"], ku, kv, vu, vv, d["players"][killer]["bot"]])
+    write_heat(heat, fights_by_map)
     # One file per map and day with all its matches: replaying many matches at once costs a few requests,
     # not one per match. Single-match replay keeps using the small per-match files.
     for (map_id, day), items in bundles.items():
@@ -190,8 +194,9 @@ def heat_cell(u: int, v: int) -> int:
     return row * HEAT_GRID + col
 
 
-def write_heat(heat) -> None:
-    """public/data/heat/<map>.json: {grid, layers: {layer: {day: [cell, count, cell, count, ...]}}}."""
+def write_heat(heat, fights_by_map) -> None:
+    """public/data/heat/<map>.json: {grid, layers: {layer: {day: [cell, count, ...]}}, fights: [[day, killer u, killer v,
+    victim u, victim v, killer is a bot], ...]}."""
     (OUT / "heat").mkdir(parents=True, exist_ok=True)
     for map_id in MAPS:
         layers = {
@@ -201,7 +206,8 @@ def write_heat(heat) -> None:
             }
             for layer in HEAT_LAYERS
         }
-        write_json(OUT / "heat" / f"{map_id}.json", {"grid": HEAT_GRID, "layers": layers})
+        fights = sorted(fights_by_map.get(map_id, []))
+        write_json(OUT / "heat" / f"{map_id}.json", {"grid": HEAT_GRID, "layers": layers, "fights": fights})
 
 
 def classify_bots(rows: list[dict]) -> dict[str, bool]:
@@ -249,12 +255,6 @@ def pair_fights(events: list, scale: float) -> list:
     return sorted(fights)
 
 
-def line_cells(u0: int, v0: int, u1: int, v1: int) -> set[int]:
-    """Heat cells crossed by the segment between two UV points (each cell once per line)."""
-    steps = max(1, int(max(abs(u1 - u0), abs(v1 - v0)) * HEAT_GRID / UV_UNITS * 2))
-    return {heat_cell(round(u0 + (u1 - u0) * k / steps), round(v0 + (v1 - v0) * k / steps)) for k in range(steps + 1)}
-
-
 def build_match(match_id: str, m: dict, heat) -> tuple[dict, dict]:
     """The match file's content and its summary row for the index; adds its points to the heat grids."""
     rows = sorted(m["rows"], key=lambda r: (r["sec"], r["user"]))
@@ -288,9 +288,6 @@ def build_match(match_id: str, m: dict, heat) -> tuple[dict, dict]:
                 map_heat[layer][day][heat_cell(u, v)] += 1
 
     fights = pair_fights(events, MAPS[m["map"]]["scale"])
-    for _, ku, kv, vu, vv, _, _ in fights:
-        for cell in line_cells(ku, kv, vu, vv):
-            map_heat["fire"][day][cell] += 1
 
     short_id = match_id.removesuffix(".nakama-0")
     player_list = [{k: v for k, v in p.items() if k != "index"} for p in players.values()]

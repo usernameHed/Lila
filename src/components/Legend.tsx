@@ -1,9 +1,11 @@
 import { useEffect, useRef } from 'react';
-import { drawMarker } from '../lib/draw';
-import { EVENT_STYLE, PATH_COLOR } from '../lib/style';
+import { drawFightLine, drawMarker, type LegendKey } from '../lib/draw';
+import { EVENT_STYLE, FIRE_COLOR, PATH_COLOR, rgbCss } from '../lib/style';
 import type { EventType } from '../lib/types';
 
-function MarkerIcon({ type }: { type: EventType }) {
+export const LEGEND_KEYS: LegendKey[] = [...(Object.keys(EVENT_STYLE) as EventType[]), 'fights'];
+
+function Icon({ k }: { k: LegendKey }) {
   const ref = useRef<HTMLCanvasElement>(null);
   useEffect(() => {
     const el = ref.current;
@@ -13,28 +15,62 @@ function MarkerIcon({ type }: { type: EventType }) {
     el.width = 18 * dpr;
     el.height = 18 * dpr;
     ctx.scale(dpr, dpr);
-    const s = EVENT_STYLE[type];
+    if (k === 'fights') {
+      ctx.scale(0.6, 0.6);
+      drawFightLine(ctx, { x: 4, y: 26 }, { x: 26, y: 4 }, false);
+      return;
+    }
+    const s = EVENT_STYLE[k];
     drawMarker(ctx, s.shape, s.color, 9, 9, Math.min(6, s.size));
-  }, [type]);
+  }, [k]);
   return <canvas ref={ref} style={{ width: 18, height: 18 }} aria-hidden />;
 }
 
-/** Path styles, then every event type with its count in the current match. Types absent from it are dimmed. */
-export function Legend({ counts }: { counts: Partial<Record<EventType, number>> }) {
+const label = (k: LegendKey) => (k === 'fights' ? 'Killer to victim (line of fire)' : EVENT_STYLE[k].label);
+const color = (k: LegendKey) => (k === 'fights' ? FIRE_COLOR : EVENT_STYLE[k].color);
+
+interface Props {
+  counts: Partial<Record<LegendKey, number>>;
+  hidden: LegendKey[];
+  onToggle: (k: LegendKey) => void;
+  onOnly: (k: LegendKey) => void;
+  onHover: (k: LegendKey | null) => void;
+}
+
+/**
+ * Path styles, then every marker kind with its count in the selection. Hover a row: its markers pulse on the map.
+ * Click a row: show only that kind (click it again to show all). Click its box: show or hide it.
+ */
+export function Legend({ counts, hidden, onToggle, onOnly, onHover }: Props) {
   return (
     <ul className="legend">
-      <li>
+      <li className="static">
         <span className="swatch line" style={{ background: PATH_COLOR.human }} /> Player path
       </li>
-      <li>
+      <li className="static">
         <span className="swatch line dashed" style={{ color: PATH_COLOR.bot }} /> Bot path
       </li>
-      {(Object.keys(EVENT_STYLE) as EventType[]).map((type) => (
-        <li key={type} className={counts[type] ? '' : 'none'}>
-          <MarkerIcon type={type} /> {EVENT_STYLE[type].label}
-          <span className="count">{counts[type] ?? 0}</span>
-        </li>
-      ))}
+      {LEGEND_KEYS.map((k) => {
+        const on = !hidden.includes(k);
+        return (
+          <li key={k} className={`${on ? '' : 'off'} ${counts[k] ? '' : 'none'}`} onMouseEnter={() => on && onHover(k)} onMouseLeave={() => onHover(null)}>
+            <button
+              className="legend-box"
+              onClick={() => onToggle(k)}
+              aria-pressed={on}
+              aria-label={`${on ? 'Hide' : 'Show'} ${label(k)}`}
+              title={on ? 'Hide on the map' : 'Show on the map'}
+              style={{ borderColor: color(k), background: on ? rgbCss([255, 255, 255], 0.06) : 'transparent' }}
+            >
+              {on && <Icon k={k} />}
+            </button>
+            <button className="legend-name" onClick={() => onOnly(k)} title="Show only this (click again for all)">
+              {label(k)}
+              <span className="count">{counts[k] ?? 0}</span>
+            </button>
+          </li>
+        );
+      })}
     </ul>
   );
 }

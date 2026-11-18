@@ -96,21 +96,30 @@ export function toPixels(k: Float32Array, grid: number, rgb: Rgb): Uint8ClampedA
 }
 
 export const BANDS = 4;
-export const BAND_SCALE = 4; // bands are drawn at 4x the grid, so their edges are crisp
+export const BAND_SCALE = 8; // bands are computed at 8x the grid (1024 px), so their edges stay smooth on screen
 
-/** Bilinear upscale of a square grid, so band edges follow smooth curves instead of grid squares. */
+/** Catmull-Rom weight: a smooth curve through the grid values (bilinear shows diamond-shaped edges). */
+function cubic(p0: number, p1: number, p2: number, p3: number, t: number): number {
+  return p1 + 0.5 * t * (p2 - p0 + t * (2 * p0 - 5 * p1 + 4 * p2 - p3 + t * (3 * (p1 - p2) + p3 - p0)));
+}
+
+/** Bicubic upscale of a square grid by `f`, clamped to 0-1, so band edges follow smooth curves. */
 export function upscale(k: Float32Array, grid: number, f: number): Float32Array {
   const n = grid * f;
+  const at = (x: number, y: number) => k[Math.min(grid - 1, Math.max(0, y)) * grid + Math.min(grid - 1, Math.max(0, x))];
   const out = new Float32Array(n * n);
+  const row = new Float32Array(4);
   for (let y = 0; y < n; y++) {
     const gy = Math.min(grid - 1, Math.max(0, (y + 0.5) / f - 0.5));
-    const y0 = Math.floor(gy), y1 = Math.min(grid - 1, y0 + 1), ty = gy - y0;
+    const y1 = Math.floor(gy), ty = gy - y1;
     for (let x = 0; x < n; x++) {
       const gx = Math.min(grid - 1, Math.max(0, (x + 0.5) / f - 0.5));
-      const x0 = Math.floor(gx), x1 = Math.min(grid - 1, x0 + 1), tx = gx - x0;
-      const top = k[y0 * grid + x0] * (1 - tx) + k[y0 * grid + x1] * tx;
-      const bottom = k[y1 * grid + x0] * (1 - tx) + k[y1 * grid + x1] * tx;
-      out[y * n + x] = top * (1 - ty) + bottom * ty;
+      const x1 = Math.floor(gx), tx = gx - x1;
+      for (let j = 0; j < 4; j++) {
+        const yy = y1 - 1 + j;
+        row[j] = cubic(at(x1 - 1, yy), at(x1, yy), at(x1 + 1, yy), at(x1 + 2, yy), tx);
+      }
+      out[y * n + x] = Math.min(1, Math.max(0, cubic(row[0], row[1], row[2], row[3], ty)));
     }
   }
   return out;

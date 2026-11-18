@@ -21,11 +21,15 @@ export interface View {
   look: Look;
   /** Replay: every match, or only matches of players who never played again. */
   players: 'all' | 'once';
+  /** Replay: legend rows turned off (event types, or 'fights' for the killer-to-victim lines). */
+  hidden: string[];
+  /** Replay: draw the chosen heatmap kinds under the replay. */
+  heatUnder: boolean;
 }
 
 export const ALL = 'all';
 
-export const DEFAULT_VIEW: View = { mode: 'replay', map: 'AmbroseValley', day: 'all', matches: [], layers: ['traffic'], kills: 'both', deaths: 'both', mono: false, look: 'smooth', players: 'all' };
+export const DEFAULT_VIEW: View = { mode: 'replay', map: 'AmbroseValley', day: 'all', matches: [], layers: ['traffic'], kills: 'both', deaths: 'both', mono: false, look: 'bands', players: 'all', hidden: [], heatUnder: false };
 
 const MAPS: MapId[] = ['AmbroseValley', 'GrandRift', 'Lockdown'];
 const LAYERS: HeatLayer[] = ['traffic', 'loot', 'fire', 'kills', 'deaths', 'storm']; // drawing order
@@ -46,8 +50,10 @@ export function parseView(hash: string): View {
     kills: pick('kills', WHO, 'both'),
     deaths: pick('deaths', WHO, 'both'),
     mono: q.get('mono') === '1',
-    look: pick<Look>('look', ['smooth', 'bands'], 'smooth'),
+    look: pick<Look>('look', ['smooth', 'bands'], DEFAULT_VIEW.look),
     players: pick<View['players']>('players', ['all', 'once'], 'all'),
+    hidden: (q.get('hide') ?? '').split(',').filter((k) => /^[a-zA-Z]{2,20}$/.test(k)),
+    heatUnder: q.get('under') === '1',
   };
 }
 
@@ -79,10 +85,15 @@ export function viewHash(v: View): string {
     q.set('layer', v.layers.join(','));
     if (v.kills !== 'both' && v.layers.includes('kills')) q.set('kills', v.kills);
     if (v.deaths !== 'both' && v.layers.includes('deaths')) q.set('deaths', v.deaths);
-    if (v.look !== 'smooth') q.set('look', v.look);
   }
+  if (v.look !== DEFAULT_VIEW.look) q.set('look', v.look);
   if (v.mono) q.set('mono', '1');
   if (v.mode === 'replay' && v.players === 'once') q.set('players', 'once');
+  if (v.mode === 'replay' && v.hidden.length) q.set('hide', v.hidden.join(','));
+  if (v.mode === 'replay' && v.heatUnder) {
+    q.set('under', '1');
+    q.set('layer', v.layers.join(','));
+  }
   return `#${q}`;
 }
 
