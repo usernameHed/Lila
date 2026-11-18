@@ -42,6 +42,7 @@ On a 16:9 screen (1366x768 to 1920x1080) everything fits without scrolling:
 - **3D**: an estimated terrain (from where players walked), paths, events and the heatmap at their real height;
   drag to orbit, middle or right drag to move, scroll to zoom, height x1 to x8; hover and click work as in 2D.
 - **Line of fire**: killer-to-victim arrows for the 36 recorded pairs, plus 6 inferred (lighter).
+- **Undo / redo** for every setting (↶ ↷ in the header, Cmd/Ctrl+Z, Shift+Cmd/Ctrl+Z); dragging a slider is one step.
 - **Shareable views**: the URL holds the whole view. **Update button** when a new version is deployed.
 
 ## Tech stack

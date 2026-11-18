@@ -371,3 +371,8 @@ select {
 .icon-size input { flex: 1; accent-color: var(--blue); }
 .icon-size span { width: 36px; text-align: right; font-variant-numeric: tabular-nums; }
 .tick-strip { position: absolute; left: 0; right: 0; top: -12px; height: 12px; width: 100%; pointer-events: none; }
+.history-btns { display: flex; gap: 4px; margin-left: auto; }
+.history-btns button { width: 30px; height: 30px; border-radius: 7px; border: 1px solid var(--line); background: #1d2026; color: var(--text); font-size: 16px; cursor: pointer; }
+.history-btns button:disabled { opacity: 0.3; cursor: default; }
+.history-btns button:hover:not(:disabled) { border-color: var(--blue); color: var(--blue); }
+.side header.brand { align-items: center; }

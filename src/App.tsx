@@ -6,6 +6,7 @@ import { ReplayStage } from './components/Replay';
 import { OverviewSide, ReplaySide, RightPanel, type LayerHandlers } from './components/SidePanels';
 import { UpdateButton } from './components/UpdateButton';
 import { loadIndex } from './lib/data';
+import { record, redo, start, undo, type History } from './lib/history';
 import type { LegendKey } from './lib/draw';
 import { MAP_LABEL, formatDay } from './lib/style';
 import { applyFilter } from './lib/matchFilter';
@@ -17,8 +18,27 @@ const TAB_LABEL: Record<Mode, string> = { overview: 'Overview', replay: 'Match r
 export function App() {
   const [index, setIndex] = useState<Index | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [view, setView] = useState<View>(() => parseView(window.location.hash));
-  const update = useCallback((patch: Partial<View>) => setView((v) => ({ ...v, ...patch })), []);
+  // Every setting lives in one view object, with an undo / redo history.
+  const [hist, setHist] = useState<History<View>>(() => start(parseView(window.location.hash)));
+  const view = hist.present;
+  const update = useCallback(
+    (patch: Partial<View>) => setHist((h) => record(h, { ...h.present, ...patch }, Object.keys(patch).sort().join(','), Date.now())),
+    [],
+  );
+  const setView = useCallback((v: View) => setHist((h) => record(h, v, 'link', Date.now())), []);
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      const typing = e.target instanceof HTMLElement && e.target.closest('input[type=text], textarea');
+      if (!(e.metaKey || e.ctrlKey) || typing) return;
+      const k = e.key.toLowerCase();
+      if (k === 'z' && !e.shiftKey) setHist(undo);
+      else if ((k === 'z' && e.shiftKey) || k === 'y') setHist(redo);
+      else return;
+      e.preventDefault();
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, []);
 
   useEffect(() => {
     loadIndex().then(setIndex, (e: Error) => setError(e.message));
@@ -27,13 +47,16 @@ export function App() {
   // Keep the URL in step with the view (shareable), and follow the back button / pasted links.
   useEffect(() => {
     const hash = viewHash(view);
-    if (window.location.hash !== hash) history.replaceState(null, '', hash);
+    if (window.location.hash !== hash) window.history.replaceState(null, '', hash);
   }, [view]);
   useEffect(() => {
-    const onHash = () => setView(parseView(window.location.hash));
+    const onHash = () => {
+      const next = parseView(window.location.hash);
+      if (viewHash(next) !== viewHash(hist.present)) setView(next);
+    };
     window.addEventListener('hashchange', onHash);
     return () => window.removeEventListener('hashchange', onHash);
-  }, []);
+  }, [hist.present, setView]);
 
   const matches = useMemo(
     () =>
@@ -78,6 +101,14 @@ export function App() {
           <div>
             <h1>LILA BLACK</h1>
             <p className="sub">Player journeys · Feb 10-14, 2026</p>
+          </div>
+          <div className="history-btns">
+            <button onClick={() => setHist(undo)} disabled={!hist.past.length} title="Undo (Cmd/Ctrl+Z)" aria-label="Undo">
+              ↶
+            </button>
+            <button onClick={() => setHist(redo)} disabled={!hist.future.length} title="Redo (Shift+Cmd/Ctrl+Z)" aria-label="Redo">
+              ↷
+            </button>
           </div>
           <UpdateButton />
         </header>

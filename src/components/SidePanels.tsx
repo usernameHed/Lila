@@ -206,7 +206,7 @@ export function RightPanel(p: RightProps) {
             <button onClick={() => update({ layers: [] })} disabled={!view.layers.length}>
               None
             </button>
-            <Choice label="Heatmap colors" options={[['each', 'Per kind'], ['mono', 'One color']]} value={view.heatMono ? 'mono' : 'each'} onChange={(c) => update({ heatMono: c === 'mono' })} />
+            <Choice label="Heatmap colors" options={[['each', 'Per kind'], ['mono', 'Merge']]} value={view.heatMono ? 'mono' : 'each'} onChange={(c) => update({ heatMono: c === 'mono' })} />
           </div>
           <LayerList
             heat={p.heat}

@@ -15,6 +15,11 @@ about 300 lines, move the oldest entries word for word to `SESSION_HISTORY.md` (
 
 ---
 
+## 2026-11-18 (desktop session): undo / redo, "Merge"
+
+- Ugo: undo / redo for every setting -> `lib/history.ts` (tested; same setting within 800 ms = one step), buttons in
+  the header, Cmd/Ctrl+Z, Shift+Cmd+Z, Ctrl+Y. Heatmap "One color" renamed "Merge". Next: Data tab (drop a dataset).
+
 ## 2026-11-18 (desktop session): grouping, faster icons, even path brightness, dense timeline
 
 - Ugo: 9,936 loot icons slow; group by zoom with a slider; paths brighter on Ambrose than Grand Rift; no timeline
