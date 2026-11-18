@@ -60,7 +60,7 @@ def bar_labels(ax, bars, fmt="{:,.0f}"):
 def human_events(matches):
     """(map, minute, category, u, v) for every event emitted by a human."""
     for m in matches.values():
-        for t, cat, u, v, i in m["events"]:
+        for t, cat, u, v, i, *_ in m["events"]:
             if not m["players"][i]["bot"]:
                 yield m["map"], t / 60000, cat, u, v
 
@@ -145,7 +145,7 @@ def ambrose_regions(index, matches):
             if not p["bot"]:
                 for i in range(0, len(p["path"]), 3):
                     traffic[region(p["path"][i + 1], p["path"][i + 2])] += 1
-        for t, cat, u, v, i in m["events"]:
+        for t, cat, u, v, i, *_ in m["events"]:
             if m["players"][i]["bot"]:
                 continue
             if cat == "loot":

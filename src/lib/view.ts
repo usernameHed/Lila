@@ -25,11 +25,17 @@ export interface View {
   hidden: string[];
   /** Replay: draw the chosen heatmap kinds under the replay. */
   heatUnder: boolean;
+  /** Replay: 3D view (height from the data's y) instead of the flat map. */
+  view3d: boolean;
+  /** Replay: color paths by player (or match) or by height. */
+  colorBy: 'player' | 'height';
+  /** 3D: vertical exaggeration (1-8). */
+  exaggeration: number;
 }
 
 export const ALL = 'all';
 
-export const DEFAULT_VIEW: View = { mode: 'replay', map: 'AmbroseValley', day: 'all', matches: [], layers: ['traffic'], kills: 'both', deaths: 'both', mono: false, look: 'bands', players: 'all', hidden: [], heatUnder: false };
+export const DEFAULT_VIEW: View = { mode: 'replay', map: 'AmbroseValley', day: 'all', matches: [], layers: ['traffic'], kills: 'both', deaths: 'both', mono: false, look: 'bands', players: 'all', hidden: [], heatUnder: false, view3d: false, colorBy: 'player', exaggeration: 4 };
 
 const MAPS: MapId[] = ['AmbroseValley', 'GrandRift', 'Lockdown'];
 const LAYERS: HeatLayer[] = ['traffic', 'loot', 'fire', 'kills', 'deaths', 'storm']; // drawing order
@@ -54,6 +60,9 @@ export function parseView(hash: string): View {
     players: pick<View['players']>('players', ['all', 'once'], 'all'),
     hidden: (q.get('hide') ?? '').split(',').filter((k) => /^[a-zA-Z]{2,20}$/.test(k)),
     heatUnder: q.get('under') === '1',
+    view3d: q.get('view') === '3d',
+    colorBy: pick<View['colorBy']>('color', ['player', 'height'], 'player'),
+    exaggeration: Math.min(8, Math.max(1, Math.round(Number(q.get('ex')) || DEFAULT_VIEW.exaggeration))),
   };
 }
 
@@ -90,6 +99,9 @@ export function viewHash(v: View): string {
   if (v.mono) q.set('mono', '1');
   if (v.mode === 'replay' && v.players === 'once') q.set('players', 'once');
   if (v.mode === 'replay' && v.hidden.length) q.set('hide', v.hidden.join(','));
+  if (v.mode === 'replay' && v.view3d) q.set('view', '3d');
+  if (v.mode === 'replay' && v.view3d && v.exaggeration !== DEFAULT_VIEW.exaggeration) q.set('ex', String(v.exaggeration));
+  if (v.mode === 'replay' && v.colorBy === 'height') q.set('color', 'height');
   if (v.mode === 'replay' && v.heatUnder) {
     q.set('under', '1');
     q.set('layer', v.layers.join(','));

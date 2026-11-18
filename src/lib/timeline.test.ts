@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { matchEnd, positionAt, samplesUntil } from './timeline';
+import { heightAt, matchEnd, positionAt, samplesUntil } from './timeline';
 
 // Three samples: t=0 at (0,0), t=5000 at (100,50), t=10000 at (200,50)
 const path = [0, 0, 0, 5000, 100, 50, 10000, 200, 50];
@@ -27,5 +27,15 @@ describe('timeline', () => {
   it('ends the match at its last sample or event', () => {
     expect(matchEnd([path, []], [12000, 3000])).toBe(12000);
     expect(matchEnd([path], [])).toBe(10000);
+  });
+});
+
+describe('heightAt', () => {
+  it('interpolates height like position, holds the last one', () => {
+    const h = [1000, 1100, 1300];
+    expect(heightAt(path, h, -1)).toBeNull();
+    expect(heightAt(path, h, 2500)).toBe(1050);
+    expect(heightAt(path, h, 7500)).toBe(1200);
+    expect(heightAt(path, h, 99999)).toBe(1300);
   });
 });

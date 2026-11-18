@@ -65,6 +65,8 @@ pixelX = u * imageSize             pixelY = (1 - v) * imageSize        (images s
 | One match crosses midnight: the same human file is in `February_10` and `February_11`, row for row | Read once (first day wins): 89,016 rows used |
 | 794 of 796 matches have a single human | Shown as is, and called out in INSIGHTS.md |
 | No extraction event | "Survived" = no death event in the log |
+| `y` is height in meters (README), about 40 m of range per map with clear levels (ground, floors, hills) | Kept in decimeters on every sample and event; 3D ground plane at the map's 1st-percentile height |
+| No storm position anywhere in the data | The storm is not drawn: inferring it was tested and rejected (players drift one way only 55-67% of the time; 17 storm deaths per map at most). Logging ask in PRODUCT.md |
 | A kill row holds only the killer's position: no victim id, position or aim | Killer-victim pairs only where both ends are recorded (same match, same second, within 60 m): 39 fights. Not estimated elsewhere: 95% of kills happen in matches with no bot file, and the nearest recorded bot is a median 105 m away |
 
 ## Trade-offs
@@ -80,4 +82,5 @@ pixelX = u * imageSize             pixelY = (1 - v) * imageSize        (images s
 | Gradient only | Toon look by default: 4 flat bands with outlines, bicubic upscale to 8x the grid | Bands read like contour lines: "how hot" at a glance; bicubic keeps the edges curved, not pixelated |
 | Line of fire as a heat grid | Drawn as arrows | 39 lines blur into noise as a heatmap; as arrows each one reads |
 | One request per match for multi-replay | Map-day bundles above 5 matches | Never hundreds of requests; one match alone stays a 5 KB load. 566 matches replay at 60 fps |
+| 3D always, or a 3D library in the main bundle | 2D by default, 3D on demand (lazy chunk, 125 KB gzipped) | Level designers read top-down maps first; 3D answers "which floor", not "where" |
 | Full-size minimaps | 2048 px JPEG | ~300 KB instead of 3-12 MB, still sharp on a retina laptop |

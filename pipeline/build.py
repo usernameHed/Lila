@@ -77,6 +77,18 @@ DAY_DIR = re.compile(r"^February_(\d+)$")
 BOT_ID = re.compile(r"^\d+$")
 
 
+def height_range(matches: dict, map_id: str) -> dict:
+    """The map's height range in meters (1st to 99th percentile of every row), for the height colors and the 3D view."""
+    ys = sorted(r["y"] for m in matches.values() if m["map"] == map_id for r in m["rows"])
+    pick = lambda q: round(ys[int(q * (len(ys) - 1))], 1)  # noqa: E731
+    return {"hMin": pick(0.01), "hMax": pick(0.99)}
+
+
+def height(y: float) -> int:
+    """Height (the README's y, elevation in meters) in decimeters, as an integer."""
+    return round(y * 10)
+
+
 def to_uv(map_id: str, x: float, z: float) -> tuple[int, int]:
     """World (x, z) to map UV in UV_UNITS. v grows northward (z); the app flips it for the image."""
     m = MAPS[map_id]
@@ -116,6 +128,7 @@ def read_files():
                     "match": cols["match_id"][i],
                     "map": cols["map_id"][i],
                     "x": cols["x"][i],
+                    "y": cols["y"][i],  # height (elevation) in meters
                     "z": cols["z"][i],
                     # Typed timestamp[ms], but the number counts SECONDS: read as ms, matches last 0.01-0.9 s;
                     # as seconds, 13 s to 15 min. Not wall clock (as Unix seconds it lands on late Dec 2025),
@@ -157,8 +170,8 @@ def build() -> None:
     fights_by_map: dict[str, list] = defaultdict(list)
     for items in bundles.values():
         for d in items:
-            for _, ku, kv, vu, vv, killer, _ in d["fights"]:
-                fights_by_map[d["map"]].append([d["day"], ku, kv, vu, vv, d["players"][killer]["bot"]])
+            for _, ku, kv, vu, vv, killer, _, kh, vh in d["fights"]:
+                fights_by_map[d["map"]].append([d["day"], ku, kv, vu, vv, d["players"][killer]["bot"], kh, vh])
     write_heat(heat, fights_by_map)
     # One file per map and day with all its matches: replaying many matches at once costs a few requests,
     # not one per match. Single-match replay keeps using the small per-match files.
@@ -177,7 +190,7 @@ def build() -> None:
 
     days = sorted({s["day"] for s in summaries})
     index = {
-        "maps": [{"id": k, **v} for k, v in MAPS.items()],
+        "maps": [{"id": k, **v, **height_range(matches, k)} for k, v in MAPS.items()],
         "days": days,
         "uvUnits": UV_UNITS,
         "matches": sorted(summaries, key=lambda s: (s["day"], s["map"], s["id"])),
@@ -231,13 +244,13 @@ def classify_bots(rows: list[dict]) -> dict[str, bool]:
 
 
 def pair_fights(events: list, scale: float) -> list:
-    """[t, killer u, killer v, victim u, victim v, killer index, victim index] for each kill whose victim's death is
+    """[t, killer u, killer v, victim u, victim v, killer index, victim index, killer h, victim h] for each kill whose victim's death is
     also recorded. Only possible when both files exist: 39 fights in the whole dataset (bot files: 52 matches)."""
     fights = []
     for kill_cat, death_cat in PAIRS:
         deaths = [e for e in events if e[1] == death_cat]
         used: set[int] = set()
-        for t, cat, u, v, killer in events:
+        for t, cat, u, v, killer, h in events:
             if cat != kill_cat:
                 continue
             max_uv = PAIR_MAX_METERS / scale * UV_UNITS
@@ -251,7 +264,7 @@ def pair_fights(events: list, scale: float) -> list:
             _, i = min(near)
             used.add(i)
             d = deaths[i]
-            fights.append([t, u, v, d[2], d[3], killer, d[4]])
+            fights.append([t, u, v, d[2], d[3], killer, d[4], h, d[5]])
     return sorted(fights)
 
 
@@ -270,11 +283,12 @@ def build_match(match_id: str, m: dict, heat) -> tuple[dict, dict]:
     for r in rows:
         p = players.get(r["user"])
         if p is None:
-            p = players[r["user"]] = {"index": len(players), "id": r["user"], "bot": bots[r["user"]], "path": []}
+            p = players[r["user"]] = {"index": len(players), "id": r["user"], "bot": bots[r["user"]], "path": [], "h": []}
         u, v = to_uv(r["map"], r["x"], r["z"])
         t = (r["sec"] - t0) * 1000
         if r["event"] in POSITION_EVENTS:
             p["path"].extend((t, u, v))
+            p["h"].append(height(r["y"]))
             if not p["bot"]:
                 map_heat["traffic"][day][heat_cell(u, v)] += 1
             continue
@@ -282,7 +296,7 @@ def build_match(match_id: str, m: dict, heat) -> tuple[dict, dict]:
         if category is None:
             raise ValueError(f"Unexpected event {r['event']} from {'bot' if p['bot'] else 'human'} {r['user']}")
         counts[category] += 1
-        events.append([t, category, u, v, p["index"]])
+        events.append([t, category, u, v, p["index"], height(r["y"])])
         for layer, cats in HEAT_LAYERS.items():
             if category in cats:
                 map_heat[layer][day][heat_cell(u, v)] += 1

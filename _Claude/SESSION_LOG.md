@@ -15,6 +15,13 @@ about 300 lines, move the oldest entries word for word to `SESSION_HISTORY.md` (
 
 ---
 
+## 2026-11-18 (desktop session): height, 2D and 3D
+
+- Ugo: use y (height) for 2D and 3D. Done: pipeline keeps height (dm) on samples, events, fights, `hMin/hMax` per map;
+  2D "By height" path colors (8 bands, one stroke each); 3D view (three.js, lazy chunk): minimap ground, Line2 paths,
+  round event dots, fights, orbit, playback, exaggeration x1-8. URL `view=3d`, `color=height`, `ex=`.
+- Ugo: show the storm moving. Not in the data; inference tested and rejected (see DATA.md). Logged as a telemetry ask.
+
 ## 2026-11-18 (desktop session): charts for the decisions
 
 - Ugo: a doc section with the "why the team needs it" content, and charts to back each view, assumption and proposal.

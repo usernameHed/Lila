@@ -62,3 +62,8 @@ export function formatDuration(ms: number): string {
   const s = Math.round(ms / 1000);
   return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`;
 }
+
+/** Height colors: one hue (cyan), dark = low, bright = high; 8 steps so a path can be drawn in 8 strokes. */
+export const HEIGHT_STEPS = 8;
+export const heightColor = (k: number) => `hsl(188, 85%, ${Math.round(28 + 62 * Math.max(0, Math.min(1, k)))}%)`;
+export const HEIGHT_RAMP = `linear-gradient(90deg, ${heightColor(0)}, ${heightColor(0.5)}, ${heightColor(1)})`;

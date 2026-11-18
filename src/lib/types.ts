@@ -25,17 +25,19 @@ export interface HeatData {
   // -> day -> flat [cell, count, cell, count, ...]
   layers: Record<string, Record<string, number[]>>;
   /** Killer-to-victim lines of this map: [day, killer u, killer v, victim u, victim v, killer is a bot]. */
-  fights: [string, number, number, number, number, boolean][];
+  fights: [string, number, number, number, number, boolean, number, number][];
 }
 
-/** A kill whose victim's death is also recorded: [t, killer u, killer v, victim u, victim v, killer, victim]. */
-export type Fight = [number, number, number, number, number, number, number];
+/** A kill whose victim's death is also recorded: [t, killer u, v, victim u, v, killer, victim, killer h, victim h]. */
+export type Fight = [number, number, number, number, number, number, number, number, number];
 
 export interface MapConfig {
   id: MapId;
   scale: number;
   originX: number;
   originZ: number;
+  hMin: number; // height range in meters (1st-99th percentile): height colors, 3D view
+  hMax: number;
 }
 
 export interface MatchSummary {
@@ -62,10 +64,11 @@ export interface Player {
   id: string;
   bot: boolean;
   path: number[]; // flat triples: t (ms since match start), u, v
+  h: number[]; // height of each path sample, in decimeters
 }
 
-/** [t (ms), type, u, v, index of the player in Match.players] */
-export type MatchEvent = [number, EventType, number, number, number];
+/** [t (ms), type, u, v, index of the player in Match.players, height (dm)] */
+export type MatchEvent = [number, EventType, number, number, number, number];
 
 export interface Match {
   id: string;

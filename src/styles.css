@@ -176,3 +176,14 @@ select {
 .heat-options h2 { margin: 6px 0 0; }
 .under-layers { margin-top: 8px; }
 .under-layers .layer .choice { margin-left: 32px; }
+
+/* Above the map: 2D / 3D, color by, height scale, exaggeration */
+.stage-tools { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 14px; font-size: 13px; }
+.height-scale { display: inline-flex; align-items: center; gap: 6px; color: var(--muted); }
+.height-scale .ramp { width: 80px; margin: 0; }
+.exaggeration { display: inline-flex; align-items: center; gap: 8px; color: var(--muted); }
+.exaggeration input { width: 110px; accent-color: var(--accent); }
+.map3d { position: relative; flex: 1; min-height: 0; border-radius: 8px; overflow: hidden; }
+.map3d canvas { display: block; }
+.map3d-help { position: absolute; left: 10px; bottom: 8px; font-size: 12px; color: var(--muted); pointer-events: none; }
+@media (max-width: 760px) { .map3d { height: calc(100vw - 32px); flex: none; } }

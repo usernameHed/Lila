@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { uvToPixel, worldToUv } from './coords';
 import type { MapConfig } from './types';
 
-const ambrose: MapConfig = { id: 'AmbroseValley', scale: 900, originX: -370, originZ: -473 };
+const ambrose: MapConfig = { id: 'AmbroseValley', scale: 900, originX: -370, originZ: -473, hMin: 100, hMax: 150 };
 
 describe('coordinate mapping', () => {
   it('matches the worked example of the dataset README (x=-301.45, z=-355.55 -> pixel 78, 890 on 1024 px)', () => {

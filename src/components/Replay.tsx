@@ -1,9 +1,10 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { Suspense, lazy, useCallback, useEffect, useMemo, useState } from 'react';
 import { loadMatches } from '../lib/data';
 import { drawMatches, type LegendKey } from '../lib/draw';
-import { MANY_MATCHES, MATCH_COLORS, formatDay, formatDuration } from '../lib/style';
+import { HEIGHT_RAMP, MANY_MATCHES, MATCH_COLORS, formatDay, formatDuration } from '../lib/style';
 import { matchEnd } from '../lib/timeline';
-import type { Match, MatchSummary } from '../lib/types';
+import type { MapConfig, Match, MatchSummary } from '../lib/types';
+import { Choice } from './Choice';
 import { MapCanvas } from './MapCanvas';
 import { PlaybackBar } from './PlaybackBar';
 import { usePlayback } from './usePlayback';
@@ -71,7 +72,14 @@ interface StageProps {
   hover: LegendKey | null;
   /** Draws a heatmap under the replay, or nothing. */
   under: ((ctx: CanvasRenderingContext2D, size: number) => void) | null;
+  mapConfig: MapConfig;
+  view3d: boolean;
+  colorBy: 'player' | 'height';
+  exaggeration: number;
+  onView: (patch: { view3d?: boolean; colorBy?: 'player' | 'height'; exaggeration?: number }) => void;
 }
+
+const Map3D = lazy(() => import('./Map3D'));
 
 /** A clock for the legend hover pulse: ticks every frame only while something is hovered. */
 function usePulse(active: boolean): number {
@@ -89,7 +97,7 @@ function usePulse(active: boolean): number {
   return phase;
 }
 
-export function ReplayStage({ summaries, uvUnits, mono, hidden, hover, under }: StageProps) {
+export function ReplayStage({ summaries, uvUnits, mono, hidden, hover, under, mapConfig, view3d, colorBy, exaggeration, onView }: StageProps) {
   const [loaded, setLoaded] = useState<Match[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -120,13 +128,18 @@ export function ReplayStage({ summaries, uvUnits, mono, hidden, hover, under }: 
   const phase = usePulse(!!hover);
   const hiddenSet = useMemo(() => new Set(hidden), [hidden]);
   const events = useMemo(() => (current ?? []).flatMap((m) => m.events), [current]);
+  const heightRange = useMemo(
+    () => (colorBy === 'height' ? { min: mapConfig.hMin * 10, max: mapConfig.hMax * 10 } : null),
+    [colorBy, mapConfig],
+  );
 
   const draw = useCallback(
     (ctx: CanvasRenderingContext2D, size: number) => {
       under?.(ctx, size);
-      if (shown.length) drawMatches(ctx, shown, uvUnits, size, current ? play.t : Infinity, play.playing, { mono, hidden: hiddenSet, hover, phase });
+      if (shown.length)
+        drawMatches(ctx, shown, uvUnits, size, current ? play.t : Infinity, play.playing, { mono, hidden: hiddenSet, hover, phase, heightRange });
     },
-    [shown, current, uvUnits, play.t, play.playing, mono, hiddenSet, hover, phase, under],
+    [shown, current, uvUnits, play.t, play.playing, mono, hiddenSet, hover, phase, under, heightRange],
   );
 
   if (!summaries.length) return <div className="empty">No match for these filters.</div>;
@@ -141,7 +154,37 @@ export function ReplayStage({ summaries, uvUnits, mono, hidden, hover, under }: 
           {loading && <span className="muted"> Loading…</span>}
         </div>
       )}
-      <MapCanvas map={summaries[0].map} draw={draw} dim={under ? 0.4 : 0} />
+      <div className="stage-tools">
+        <Choice label="View" options={[['2d', '2D'], ['3d', '3D']]} value={view3d ? '3d' : '2d'} onChange={(v) => onView({ view3d: v === '3d' })} />
+        <Choice label="Color paths by" options={[['player', 'By player'], ['height', 'By height']]} value={colorBy} onChange={(c) => onView({ colorBy: c })} />
+        {colorBy === 'height' && (
+          <span className="height-scale" title="Height above sea level, from the data's y">
+            {Math.round(mapConfig.hMin)} m <span className="ramp" style={{ background: HEIGHT_RAMP }} /> {Math.round(mapConfig.hMax)} m
+          </span>
+        )}
+        {view3d && (
+          <label className="exaggeration" title="Stretch heights so the relief shows">
+            Height x{exaggeration}
+            <input type="range" min={1} max={8} step={1} value={exaggeration} onChange={(e) => onView({ exaggeration: Number(e.target.value) })} />
+          </label>
+        )}
+      </div>
+      {view3d ? (
+        <Suspense fallback={<div className="empty">Loading 3D…</div>}>
+          <Map3D
+            map={mapConfig}
+            matches={shown}
+            uvUnits={uvUnits}
+            t={current ? play.t : Infinity}
+            hidden={hiddenSet}
+            byHeight={colorBy === 'height'}
+            mono={mono}
+            exaggeration={exaggeration}
+          />
+        </Suspense>
+      ) : (
+        <MapCanvas map={summaries[0].map} draw={draw} dim={under ? 0.4 : 0} />
+      )}
       {error && <div className="empty">Could not load: {error}</div>}
       <PlaybackBar
         t={play.t}

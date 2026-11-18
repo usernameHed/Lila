@@ -34,7 +34,7 @@ should log so the tool can answer more).
 | Part | Choice |
 |---|---|
 | Data pipeline | Python 3 + pyarrow + Pillow, run once offline (`pipeline/build.py`) |
-| App | Vite, React 19, TypeScript, HTML canvas |
+| App | Vite, React 19, TypeScript, HTML canvas (2D), three.js (3D, loaded on demand) |
 | Hosting | Cloudflare Workers static assets (no server code, no database) |
 | Tests | Vitest |
 

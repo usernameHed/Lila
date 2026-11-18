@@ -100,7 +100,7 @@ def quadrants(index, matches):
                     continue
                 for i in range(0, len(p["path"]), 3):
                     traffic[region(p["path"][i + 1], p["path"][i + 2])] += 1
-            for t, cat, u, v, _ in m["events"]:
+            for t, cat, u, v, *_ in m["events"]:
                 r = region(u, v)
                 if cat == "loot":
                     loot[r] += 1
@@ -118,7 +118,7 @@ def storm(index, matches):
     print("\n## Storm deaths")
     for m in matches.values():
         dur = next(s["durationMs"] for s in index["matches"] if s["id"] == m["id"])
-        for t, cat, u, v, _ in m["events"]:
+        for t, cat, u, v, *_ in m["events"]:
             if cat == "storm":
                 print(f"  {m['map']:13} t={t / 60000:4.1f} min of {dur / 60000:4.1f}  u={u / 100:5.1f}% v={v / 100:5.1f}%")
 

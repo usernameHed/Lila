@@ -34,3 +34,14 @@ export function matchEnd(paths: number[][], eventTimes: number[]): number {
   for (const t of eventTimes) end = Math.max(end, t);
   return end;
 }
+
+/** Height (dm) at time t, interpolated like positionAt; null before the first sample. */
+export function heightAt(path: number[], h: number[], t: number): number | null {
+  const n = samplesUntil(path, t);
+  if (n === 0) return null;
+  if (n >= h.length) return h[h.length - 1];
+  const i = (n - 1) * 3;
+  const span = path[i + 3] - path[i];
+  const k = span > 0 ? (t - path[i]) / span : 0;
+  return h[n - 1] + (h[n] - h[n - 1]) * k;
+}

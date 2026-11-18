@@ -190,7 +190,19 @@ export function App() {
         {!index ? (
           <div className="empty">Loading…</div>
         ) : view.mode === 'replay' ? (
-          <ReplayStage summaries={selected} uvUnits={index.uvUnits} mono={view.mono} hidden={hidden} hover={hover} under={view.heatUnder ? underDraw : null} />
+          <ReplayStage
+            summaries={selected}
+            uvUnits={index.uvUnits}
+            mono={view.mono}
+            hidden={hidden}
+            hover={hover}
+            under={view.heatUnder ? underDraw : null}
+            mapConfig={index.maps.find((m) => m.id === view.map) ?? index.maps[0]}
+            view3d={view.view3d}
+            colorBy={view.colorBy}
+            exaggeration={view.exaggeration}
+            onView={update}
+          />
         ) : (
           <HeatStage
             map={view.map}

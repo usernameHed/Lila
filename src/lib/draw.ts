@@ -1,7 +1,7 @@
 // Canvas drawing for the map: a match at a given time, and heatmap pixels.
 import { uvToPixel } from './coords';
-import { EVENT_LAYER, EVENT_STYLE, FIRE_COLOR, MANY_MATCHES, MATCH_COLORS, PATH_COLOR, type MarkerShape } from './style';
-import { positionAt, samplesUntil } from './timeline';
+import { EVENT_LAYER, EVENT_STYLE, FIRE_COLOR, HEIGHT_STEPS, MANY_MATCHES, MATCH_COLORS, PATH_COLOR, heightColor, type MarkerShape } from './style';
+import { heightAt, positionAt, samplesUntil } from './timeline';
 import type { EventType, Match, MatchEvent } from './types';
 
 /** How long (match time) a fresh event keeps a ring around it during playback. */
@@ -10,6 +10,7 @@ const FRESH_MS = 8000;
 interface Look {
   human: string; // player path color
   faint: boolean; // many matches at once: thinner, lighter lines, no loot
+  height?: { min: number; max: number }; // color paths by height (dm range) instead of by player
 }
 
 /** What a legend row can point at: an event type, or the killer-to-victim lines. */
@@ -17,6 +18,7 @@ export type LegendKey = EventType | 'fights';
 
 export interface ReplayOptions {
   mono?: boolean; // one color for every match
+  heightRange?: { min: number; max: number } | null; // color paths by height (dm), dark = low, bright = high
   hidden?: ReadonlySet<LegendKey>; // legend rows turned off
   hover?: LegendKey | null; // legend row under the mouse: its markers pulse, the rest fade
   phase?: number; // animation clock (ms) for the pulse
@@ -27,7 +29,7 @@ export function drawMatches(ctx: CanvasRenderingContext2D, matches: Match[], uvU
   const many = matches.length > MANY_MATCHES;
   const hidden = o.hidden ?? new Set<LegendKey>();
   matches.forEach((m, i) =>
-    drawPaths(ctx, m, uvUnits, size, t, playing, { human: many || o.mono ? PATH_COLOR.human : MATCH_COLORS[i], faint: many }),
+    drawPaths(ctx, m, uvUnits, size, t, playing, { human: many || o.mono ? PATH_COLOR.human : MATCH_COLORS[i], faint: many, height: o.heightRange ?? undefined }),
   );
 
   // Events after every path, so no marker is hidden under another match's lines.
@@ -66,16 +68,52 @@ function drawPaths(ctx: CanvasRenderingContext2D, match: Match, uvUnits: number,
       else ctx.lineTo(x, y);
     }
     const head = positionAt(p.path, t);
-    if (head) {
+    if (look.height && p.h) {
+      strokeByHeight(ctx, p.path, p.h, n, head, heightAt(p.path, p.h, t), look.height, px);
+    } else if (head) {
       const { x, y } = px(head.u, head.v);
       ctx.lineTo(x, y);
       ctx.stroke();
-      ctx.globalAlpha = 1;
-      if (playing || t < p.path[p.path.length - 3]) drawHead(ctx, x, y, color, p.bot || look.faint);
     } else ctx.stroke();
+    ctx.globalAlpha = 1;
+    if (head && (playing || t < p.path[p.path.length - 3])) {
+      const { x, y } = px(head.u, head.v);
+      const k = look.height ? heightK(heightAt(p.path, p.h, t) ?? 0, look.height) : 0;
+      drawHead(ctx, x, y, look.height ? heightColor(k) : color, p.bot || look.faint);
+    }
   }
   ctx.setLineDash([]);
   ctx.globalAlpha = 1;
+}
+
+const heightK = (h: number, r: { min: number; max: number }) => (h - r.min) / Math.max(1, r.max - r.min);
+
+/**
+ * A path colored by height: each segment takes the color of its mean height, in HEIGHT_STEPS bands, and each
+ * band is stroked once (a stroke per segment would be ~40k strokes a frame with every match shown).
+ */
+function strokeByHeight(
+  ctx: CanvasRenderingContext2D, path: number[], h: number[], n: number,
+  head: { u: number; v: number } | null, headH: number | null, range: { min: number; max: number },
+  px: (u: number, v: number) => { x: number; y: number },
+) {
+  const bands: Path2D[] = Array.from({ length: HEIGHT_STEPS }, () => new Path2D());
+  const add = (u0: number, v0: number, h0: number, u1: number, v1: number, h1: number) => {
+    const k = heightK((h0 + h1) / 2, range);
+    const band = bands[Math.min(HEIGHT_STEPS - 1, Math.max(0, Math.floor(k * HEIGHT_STEPS)))];
+    const a = px(u0, v0);
+    const b = px(u1, v1);
+    band.moveTo(a.x, a.y);
+    band.lineTo(b.x, b.y);
+  };
+  for (let s = 1; s < n; s++) add(path[s * 3 - 2], path[s * 3 - 1], h[s - 1], path[s * 3 + 1], path[s * 3 + 2], h[s]);
+  if (head && headH !== null && n > 0) add(path[n * 3 - 2], path[n * 3 - 1], h[n - 1], head.u, head.v, headH);
+  ctx.lineCap = 'round';
+  bands.forEach((band, i) => {
+    ctx.strokeStyle = heightColor((i + 0.5) / HEIGHT_STEPS);
+    ctx.stroke(band);
+  });
+  ctx.lineCap = 'butt';
 }
 
 /** Event markers; `scale` shrinks them when many matches share the map; the hovered type pulses. */
