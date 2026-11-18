@@ -8,10 +8,10 @@ import { LineGeometry } from 'three/examples/jsm/lines/LineGeometry.js';
 import { LineMaterial } from 'three/examples/jsm/lines/LineMaterial.js';
 import type { LegendKey } from '../lib/draw';
 import { minimapUrl } from '../lib/data';
-import { EVENT_STYLE, FIRE_COLOR, MANY_MATCHES, MATCH_COLORS, PATH_COLOR, heightColor } from '../lib/style';
+import { EVENT_STYLE, FIRE_COLOR, MANY_MATCHES, MATCH_COLORS, PATH_COLOR } from '../lib/style';
 import { heightAt, positionAt, samplesUntil } from '../lib/timeline';
 import { segmentDistance, type Focus } from '../lib/pick';
-import type { EventType, MapConfig, Match, Terrain } from '../lib/types';
+import type { EventType, MapConfig, Match, MatchEvent, Terrain } from '../lib/types';
 
 export interface Map3DProps {
   map: MapConfig;
@@ -19,7 +19,6 @@ export interface Map3DProps {
   uvUnits: number;
   t: number;
   hidden: ReadonlySet<LegendKey>;
-  byHeight: boolean;
   mono: boolean;
   /** Vertical exaggeration: 40 m of relief on a 900 m map is hard to see at 1x. */
   exaggeration: number;
@@ -30,6 +29,12 @@ export interface Map3DProps {
   /** The player in focus (highlighted), and a click on a path to choose one. */
   focus: Focus | null;
   onFocus: (f: Focus | null) => void;
+  /** Legend row hovered: that kind pulses (its future events shown see-through). */
+  hoverKind: LegendKey | null;
+  /** One event pointed at (map, timeline, card): a pulsing dot. */
+  activeEvent: MatchEvent | null;
+  onPointEvent: (e: MatchEvent | null) => void;
+  onPickEvent: (e: MatchEvent) => void;
 }
 
 /** Size of the ground texture: minimap + heatmap painted together. */
@@ -37,6 +42,7 @@ const TEXTURE_PX = 2048;
 
 interface PathLine {
   match: string;
+  bot: boolean;
   player: number;
   baseOpacity: number;
   baseWidth: number;
@@ -50,6 +56,9 @@ interface PathLine {
 interface EventLayer {
   points: THREE.Points;
   times: number[]; // sorted, for drawRange by time
+  refs?: MatchEvent[]; // the events, in the same order (for picking and highlighting)
+  future?: THREE.Points; // the same events drawn see-through, for the hovered kind's events still to come
+  size?: number;
 }
 
 /** A round dot texture for event points (plain points are squares). */
@@ -94,7 +103,15 @@ function place(map: MapConfig, uvUnits: number, u: number, v: number, hDm: numbe
   return new THREE.Vector3((u / uvUnits) * map.scale, hDm / 10 - map.hMin, (1 - v / uvUnits) * map.scale);
 }
 
-export default function Map3D({ map, matches, uvUnits, t, hidden, byHeight, mono, exaggeration, terrain, overlay, focus, onFocus }: Map3DProps) {
+export default function Map3D(props: Map3DProps) {
+  const { map, matches, uvUnits, t, hidden, mono, exaggeration, terrain, overlay, focus, onFocus, hoverKind, activeEvent, onPointEvent, onPickEvent } = props;
+  const hoverRef = useRef(hoverKind);
+  hoverRef.current = hoverKind;
+  const activeRef = useRef(activeEvent);
+  activeRef.current = activeEvent;
+  const activeMarker = useRef<THREE.Points | null>(null);
+  const eventCbs = useRef({ onPointEvent, onPickEvent, t });
+  eventCbs.current = { onPointEvent, onPickEvent, t };
   const box = useRef<HTMLDivElement>(null);
   const three = useRef<{
     renderer: THREE.WebGLRenderer;
@@ -128,6 +145,9 @@ export default function Map3D({ map, matches, uvUnits, t, hidden, byHeight, mono
     const controls = new OrbitControls(camera, renderer.domElement);
     controls.target.set(S / 2, 0, S / 2);
     controls.enableDamping = true;
+    // Left: orbit. Middle or right: pan (move across the map). Wheel: zoom.
+    controls.mouseButtons = { LEFT: THREE.MOUSE.ROTATE, MIDDLE: THREE.MOUSE.PAN, RIGHT: THREE.MOUSE.PAN };
+    controls.screenSpacePanning = false; // pan along the ground, not the screen
     controls.maxPolarAngle = Math.PI * 0.49; // never under the ground
     controls.update();
 
@@ -164,7 +184,22 @@ export default function Map3D({ map, matches, uvUnits, t, hidden, byHeight, mono
     ro.observe(el);
     resize();
     let frame = 0;
-    const loop = () => {
+    const loop = (now = 0) => {
+      // Hover pulse: the hovered kind's dots grow and shrink, the others step back; the pointed-at event pulses.
+      const k = 0.5 - 0.5 * Math.cos((now / 900) * Math.PI * 2);
+      const hk = hoverRef.current;
+      const ae = activeRef.current;
+      for (const [type, layer] of built.current.events) {
+        const m = layer.points.material as THREE.PointsMaterial;
+        m.size = (layer.size ?? 10) * (hk === type ? 1.3 + 0.35 * k : 1);
+        m.opacity = hk || ae ? (hk === type ? 1 : 0.25) : 1;
+        if (layer.future) (layer.future.material as THREE.PointsMaterial).size = m.size;
+      }
+      const mk = activeMarker.current;
+      if (mk?.visible) {
+        (mk.material as THREE.PointsMaterial).size = 18 + 16 * k;
+        (mk.material as THREE.PointsMaterial).opacity = 1 - 0.4 * k;
+      }
       controls.update();
       renderer.render(scene, camera);
       frame = requestAnimationFrame(loop);
@@ -188,18 +223,50 @@ export default function Map3D({ map, matches, uvUnits, t, hidden, byHeight, mono
     if (!ctx) return;
     const el = ctx.renderer.domElement;
     let down: { x: number; y: number } | null = null;
-    const onDown = (e: PointerEvent) => (down = { x: e.clientX, y: e.clientY });
-    const onUp = (e: PointerEvent) => {
-      if (!down || Math.abs(e.clientX - down.x) + Math.abs(e.clientY - down.y) > 4) return;
-      // Screen-space pick: project each path's drawn points, nearest segment within 12 px (same rule as 2D).
+    const screen = (e: PointerEvent) => {
       const r = el.getBoundingClientRect();
-      const mx = e.clientX - r.left;
-      const my = e.clientY - r.top;
       ctx.world.updateMatrixWorld();
       const toScreen = (x: number, y: number, z: number) => {
         const v = new THREE.Vector3(x, y, z).applyMatrix4(ctx.world.matrixWorld).project(ctx.camera);
         return { x: ((v.x + 1) / 2) * r.width, y: ((1 - v.y) / 2) * r.height, behind: v.z > 1 };
       };
+      return { mx: e.clientX - r.left, my: e.clientY - r.top, toScreen };
+    };
+    /** The event dot under the mouse (already happened, kind shown), within 10 px. */
+    const eventAt = (e: PointerEvent): MatchEvent | null => {
+      const { mx, my, toScreen } = screen(e);
+      let best: { d: number; ref: MatchEvent } | null = null;
+      for (const layer of built.current.events.values()) {
+        if (!layer.points.visible || !layer.refs) continue;
+        const pos = layer.points.geometry.attributes.position as THREE.BufferAttribute;
+        const n = layer.points.geometry.drawRange.count === Infinity ? pos.count : Math.min(pos.count, layer.points.geometry.drawRange.count);
+        for (let i = 0; i < n; i++) {
+          const a = toScreen(pos.getX(i), pos.getY(i), pos.getZ(i));
+          if (a.behind) continue;
+          const d = Math.hypot(a.x - mx, a.y - my);
+          if (d <= 10 && (!best || d < best.d)) best = { d, ref: layer.refs[i] };
+        }
+      }
+      return best?.ref ?? null;
+    };
+    let moveFrame = 0;
+    const onMove = (e: PointerEvent) => {
+      if (down || moveFrame) return; // not while dragging; at most once a frame
+      moveFrame = requestAnimationFrame(() => {
+        moveFrame = 0;
+        eventCbs.current.onPointEvent(eventAt(e));
+      });
+    };
+    const onLeave = () => eventCbs.current.onPointEvent(null);
+    const onDown = (e: PointerEvent) => (down = { x: e.clientX, y: e.clientY });
+    const onUp = (e: PointerEvent) => {
+      const click = down && Math.abs(e.clientX - down.x) + Math.abs(e.clientY - down.y) <= 4;
+      down = null;
+      if (!click) return;
+      const ev = eventAt(e);
+      if (ev) return eventCbs.current.onPickEvent(ev);
+      // Screen-space pick: project each path's drawn points, nearest segment within 12 px (same rule as 2D).
+      const { mx, my, toScreen } = screen(e);
       let best: { d: number; p: PathLine } | null = null;
       for (const path of built.current.paths) {
         const geo = path.line.geometry as LineGeometry;
@@ -219,9 +286,14 @@ export default function Map3D({ map, matches, uvUnits, t, hidden, byHeight, mono
     };
     el.addEventListener('pointerdown', onDown);
     el.addEventListener('pointerup', onUp);
+    el.addEventListener('pointermove', onMove);
+    el.addEventListener('pointerleave', onLeave);
     return () => {
+      cancelAnimationFrame(moveFrame);
       el.removeEventListener('pointerdown', onDown);
       el.removeEventListener('pointerup', onUp);
+      el.removeEventListener('pointermove', onMove);
+      el.removeEventListener('pointerleave', onLeave);
     };
   }, [map]);
 
@@ -288,7 +360,6 @@ export default function Map3D({ map, matches, uvUnits, t, hidden, byHeight, mono
       });
     });
     const many = matches.length > MANY_MATCHES;
-    const range = { min: map.hMin * 10, max: map.hMax * 10 };
     const paths: PathLine[] = [];
     const materials: LineMaterial[] = [];
     matches.forEach((m, mi) => {
@@ -303,7 +374,7 @@ export default function Map3D({ map, matches, uvUnits, t, hidden, byHeight, mono
           const v = place(map, uvUnits, p.path[i * 3 + 1], p.path[i * 3 + 2], p.h[i]);
           pos.set([v.x, v.y, v.z], i * 3);
           flat.set([v.x, 0.3, v.z], i * 3);
-          const c = byHeight ? new THREE.Color(heightColor((p.h[i] - range.min) / (range.max - range.min))) : base;
+          const c = base;
           colors.set([c.r, c.g, c.b], i * 3);
         }
         // Thick lines (Line2: width in screen pixels), colored per vertex (by player, or by height).
@@ -330,29 +401,40 @@ export default function Map3D({ map, matches, uvUnits, t, hidden, byHeight, mono
         const head = new THREE.Mesh(new THREE.SphereGeometry((p.bot ? 2 : 3.5) * (many ? 0.5 : 1), 12, 8), new THREE.MeshBasicMaterial({ color: base }));
         head.scale.set(1, 1 / exaggerationRef.current, 1);
         content.add(line, shadow, head);
-        paths.push({ match: m.id, player: pi, baseOpacity: material.opacity, baseWidth: material.linewidth, line, shadow, head, path: p.path, h: p.h });
+        paths.push({ match: m.id, bot: p.bot, player: pi, baseOpacity: material.opacity, baseWidth: material.linewidth, line, shadow, head, path: p.path, h: p.h });
       });
     });
 
     const events = new Map<EventType, EventLayer>();
-    const byType = new Map<EventType, { t: number; v: THREE.Vector3 }[]>();
+    const byType = new Map<EventType, { t: number; v: THREE.Vector3; ref: MatchEvent }[]>();
     for (const m of matches)
-      for (const [time, type, u, v, , h] of m.events) {
+      for (const e of m.events) {
+        const [time, type, u, v, , h] = e;
         if (many && type === 'loot') continue;
         if (!byType.has(type)) byType.set(type, []);
-        byType.get(type)!.push({ t: time, v: place(map, uvUnits, u, v, h ?? map.hMin * 10) });
+        byType.get(type)!.push({ t: time, v: place(map, uvUnits, u, v, h ?? map.hMin * 10), ref: e });
       }
     for (const [type, list] of byType) {
       list.sort((a, b) => a.t - b.t);
-      const geo = new THREE.BufferGeometry().setFromPoints(list.map((e) => e.v));
       const size = type === 'loot' ? 7 : many ? 8 : 13;
-      const points = new THREE.Points(
-        geo,
-        new THREE.PointsMaterial({ color: EVENT_STYLE[type].color, size, sizeAttenuation: false, map: DOT, alphaTest: 0.5, transparent: true }),
-      );
-      content.add(points);
-      events.set(type, { points, times: list.map((e) => e.t) });
+      const make = (opacity: number) =>
+        new THREE.Points(
+          new THREE.BufferGeometry().setFromPoints(list.map((e) => e.v)),
+          new THREE.PointsMaterial({ color: EVENT_STYLE[type].color, size, sizeAttenuation: false, map: DOT, alphaTest: 0.05, transparent: true, opacity }),
+        );
+      const points = make(1);
+      const future = make(0.35);
+      content.add(points, future);
+      events.set(type, { points, future, times: list.map((e) => e.t), refs: list.map((e) => e.ref), size });
     }
+    // The one event pointed at: a bigger dot that pulses (moved and colored per frame).
+    const marker = new THREE.Points(
+      new THREE.BufferGeometry().setFromPoints([new THREE.Vector3()]),
+      new THREE.PointsMaterial({ color: 0xffffff, size: 24, sizeAttenuation: false, map: DOT, alphaTest: 0.05, transparent: true, depthTest: false }),
+    );
+    marker.visible = false;
+    content.add(marker);
+    activeMarker.current = marker;
 
     let fights: EventLayer | null = null;
     const fightList = matches
@@ -368,7 +450,7 @@ export default function Map3D({ map, matches, uvUnits, t, hidden, byHeight, mono
     built.current = { paths, events, fights };
     lineMaterials.current = materials;
     resizeLines();
-  }, [matches, map, uvUnits, byHeight, mono]);
+  }, [matches, map, uvUnits, mono]);
 
   // Focus: the chosen path bold and fully opaque, the others faded.
   useEffect(() => {
@@ -379,23 +461,23 @@ export default function Map3D({ map, matches, uvUnits, t, hidden, byHeight, mono
       m.linewidth = is ? 6 : p.baseWidth;
       p.head.visible = p.head.visible && (!focus || is);
     }
-  }, [focus, matches, byHeight, mono]);
+  }, [focus, matches, mono]);
 
   // Every frame of the playback: how much of each path, which events, where the heads are.
   useEffect(() => {
     const { paths, events, fights } = built.current;
-    const range = { min: map.hMin * 10, max: map.hMax * 10 };
     for (const p of paths) {
       const n = samplesUntil(p.path, t);
       p.line.geometry.instanceCount = Math.max(0, n - 1); // Line2 draws one instance per segment
       p.shadow.geometry.setDrawRange(0, n);
-      p.shadow.visible = !terrain; // a flat shadow would be buried under the terrain
+      const hide = hidden.has(p.bot ? 'botPath' : 'humanPath');
+      p.line.visible = !hide;
+      p.shadow.visible = !terrain && !hide; // a flat shadow would be buried under the terrain
       const at = positionAt(p.path, t);
       const h = heightAt(p.path, p.h, t);
-      p.head.visible = !!at && t < p.path[p.path.length - 3];
+      p.head.visible = !!at && t < p.path[p.path.length - 3] && !hidden.has(p.bot ? 'botPath' : 'humanPath');
       if (at && h !== null) {
         p.head.position.copy(place(map, uvUnits, at.u, at.v, h));
-        if (byHeight) (p.head.material as THREE.MeshBasicMaterial).color.set(heightColor((h - range.min) / (range.max - range.min)));
       }
     }
     const count = (times: number[]) => {
@@ -409,18 +491,33 @@ export default function Map3D({ map, matches, uvUnits, t, hidden, byHeight, mono
       return lo;
     };
     for (const [type, layer] of events) {
+      const n = count(layer.times);
       layer.points.visible = !hidden.has(type);
-      layer.points.geometry.setDrawRange(0, count(layer.times));
+      layer.points.geometry.setDrawRange(0, n);
+      if (layer.future) {
+        layer.future.visible = !hidden.has(type) && hoverKind === type; // the hovered kind's future, see-through
+        layer.future.geometry.setDrawRange(n, layer.times.length - n);
+      }
+    }
+    const marker = activeMarker.current;
+    if (marker) {
+      marker.visible = !!activeEvent;
+      if (activeEvent) {
+        const [, type, u, v, , h] = activeEvent;
+        (marker.geometry.attributes.position as THREE.BufferAttribute).setXYZ(0, ...place(map, uvUnits, u, v, h).toArray());
+        marker.geometry.attributes.position.needsUpdate = true;
+        (marker.material as THREE.PointsMaterial).color.set(EVENT_STYLE[type].color);
+      }
     }
     if (fights) {
       fights.points.visible = !hidden.has('fights');
       fights.points.geometry.setDrawRange(0, count(fights.times) * 2);
     }
-  }, [t, hidden, map, uvUnits, byHeight, matches, terrain]);
+  }, [t, hidden, map, uvUnits, matches, terrain, hoverKind, activeEvent]);
 
   return (
     <div className="map3d" ref={box}>
-      <div className="map3d-help">Drag to orbit · right-drag to pan · scroll to zoom</div>
+      <div className="map3d-help">Drag to orbit · middle or right drag to move · scroll to zoom · click a path or a dot</div>
     </div>
   );
 }

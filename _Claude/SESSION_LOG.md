@@ -15,6 +15,16 @@ about 300 lines, move the oldest entries word for word to `SESSION_HISTORY.md` (
 
 ---
 
+## 2026-11-18 (desktop session): big UI pass (Ugo's list)
+
+- Heatmaps tab gone: heatmap is a right panel in Match replay (own one-color switch); old `mode=heat` links map to
+  replay + heatmap + paths hidden. Tabs clearer (accent). Legend: paths toggleable, click = toggle, All / None.
+- Removed: line of sight (misleading), By player / By height. Map canvas fills the stage, opens 1.15x past the
+  border, zoom uses side space. 3D: middle / right drag pans. Timeline: storm band from 10.9 min (zone not logged).
+- Toon outlines are vector contours (marching squares, `lib/contours.ts`). Match list grouped by day (fold, tick a
+  day). Linked hover / click of one event across map (2D, 3D), timeline tick, legend row and player card.
+- Ugo: storm zone = "needed next time": in Overview and PRODUCT.md telemetry asks.
+
 ## 2026-11-18 (desktop session): power positions, raised kills, line of sight, PvP filter
 
 - Ugo: "build both" (power positions, raised kills); line of sight even if approximate; PvP fights viewable apart.

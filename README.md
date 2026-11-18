@@ -16,22 +16,25 @@ The site opens on an **Overview**: what the tool is for, the four findings with 
 data details we had to get right, how it is built, and what the game should log next, each with links into the
 live views. It doubles as the walkthrough of the features below.
 
-- **Match replay**: pick a map, a day and a match; every player's path is drawn on the minimap (players solid
-  blue, bots dashed orange) with a marker for each kill, death, storm death and loot. Play it at 10x, 30x or
-  60x (Space plays and pauses), or scrub the timeline, which carries a tick for every fight and death.
-- **Several matches at once**: tick matches in the list (or "Select all") to replay them together, all from
-  their own 0:00, one color per match. With every match of a map selected, you see where all players are at
-  minute 8, where fights start, who is still out at minute 11. "One color" draws them all in the same color.
-- **Heatmaps**: where players spend time (green), stand when killing (red), get killed (white), get caught by the
-  storm (violet), loot (yellow), and the line of fire between killer and victim (orange), per map, for one day or
-  all five. Click a kind to show it alone, tick its box to stack several. Kills and deaths split into bots,
-  players or both. Two looks: smooth, or toon (flat bands with outlines); one color per kind, or one for all.
-- **Players who played once**: a replay filter for the 107 matches that were a player's only one, to see what
-  happened to the players who did not come back.
-- **Fight lines**: in replay, a dashed arrow from killer to victim for the 36 kills whose victim is also recorded (plus 6 inferred).
-- **Shareable views**: the URL holds the mode, map, day, match and layer, so a link opens exactly that view.
-- **Update button**: when a newer version is deployed, an open page shows a green Update button (checked on
-  open, on return to the tab and every 5 minutes); it reloads onto the new version and keeps the view.
+**Match replay** (left: which matches and the legend; middle: the map; right: the heatmap):
+- **Replay** one match or many on one clock, at 10x / 30x / 60x; Space plays and pauses; grabbing the timeline
+  pauses. The timeline has a tick per fight and death, and a band where the storm kills (from minute 10.9).
+- **Matches grouped by day**: fold a day, tick it to select all its matches; one line per match (duration, how
+  it ended, kills, loot). Filters: all, players who played only once, matches with a player-vs-player fight.
+- **Legend**: click a row to show or hide it (paths included), All / None; hover a row and those markers pulse
+  on the map, future ones shown see-through.
+- **Everything is linked**: hover an event on the map, its tick on the timeline or its row in a player's card,
+  and it pulses in all of them and in the legend. Click a player or an event for its card (how it ended,
+  distance, height range, fights, every event; click one to jump there).
+- **Heatmap panel**: traffic, loot, power positions (kills per minute spent), raised kills (from 3 m above the
+  ground), line of fire, kills and deaths (bots / players / both), storm deaths; one color per kind or one color;
+  toon bands with vector outlines, sharp at any zoom.
+- **2D**: the map fills the stage, opens just past its dark border; scroll to zoom (8x) into the side space, drag
+  to pan, double-click to reset.
+- **3D**: an estimated terrain (from where players walked), paths, events and the heatmap at their real height;
+  drag to orbit, middle or right drag to move, scroll to zoom, height x1 to x8; hover and click work as in 2D.
+- **Line of fire**: killer-to-victim arrows for the 36 recorded pairs, plus 6 inferred (lighter).
+- **Shareable views**: the URL holds the whole view. **Update button** when a new version is deployed.
 
 ## Tech stack
 

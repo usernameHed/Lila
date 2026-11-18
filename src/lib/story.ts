@@ -1,8 +1,9 @@
 // One player's match, summed up for the details card: what happened, when, against whom.
 import { EVENT_STYLE } from './style';
-import type { EventType, Match } from './types';
+import type { EventType, Match, MatchEvent } from './types';
 
 export interface StoryEvent {
+  ref: MatchEvent; // the event itself, to link the card with the map and the timeline
   t: number;
   type: EventType;
   label: string;
@@ -39,7 +40,7 @@ export function playerStory(match: Match, index: number, uvUnits: number, mapSca
   for (let i = 3; i < p.path.length; i += 3) meters += toM(Math.hypot(p.path[i + 1] - p.path[i - 2], p.path[i + 2] - p.path[i - 1]));
   const events = match.events
     .filter((e) => e[4] === index)
-    .map(([t, type]) => ({ t, type, label: EVENT_STYLE[type].label }))
+    .map((e) => ({ ref: e, t: e[0], type: e[1], label: EVENT_STYLE[e[1]].label }))
     .sort((a, b) => a.t - b.t);
   const fights: StoryFight[] = (match.fights ?? [])
     .filter((f) => f[5] === index || f[6] === index)

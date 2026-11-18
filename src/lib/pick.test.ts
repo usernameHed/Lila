@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { pickPlayer, segmentDistance } from './pick';
+import { pickEvent, pickPlayer, segmentDistance } from './pick';
 import type { Match } from './types';
 
 const match: Match = {
@@ -25,5 +25,14 @@ describe('picking', () => {
     expect(pickPlayer([match], 2000, 50, 2, 5)).toEqual({ match: 'm1', player: 0 });
     expect(pickPlayer([match], 1000, 180, 50, 5)).toBeNull(); // that part of the path is still in the future
     expect(pickPlayer([match], 2000, 50, 25, 5)).toBeNull();
+  });
+});
+
+describe('pickEvent', () => {
+  const m: Match = { ...match, events: [[500, 'loot', 100, 50, 1, 0], [1500, 'killBot', 200, 50, 1, 0]] };
+  it('finds the nearest shown event, skipping future and hidden ones', () => {
+    expect(pickEvent([m], 2000, 102, 50, 5, new Set())?.event).toBe(m.events[0]);
+    expect(pickEvent([m], 1000, 199, 50, 5, new Set())).toBeNull(); // not happened yet
+    expect(pickEvent([m], 2000, 102, 50, 5, new Set(['loot']))).toBeNull();
   });
 });

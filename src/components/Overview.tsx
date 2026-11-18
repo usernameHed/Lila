@@ -82,9 +82,9 @@ export function Overview({ index }: { index: Index | null }) {
             <strong>All 566 matches at once</strong>
             <span>Every player on Ambrose Valley on one clock: where everyone is at minute 8.</span>
           </a>
-          <a className="card" href="#mode=heat&map=AmbroseValley&layer=traffic,kills">
+          <a className="card" href="#mode=replay&map=AmbroseValley&under=1&layer=traffic,kills&hide=humanPath,botPath">
             <strong>Kill zones over traffic</strong>
-            <span>Heatmaps you can stack: traffic, loot, kills, deaths, storm deaths, lines of fire.</span>
+            <span>Heatmaps you can stack (right panel): traffic, loot, kills, deaths, storm deaths, power positions, lines of fire.</span>
           </a>
           <a className="card" href="#mode=replay&map=Lockdown&view=3d&under=1&layer=traffic&match=all">
             <strong>3D, with terrain</strong>
@@ -94,13 +94,13 @@ export function Overview({ index }: { index: Index | null }) {
             <strong>Players who never came back</strong>
             <span>The 84 Ambrose Valley matches that were a player's only one: where they went, where they died.</span>
           </a>
-          <a className="card" href="#mode=heat&map=Lockdown&layer=traffic,storm">
+          <a className="card" href="#mode=replay&map=Lockdown&under=1&layer=traffic,storm&hide=humanPath,botPath">
             <strong>Where the storm catches players</strong>
             <span>Storm deaths over traffic on Lockdown.</span>
           </a>
-          <a className="card" href="#mode=heat&map=AmbroseValley&layer=power,raised">
-            <strong>Power positions and line of sight</strong>
-            <span>Spots that win 3-5x more fights per minute, kills from rooftops; turn on Line of sight and click a spot to see what it commands.</span>
+          <a className="card" href="#mode=replay&map=AmbroseValley&under=1&layer=power,raised&hide=humanPath,botPath">
+            <strong>Power positions</strong>
+            <span>Spots that win 3-5x more fights per minute, and kills made from rooftops and ledges.</span>
           </a>
           <a className="card" href="#mode=replay&map=AmbroseValley&players=pvp&match=all">
             <strong>The only player vs player fights</strong>
@@ -122,19 +122,19 @@ export function Overview({ index }: { index: Index | null }) {
             time, against 48.5% for players who came back. Only <b>6-18%</b> of each day's new players returned the next day.
           </p>
         </Finding>
-        <Finding n={2} title="Bots make every fight" img={['combat']} alt="Who players kill, what kills players" to="#mode=heat&map=AmbroseValley&layer=deaths&deaths=bots" cta="Where bots kill players">
+        <Finding n={2} title="Bots make every fight" img={['combat']} alt="Who players kill, what kills players" to="#mode=replay&map=AmbroseValley&under=1&layer=deaths&deaths=bots&hide=humanPath,botPath" cta="Where bots kill players">
           <p>
             Players killed <b>2,240 bots and 3 players</b>. <b>91%</b> of player deaths are to bots. 794 of 796 matches carry one
             human: in practice, the game is PvE.
           </p>
         </Finding>
-        <Finding n={3} title="The storm is a clock, and it takes the fullest bags" img={['storm_timing', 'storm_map']} alt="Deaths by minute; storm deaths on the maps" to="#mode=heat&map=Lockdown&layer=traffic,storm" cta="Storm deaths on Lockdown">
+        <Finding n={3} title="The storm is a clock, and it takes the fullest bags" img={['storm_timing', 'storm_map']} alt="Deaths by minute; storm deaths on the maps" to="#mode=replay&map=Lockdown&under=1&layer=traffic,storm&hide=humanPath,botPath" cta="Storm deaths on Lockdown">
           <p>
             No storm death before minute <b>10.9</b>; <b>28%</b> of 11+ minute runs end in one. Victims carried a median 18 items
             (bot deaths: 8) and died mid-map: they did not reach extraction in time.
           </p>
         </Finding>
-        <Finding n={4} title="Ambrose Valley's center is a death trap that pays no better than the south" img={['ambrose_heat', 'ambrose_regions']} alt="Kills and loot; regions" to="#mode=heat&map=AmbroseValley&layer=loot,kills" cta="Kills over loot">
+        <Finding n={4} title="Ambrose Valley's center is a death trap that pays no better than the south" img={['ambrose_heat', 'ambrose_regions']} alt="Kills and loot; regions" to="#mode=replay&map=AmbroseValley&under=1&layer=loot,kills&hide=humanPath,botPath" cta="Kills over loot">
           <p>
             The center holds <b>53.5%</b> of deaths for 35% of the time spent. The south-center gives more loot per minute at a
             <b> quarter</b> of the death rate: the safest route is also the best one.
@@ -168,9 +168,9 @@ export function Overview({ index }: { index: Index | null }) {
           <li><b>One journey exported twice</b> (a match across midnight, Feb 10 and 11): read once.</li>
           <li><b>Event bytes decoded</b>, no file unreadable, no match on two maps.</li>
           <li><b>Killer → victim pairs</b>: 36 where both events are recorded (same second, within 60 m), plus 6 inferred from a bot path that stops at the kill or a bot within 40 m of a death (drawn lighter). 95% of fights happen in matches with no bot recorded: there, the data has no victim at all.</li>
-          <li><b>No storm position in the data</b>: the storm is not drawn (inferring it was tested and rejected).</li>
+          <li><b>No storm position in the data</b>: the moving storm cannot be drawn (inferring it was tested and rejected). The timeline shows when it kills: only after minute 10.9.</li>
           <li><b>Player vs player is 3 events.</b> In all 3, the only human recorded has a Kill and a Killed at the same second and the same spot, at the end of the match: a trade or a self-kill; the other player's file is missing. Kept visible on their own (filter "Fought a player").</li>
-          <li><b>Terrain and line of sight are estimates.</b> Ground height per 9 m cell comes from where players and bots walked; line of sight uses that ground only. Walls and buildings are not in the data: what it shows as visible is the most a spot could see.</li>
+          <li><b>The terrain is an estimate.</b> Ground height per 9 m cell comes from where players and bots walked (the low end of the heights seen there); walls and buildings are not in the data.</li>
         </ul>
       </section>
 
@@ -203,7 +203,8 @@ export function Overview({ index }: { index: Index | null }) {
         <ul className="checks">
           <li><b>Kills and deaths</b>: the other side's id and position, weapon, distance, line of sight → a line of fire for every fight.</li>
           <li><b>Facing</b> on position samples, 1-2 s sampling in combat → sightlines.</li>
-          <li><b>Extraction</b> and <b>storm edge</b> events → real extraction rate, the storm drawn on the replay.</li>
+          <li><b>Storm zone</b>: its edge or radius every few seconds. <b>Needed next time</b>: today only its victims are logged, so the moving storm cannot be shown (the timeline marks when it starts killing, minute 10.9).</li>
+          <li><b>Extraction</b> events → a real extraction rate (today "survived" = no death logged).</li>
           <li><b>Match start</b> (humans and bots in the match, spawn point) and <b>wall-clock time</b> → matchmaking and first-match analysis.</li>
           <li><b>Level geometry</b> (collision mesh or navmesh export) → real line of sight with walls and cover, and whether each power position can be reached from several routes.</li>
           <li><b>Loot value</b>, every bot logged, test accounts flagged.</li>

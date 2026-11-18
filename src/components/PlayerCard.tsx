@@ -1,16 +1,20 @@
 import { formatDuration } from '../lib/style';
-import type { Story } from '../lib/story';
+import type { Story, StoryEvent } from '../lib/story';
+import type { MatchEvent } from '../lib/types';
 
 interface Props {
   story: Story;
   title: string; // e.g. "Lockdown · 10 Feb"
-  onSeek: (t: number) => void;
+  /** The event pointed at (here, on the map or the timeline): its row is highlighted and pulses. */
+  active: MatchEvent | null;
+  onPoint: (e: MatchEvent | null) => void;
+  onSeek: (e: StoryEvent) => void;
   onClose: () => void;
   onOnlyThisMatch?: () => void;
 }
 
 /** Everything about one player in one match: identity, numbers, every event (click to jump there), fights. */
-export function PlayerCard({ story: s, title, onSeek, onClose, onOnlyThisMatch }: Props) {
+export function PlayerCard({ story: s, title, active, onPoint, onSeek, onClose, onOnlyThisMatch }: Props) {
   return (
     <aside className="player-card" aria-label="Player details">
       <header>
@@ -33,7 +37,10 @@ export function PlayerCard({ story: s, title, onSeek, onClose, onOnlyThisMatch }
           <ul className="story">
             {s.fights.map((f, i) => (
               <li key={i}>
-                <button onClick={() => onSeek(f.t)}>
+                <button onClick={() => {
+                  const e = s.events.find((x) => x.t === f.t && (x.type === 'killBot' || x.type === 'killPlayer' || x.type.startsWith('diedTo') || x.type === 'botKill' || x.type === 'botDeath'));
+                  if (e) onSeek(e);
+                }}>
                   <span className="time">{formatDuration(f.t)}</span>
                   {f.role === 'killer' ? 'Killed' : 'Killed by'} {f.otherBot ? 'a bot' : 'a player'} {Math.round(f.meters)} m away
                   {f.inferred && <span className="muted"> (inferred)</span>}
@@ -46,8 +53,8 @@ export function PlayerCard({ story: s, title, onSeek, onClose, onOnlyThisMatch }
       <h4>Events ({s.events.length})</h4>
       <ul className="story">
         {s.events.map((e, i) => (
-          <li key={i}>
-            <button onClick={() => onSeek(e.t)}>
+          <li key={i} className={e.ref === active ? 'active' : ''} ref={e.ref === active ? (el) => el?.scrollIntoView({ block: 'nearest' }) : undefined}>
+            <button onClick={() => onSeek(e)} onMouseEnter={() => onPoint(e.ref)} onMouseLeave={() => onPoint(null)}>
               <span className="time">{formatDuration(e.t)}</span>
               {e.label}
             </button>

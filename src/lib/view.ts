@@ -1,7 +1,7 @@
 // The view (what is on screen) lives in the URL hash, so a Level Designer can share exactly what they see.
 import type { HeatLayer, MapId, Who } from './types';
 
-export type Mode = 'overview' | 'replay' | 'heat';
+export type Mode = 'overview' | 'replay';
 
 export interface View {
   mode: Mode;
@@ -14,18 +14,18 @@ export interface View {
   /** Kills and deaths: against bots, players or both. */
   kills: Who;
   deaths: Who;
-  /** One color for everything (heatmap kinds, or replayed matches) instead of one color each. */
+  /** Replayed matches: one color for all instead of one per match. */
   mono: boolean;
+  /** Heatmap: one color for all kinds instead of one per kind. */
+  heatMono: boolean;
   /** Replay: every match, only matches of players who never played again, or only fights between players. */
   players: 'all' | 'once' | 'pvp';
-  /** Replay: legend rows turned off (event types, or 'fights' for the killer-to-victim lines). */
+  /** Legend rows turned off: event types, 'fights' (killer-to-victim lines), 'humanPath', 'botPath'. */
   hidden: string[];
-  /** Replay: draw the chosen heatmap kinds under the replay. */
+  /** Draw the chosen heatmap kinds on the map (under the replay). */
   heatUnder: boolean;
   /** Replay: 3D view (height from the data's y) instead of the flat map. */
   view3d: boolean;
-  /** Replay: color paths by player (or match) or by height. */
-  colorBy: 'player' | 'height';
   /** 3D: vertical exaggeration (1-8). */
   exaggeration: number;
   /** 3D: ground shaped by the terrain estimated from paths, or flat. */
@@ -34,7 +34,7 @@ export interface View {
 
 export const ALL = 'all';
 
-export const DEFAULT_VIEW: View = { mode: 'overview', map: 'AmbroseValley', day: 'all', matches: [], layers: ['traffic'], kills: 'both', deaths: 'both', mono: false, players: 'all', hidden: [], heatUnder: false, view3d: false, colorBy: 'player', exaggeration: 4, terrain: true };
+export const DEFAULT_VIEW: View = { mode: 'overview', map: 'AmbroseValley', day: 'all', matches: [], layers: ['traffic'], kills: 'both', deaths: 'both', mono: false, heatMono: false, players: 'all', hidden: [], heatUnder: false, view3d: false, exaggeration: 4, terrain: true };
 
 const MAPS: MapId[] = ['AmbroseValley', 'GrandRift', 'Lockdown'];
 const LAYERS: HeatLayer[] = ['traffic', 'loot', 'power', 'raised', 'fire', 'kills', 'deaths', 'storm']; // drawing order
@@ -46,8 +46,10 @@ export function parseView(hash: string): View {
   const pick = <T extends string>(key: string, allowed: readonly T[], fallback: T): T =>
     allowed.includes(q.get(key) as T) ? (q.get(key) as T) : fallback;
   const day = q.get('day');
+  // Old links: the Heatmaps tab is now the heatmap panel of Match replay, with paths hidden.
+  const legacyHeat = q.get('mode') === 'heat';
   return {
-    mode: pick<Mode>('mode', ['overview', 'replay', 'heat'], DEFAULT_VIEW.mode),
+    mode: legacyHeat ? 'replay' : pick<Mode>('mode', ['overview', 'replay'], DEFAULT_VIEW.mode),
     map: pick('map', MAPS, DEFAULT_VIEW.map),
     day: day && /^\d{4}-\d{2}-\d{2}$/.test(day) ? day : 'all',
     matches: parseMatches(q.get('match')),
@@ -55,11 +57,11 @@ export function parseView(hash: string): View {
     kills: pick('kills', WHO, 'both'),
     deaths: pick('deaths', WHO, 'both'),
     mono: q.get('mono') === '1',
+    heatMono: q.get('hmono') === '1' || (legacyHeat && q.get('mono') === '1'),
     players: pick<View['players']>('players', ['all', 'once', 'pvp'], 'all'),
-    hidden: (q.get('hide') ?? '').split(',').filter((k) => /^[a-zA-Z]{2,20}$/.test(k)),
-    heatUnder: q.get('under') === '1',
+    hidden: legacyHeat ? ['humanPath', 'botPath'] : (q.get('hide') ?? '').split(',').filter((k) => /^[a-zA-Z]{2,20}$/.test(k)),
+    heatUnder: legacyHeat || q.get('under') === '1',
     view3d: q.get('view') === '3d',
-    colorBy: pick<View['colorBy']>('color', ['player', 'height'], 'player'),
     terrain: q.get('ground') !== 'flat',
     exaggeration: Math.min(8, Math.max(1, Math.round(Number(q.get('ex')) || DEFAULT_VIEW.exaggeration))),
   };
@@ -67,15 +69,16 @@ export function parseView(hash: string): View {
 
 /** "kills,traffic" -> known kinds in drawing order, defaults when none. */
 function parseLayers(raw: string | null): HeatLayer[] {
-  const asked = new Set((raw ?? '').split(','));
-  const layers = LAYERS.filter((l) => asked.has(l));
-  return layers.length ? layers : DEFAULT_VIEW.layers;
+  if (raw === null) return DEFAULT_VIEW.layers;
+  const asked = new Set(raw.split(','));
+  return LAYERS.filter((l) => asked.has(l));
 }
 
-/** Show or hide one heatmap kind; the last one shown stays (an empty map would say nothing). */
+export const ALL_LAYERS = LAYERS;
+
+/** Show or hide one heatmap kind (kept in drawing order). */
 export function toggleLayer(current: HeatLayer[], layer: HeatLayer): HeatLayer[] {
-  if (!current.includes(layer)) return LAYERS.filter((l) => l === layer || current.includes(l));
-  return current.length > 1 ? current.filter((l) => l !== layer) : current;
+  return current.includes(layer) ? current.filter((l) => l !== layer) : LAYERS.filter((l) => l === layer || current.includes(l));
 }
 
 function parseMatches(raw: string | null): string[] | typeof ALL {
@@ -87,23 +90,21 @@ function parseMatches(raw: string | null): string[] | typeof ALL {
 /** The hash for a view, keeping only what the mode uses. */
 export function viewHash(v: View): string {
   const q = new URLSearchParams({ mode: v.mode, map: v.map });
+  if (v.mode !== 'replay') return `#${q}`;
   if (v.day !== 'all') q.set('day', v.day);
-  if (v.mode === 'replay' && v.matches.length) q.set('match', v.matches === ALL ? ALL : v.matches.join(','));
-  if (v.mode === 'heat') {
+  if (v.matches.length) q.set('match', v.matches === ALL ? ALL : v.matches.join(','));
+  if (v.mono) q.set('mono', '1');
+  if (v.players !== 'all') q.set('players', v.players);
+  if (v.hidden.length) q.set('hide', v.hidden.join(','));
+  if (v.view3d) q.set('view', '3d');
+  if (v.view3d && v.exaggeration !== DEFAULT_VIEW.exaggeration) q.set('ex', String(v.exaggeration));
+  if (v.view3d && !v.terrain) q.set('ground', 'flat');
+  if (v.heatUnder) {
+    q.set('under', '1');
     q.set('layer', v.layers.join(','));
     if (v.kills !== 'both' && v.layers.includes('kills')) q.set('kills', v.kills);
     if (v.deaths !== 'both' && v.layers.includes('deaths')) q.set('deaths', v.deaths);
-  }
-  if (v.mono) q.set('mono', '1');
-  if (v.mode === 'replay' && v.players !== 'all') q.set('players', v.players);
-  if (v.mode === 'replay' && v.hidden.length) q.set('hide', v.hidden.join(','));
-  if (v.mode === 'replay' && v.view3d) q.set('view', '3d');
-  if (v.mode === 'replay' && v.view3d && v.exaggeration !== DEFAULT_VIEW.exaggeration) q.set('ex', String(v.exaggeration));
-  if (v.mode === 'replay' && v.colorBy === 'height') q.set('color', 'height');
-  if (v.mode === 'replay' && v.view3d && !v.terrain) q.set('ground', 'flat');
-  if (v.mode === 'replay' && v.heatUnder) {
-    q.set('under', '1');
-    q.set('layer', v.layers.join(','));
+    if (v.heatMono) q.set('hmono', '1');
   }
   return `#${q}`;
 }
@@ -125,11 +126,11 @@ export function toggleMatch(current: string[], id: string): string[] {
   return current.length > 1 ? current.filter((x) => x !== id) : current;
 }
 
-/** Legend row clicked: only that kind is shown; clicked again while alone: everything comes back. */
-export function legendOnly(hidden: string[], k: string, all: readonly string[]): string[] {
-  const alone = all.every((x) => (x === k) !== hidden.includes(x));
-  return alone ? [] : all.filter((x) => x !== k);
-}
-
-/** Legend box clicked: show or hide that kind. */
+/** Legend row clicked: show or hide that kind. */
 export const legendToggle = (hidden: string[], k: string): string[] => (hidden.includes(k) ? hidden.filter((x) => x !== k) : [...hidden, k]);
+
+/** Tick or untick several matches at once (a whole day); never down to nothing. */
+export function setMany(current: string[], ids: string[], on: boolean): string[] {
+  const next = on ? [...current, ...ids.filter((id) => !current.includes(id))] : current.filter((id) => !ids.includes(id));
+  return next.length ? next : current.slice(0, 1);
+}

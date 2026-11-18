@@ -1,7 +1,7 @@
 // Canvas drawing for the map: a match at a given time, and heatmap pixels.
 import { uvToPixel } from './coords';
-import { EVENT_LAYER, EVENT_STYLE, FIRE_COLOR, HEIGHT_STEPS, MANY_MATCHES, MATCH_COLORS, PATH_COLOR, heightColor, type MarkerShape } from './style';
-import { heightAt, positionAt, samplesUntil } from './timeline';
+import { EVENT_LAYER, EVENT_STYLE, FIRE_COLOR, MANY_MATCHES, MATCH_COLORS, PATH_COLOR, type MarkerShape } from './style';
+import { positionAt, samplesUntil } from './timeline';
 import type { EventType, Match, MatchEvent } from './types';
 
 /** How long (match time) a fresh event keeps a ring around it during playback. */
@@ -10,17 +10,19 @@ const FRESH_MS = 8000;
 interface Look {
   human: string; // player path color
   faint: boolean; // many matches at once: thinner, lighter lines, no loot
-  height?: { min: number; max: number }; // color paths by height (dm range) instead of by player
+  hideHumans?: boolean;
+  hideBots?: boolean;
+  fade?: number; // something else is hovered: paths step back
 }
 
 /** What a legend row can point at: an event type, or the killer-to-victim lines. */
-export type LegendKey = EventType | 'fights';
+export type LegendKey = EventType | 'fights' | 'humanPath' | 'botPath';
 
 export interface ReplayOptions {
   mono?: boolean; // one color for every match
-  heightRange?: { min: number; max: number } | null; // color paths by height (dm), dark = low, bright = high
   hidden?: ReadonlySet<LegendKey>; // legend rows turned off
   hover?: LegendKey | null; // legend row under the mouse: its markers pulse, the rest fade
+  activeEvent?: MatchEvent | null; // one event pointed at (map, timeline, card): it pulses
   phase?: number; // animation clock (ms) for the pulse
 }
 
@@ -29,11 +31,20 @@ export function drawMatches(ctx: CanvasRenderingContext2D, matches: Match[], uvU
   const many = matches.length > MANY_MATCHES;
   const hidden = o.hidden ?? new Set<LegendKey>();
   matches.forEach((m, i) =>
-    drawPaths(ctx, m, uvUnits, size, t, playing, { human: many || o.mono ? PATH_COLOR.human : MATCH_COLORS[i], faint: many, height: o.heightRange ?? undefined }),
+    drawPaths(ctx, m, uvUnits, size, t, playing, {
+      human: many || o.mono ? PATH_COLOR.human : MATCH_COLORS[i],
+      faint: many,
+      hideHumans: hidden.has('humanPath'),
+      hideBots: hidden.has('botPath'),
+      fade: o.hover && o.hover !== 'humanPath' && o.hover !== 'botPath' ? 0.35 : 1,
+    }),
   );
 
   // Events after every path, so no marker is hidden under another match's lines.
-  const events = matches.flatMap((m) => m.events).filter((e) => e[0] <= t && !hidden.has(e[1]) && !(many && e[1] === 'loot' && o.hover !== 'loot'));
+  // Past events, plus the future ones of the hovered kind and the pointed-at event (drawn faded).
+  const events = matches
+    .flatMap((m) => m.events)
+    .filter((e) => (e[0] <= t || e[1] === o.hover || e === o.activeEvent) && !hidden.has(e[1]) && !(many && e[1] === 'loot' && o.hover !== 'loot' && e !== o.activeEvent));
   drawEvents(ctx, events, uvUnits, size, t, playing, many ? 0.55 : 1, o);
   // Killer-to-victim lines last: short (median ~9 m), they would hide under the markers.
   if (!hidden.has('fights')) {
@@ -54,6 +65,7 @@ function drawPaths(ctx: CanvasRenderingContext2D, match: Match, uvUnits: number,
   // Bots first, so human paths stay on top.
   const players = [...match.players].sort((a, b) => Number(b.bot) - Number(a.bot));
   for (const p of players) {
+    if (p.bot ? look.hideBots : look.hideHumans) continue;
     const n = samplesUntil(p.path, t);
     if (!n) continue;
     const color = p.bot ? PATH_COLOR.bot : look.human;
@@ -61,16 +73,14 @@ function drawPaths(ctx: CanvasRenderingContext2D, match: Match, uvUnits: number,
     ctx.lineWidth = (p.bot ? 1.25 : 2.25) * (look.faint ? 0.5 : 1);
     ctx.strokeStyle = color;
     ctx.setLineDash(p.bot ? [4, 3] : []);
-    ctx.globalAlpha = (p.bot ? 0.7 : 0.95) * (look.faint ? 0.22 : 1);
+    ctx.globalAlpha = (p.bot ? 0.7 : 0.95) * (look.faint ? 0.22 : 1) * (look.fade ?? 1);
     for (let i = 0; i < n * 3; i += 3) {
       const { x, y } = px(p.path[i + 1], p.path[i + 2]);
       if (i === 0) ctx.moveTo(x, y);
       else ctx.lineTo(x, y);
     }
     const head = positionAt(p.path, t);
-    if (look.height && p.h) {
-      strokeByHeight(ctx, p.path, p.h, n, head, heightAt(p.path, p.h, t), look.height, px);
-    } else if (head) {
+    if (head) {
       const { x, y } = px(head.u, head.v);
       ctx.lineTo(x, y);
       ctx.stroke();
@@ -78,65 +88,40 @@ function drawPaths(ctx: CanvasRenderingContext2D, match: Match, uvUnits: number,
     ctx.globalAlpha = 1;
     if (head && (playing || t < p.path[p.path.length - 3])) {
       const { x, y } = px(head.u, head.v);
-      const k = look.height ? heightK(heightAt(p.path, p.h, t) ?? 0, look.height) : 0;
-      drawHead(ctx, x, y, look.height ? heightColor(k) : color, p.bot || look.faint);
+      drawHead(ctx, x, y, color, p.bot || look.faint);
     }
   }
   ctx.setLineDash([]);
   ctx.globalAlpha = 1;
 }
 
-const heightK = (h: number, r: { min: number; max: number }) => (h - r.min) / Math.max(1, r.max - r.min);
-
-/**
- * A path colored by height: each segment takes the color of its mean height, in HEIGHT_STEPS bands, and each
- * band is stroked once (a stroke per segment would be ~40k strokes a frame with every match shown).
- */
-function strokeByHeight(
-  ctx: CanvasRenderingContext2D, path: number[], h: number[], n: number,
-  head: { u: number; v: number } | null, headH: number | null, range: { min: number; max: number },
-  px: (u: number, v: number) => { x: number; y: number },
-) {
-  const bands: Path2D[] = Array.from({ length: HEIGHT_STEPS }, () => new Path2D());
-  const add = (u0: number, v0: number, h0: number, u1: number, v1: number, h1: number) => {
-    const k = heightK((h0 + h1) / 2, range);
-    const band = bands[Math.min(HEIGHT_STEPS - 1, Math.max(0, Math.floor(k * HEIGHT_STEPS)))];
-    const a = px(u0, v0);
-    const b = px(u1, v1);
-    band.moveTo(a.x, a.y);
-    band.lineTo(b.x, b.y);
-  };
-  for (let s = 1; s < n; s++) add(path[s * 3 - 2], path[s * 3 - 1], h[s - 1], path[s * 3 + 1], path[s * 3 + 2], h[s]);
-  if (head && headH !== null && n > 0) add(path[n * 3 - 2], path[n * 3 - 1], h[n - 1], head.u, head.v, headH);
-  ctx.lineCap = 'round';
-  bands.forEach((band, i) => {
-    ctx.strokeStyle = heightColor((i + 0.5) / HEIGHT_STEPS);
-    ctx.stroke(band);
-  });
-  ctx.lineCap = 'butt';
-}
-
 /** Event markers; `scale` shrinks them when many matches share the map; the hovered type pulses. */
 function drawEvents(ctx: CanvasRenderingContext2D, all: MatchEvent[], uvUnits: number, size: number, t: number, playing: boolean, scale: number, o: ReplayOptions) {
   const px = (u: number, v: number) => uvToPixel(u, v, uvUnits, size);
-  const lit = (type: EventType) => o.hover === type;
-  // The hovered type is drawn last, on top of everything.
-  const events = [...all].sort((a, b) => Number(lit(a[1])) - Number(lit(b[1])) || EVENT_LAYER[a[1]] - EVENT_LAYER[b[1]]);
+  const one = (e: MatchEvent) => e === o.activeEvent;
+  const lit = (e: MatchEvent) => o.hover === e[1] || one(e);
+  // The hovered kind and the pointed-at event are drawn last, on top of everything.
+  const events = [...all].sort((a, b) => Number(lit(a)) - Number(lit(b)) || Number(one(a)) - Number(one(b)) || EVENT_LAYER[a[1]] - EVENT_LAYER[b[1]]);
   const k = pulse(o.phase);
-  for (const [time, type, u, v] of events) {
+  const dimming = !!o.hover || !!o.activeEvent;
+  for (const e of events) {
+    const [time, type, u, v] = e;
     const { x, y } = px(u, v);
     const style = EVENT_STYLE[type];
-    const r = style.size * scale;
-    if (o.hover) ctx.globalAlpha = lit(type) ? 1 : 0.2;
-    if (lit(type)) {
+    const r = style.size * scale * (one(e) ? 1.4 : 1);
+    const future = time > t;
+    const base = dimming ? (lit(e) ? 1 : 0.2) : 1;
+    ctx.globalAlpha = base * (future ? 0.35 : 1); // future events (shown on hover only) are see-through
+    if (lit(e)) {
       ctx.beginPath();
       ctx.strokeStyle = style.color;
       ctx.lineWidth = 2;
-      ctx.globalAlpha = 1 - k;
-      ctx.arc(x, y, r + 3 + k * 12, 0, Math.PI * 2);
+      ctx.globalAlpha = (1 - k) * (future ? 0.5 : 1);
+      ctx.lineWidth = one(e) ? 3 : 2;
+      ctx.arc(x, y, r + 3 + k * (one(e) ? 18 : 12), 0, Math.PI * 2);
       ctx.stroke();
-      ctx.globalAlpha = 1;
-    } else if (playing && t - time < FRESH_MS && type !== 'loot' && !o.hover) {
+      ctx.globalAlpha = base * (future ? 0.35 : 1);
+    } else if (playing && t - time < FRESH_MS && type !== 'loot' && !dimming) {
       ctx.beginPath();
       ctx.strokeStyle = style.color;
       ctx.lineWidth = 2;
@@ -145,7 +130,7 @@ function drawEvents(ctx: CanvasRenderingContext2D, all: MatchEvent[], uvUnits: n
       ctx.stroke();
       ctx.globalAlpha = 1;
     }
-    drawMarker(ctx, style.shape, style.color, x, y, lit(type) ? r * (1.25 + 0.25 * k) : r);
+    drawMarker(ctx, style.shape, style.color, x, y, lit(e) ? r * (1.25 + 0.25 * k) : r);
   }
   ctx.globalAlpha = 1;
 }
@@ -270,7 +255,7 @@ export function drawMarker(ctx: CanvasRenderingContext2D, shape: MarkerShape, co
  * One player in focus: the rest of the map dims, the path so far is bold, the path still to come is a dashed
  * ghost (where they will go), every one of their events shows (future ones faded), and their fights are drawn.
  */
-export function drawFocus(ctx: CanvasRenderingContext2D, match: Match, index: number, uvUnits: number, size: number, t: number) {
+export function drawFocus(ctx: CanvasRenderingContext2D, match: Match, index: number, uvUnits: number, size: number, t: number, active: MatchEvent | null = null, phase = 0) {
   const p = match.players[index];
   if (!p) return;
   const px = (u: number, v: number) => uvToPixel(u, v, uvUnits, size);
@@ -310,12 +295,24 @@ export function drawFocus(ctx: CanvasRenderingContext2D, match: Match, index: nu
   ctx.lineWidth = 3.5;
   ctx.strokeStyle = color;
   ctx.stroke();
-  for (const [time, type, u, v, who] of match.events) {
+  const k = pulse(phase);
+  for (const e of match.events) {
+    const [time, type, u, v, who] = e;
     if (who !== index) continue;
     const s = EVENT_STYLE[type];
     const { x, y } = px(u, v);
     ctx.globalAlpha = time <= t ? 1 : 0.4;
-    drawMarker(ctx, s.shape, s.color, x, y, s.size * 1.2);
+    if (e === active) {
+      // The event pointed at in the card, the timeline or on the map: a pulsing ring.
+      ctx.beginPath();
+      ctx.strokeStyle = s.color;
+      ctx.lineWidth = 3;
+      ctx.globalAlpha = 1 - k;
+      ctx.arc(x, y, s.size * 1.6 + 3 + k * 18, 0, Math.PI * 2);
+      ctx.stroke();
+      ctx.globalAlpha = time <= t ? 1 : 0.4;
+    }
+    drawMarker(ctx, s.shape, s.color, x, y, s.size * (e === active ? 1.6 + 0.3 * k : 1.2));
   }
   ctx.globalAlpha = 1;
   for (const [time, ku, kv, vu, vv, killer, victim, , , inferred] of match.fights ?? [])

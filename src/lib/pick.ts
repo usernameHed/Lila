@@ -1,6 +1,6 @@
 // Which player a click on the map means: the nearest path (drawn up to time t) or current position.
 import { positionAt, samplesUntil } from './timeline';
-import type { Match } from './types';
+import type { Match, MatchEvent } from './types';
 
 export interface Focus {
   match: string; // match id
@@ -34,4 +34,22 @@ export function pickPlayer(matches: Match[], t: number, u: number, v: number, to
       if (d <= tolerance && better) best = { d, focus: { match: m.id, player: i }, bot: p.bot };
     });
   return best ? (best as { focus: Focus }).focus : null;
+}
+
+/** An event pointed at on the map, in the timeline or in the details card. */
+export interface PointedEvent {
+  match: string;
+  event: MatchEvent; // the event object itself, as loaded (identity is stable)
+}
+
+/** The nearest event marker within `tolerance` of (u, v), among those shown at time t and not hidden. */
+export function pickEvent(matches: Match[], t: number, u: number, v: number, tolerance: number, hidden: ReadonlySet<string>): PointedEvent | null {
+  let best: { d: number; p: PointedEvent } | null = null;
+  for (const m of matches)
+    for (const e of m.events) {
+      if (e[0] > t || hidden.has(e[1])) continue;
+      const d = Math.hypot(u - e[2], v - e[3]);
+      if (d <= tolerance && (!best || d < best.d)) best = { d, p: { match: m.id, event: e } };
+    }
+  return best?.p ?? null;
 }

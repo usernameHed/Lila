@@ -1,9 +1,10 @@
 import { useEffect, useRef } from 'react';
 import { drawFightLine, drawMarker, type LegendKey } from '../lib/draw';
-import { EVENT_STYLE, FIRE_COLOR, PATH_COLOR, rgbCss } from '../lib/style';
+import { EVENT_STYLE, FIRE_COLOR, PATH_COLOR } from '../lib/style';
 import type { EventType } from '../lib/types';
 
-export const LEGEND_KEYS: LegendKey[] = [...(Object.keys(EVENT_STYLE) as EventType[]), 'fights'];
+/** Every row of the legend, in order: the two path kinds, every event type, the killer-to-victim lines. */
+export const LEGEND_KEYS: LegendKey[] = ['humanPath', 'botPath', ...(Object.keys(EVENT_STYLE) as EventType[]), 'fights'];
 
 function Icon({ k }: { k: LegendKey }) {
   const ref = useRef<HTMLCanvasElement>(null);
@@ -15,6 +16,16 @@ function Icon({ k }: { k: LegendKey }) {
     el.width = 18 * dpr;
     el.height = 18 * dpr;
     ctx.scale(dpr, dpr);
+    if (k === 'humanPath' || k === 'botPath') {
+      ctx.strokeStyle = k === 'humanPath' ? PATH_COLOR.human : PATH_COLOR.bot;
+      ctx.lineWidth = k === 'humanPath' ? 3 : 2;
+      ctx.setLineDash(k === 'botPath' ? [4, 3] : []);
+      ctx.beginPath();
+      ctx.moveTo(2, 12);
+      ctx.bezierCurveTo(6, 2, 11, 16, 16, 6);
+      ctx.stroke();
+      return;
+    }
     if (k === 'fights') {
       ctx.scale(0.6, 0.6);
       drawFightLine(ctx, { x: 4, y: 26 }, { x: 26, y: 4 }, false);
@@ -26,51 +37,54 @@ function Icon({ k }: { k: LegendKey }) {
   return <canvas ref={ref} style={{ width: 18, height: 18 }} aria-hidden />;
 }
 
-const label = (k: LegendKey) => (k === 'fights' ? 'Killer to victim (line of fire)' : EVENT_STYLE[k].label);
-const color = (k: LegendKey) => (k === 'fights' ? FIRE_COLOR : EVENT_STYLE[k].color);
+export const legendLabel = (k: LegendKey) =>
+  k === 'humanPath' ? 'Player path' : k === 'botPath' ? 'Bot path' : k === 'fights' ? 'Killer to victim (line of fire)' : EVENT_STYLE[k].label;
+const color = (k: LegendKey) => (k === 'humanPath' ? PATH_COLOR.human : k === 'botPath' ? PATH_COLOR.bot : k === 'fights' ? FIRE_COLOR : EVENT_STYLE[k].color);
 
 interface Props {
   counts: Partial<Record<LegendKey, number>>;
   hidden: LegendKey[];
+  /** The kind pointed at on the map, the timeline or the card: its row pulses. */
+  active: LegendKey | null;
   onToggle: (k: LegendKey) => void;
-  onOnly: (k: LegendKey) => void;
+  onAll: (show: boolean) => void;
   onHover: (k: LegendKey | null) => void;
 }
 
-/**
- * Path styles, then every marker kind with its count in the selection. Hover a row: its markers pulse on the map.
- * Click a row: show only that kind (click it again to show all). Click its box: show or hide it.
- */
-export function Legend({ counts, hidden, onToggle, onOnly, onHover }: Props) {
+/** Click a row to show or hide that kind; hover it to spot it on the map (future ones shown faded). */
+export function Legend({ counts, hidden, active, onToggle, onAll, onHover }: Props) {
   return (
-    <ul className="legend">
-      <li className="static">
-        <span className="swatch line" style={{ background: PATH_COLOR.human }} /> Player path
-      </li>
-      <li className="static">
-        <span className="swatch line dashed" style={{ color: PATH_COLOR.bot }} /> Bot path
-      </li>
-      {LEGEND_KEYS.map((k) => {
-        const on = !hidden.includes(k);
-        return (
-          <li key={k} className={`${on ? '' : 'off'} ${counts[k] ? '' : 'none'}`} onMouseEnter={() => on && onHover(k)} onMouseLeave={() => onHover(null)}>
-            <button
-              className="legend-box"
-              onClick={() => onToggle(k)}
-              aria-pressed={on}
-              aria-label={`${on ? 'Hide' : 'Show'} ${label(k)}`}
-              title={on ? 'Hide on the map' : 'Show on the map'}
-              style={{ borderColor: color(k), background: on ? rgbCss([255, 255, 255], 0.06) : 'transparent' }}
+    <>
+      <div className="all-none">
+        <button onClick={() => onAll(true)} disabled={!hidden.length}>
+          All
+        </button>
+        <button onClick={() => onAll(false)} disabled={hidden.length === LEGEND_KEYS.length}>
+          None
+        </button>
+      </div>
+      <ul className="legend">
+        {LEGEND_KEYS.map((k) => {
+          const on = !hidden.includes(k);
+          const isPath = k === 'humanPath' || k === 'botPath';
+          return (
+            <li
+              key={k}
+              className={`${on ? '' : 'off'} ${counts[k] || isPath ? '' : 'none'} ${active === k ? 'pulse' : ''}`}
+              onMouseEnter={() => on && onHover(k)}
+              onMouseLeave={() => onHover(null)}
             >
-              {on && <Icon k={k} />}
-            </button>
-            <button className="legend-name" onClick={() => onOnly(k)} title="Show only this (click again for all)">
-              {label(k)}
-              <span className="count">{counts[k] ?? 0}</span>
-            </button>
-          </li>
-        );
-      })}
-    </ul>
+              <button className="legend-row" onClick={() => onToggle(k)} aria-pressed={on} title={on ? 'Hide on the map' : 'Show on the map'}>
+                <span className="legend-box" style={{ borderColor: color(k) }}>
+                  {on && <Icon k={k} />}
+                </span>
+                <span className="legend-label">{legendLabel(k)}</span>
+                {!isPath && <span className="count">{counts[k] ?? 0}</span>}
+              </button>
+            </li>
+          );
+        })}
+      </ul>
+    </>
   );
 }

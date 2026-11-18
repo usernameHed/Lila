@@ -3,12 +3,18 @@ import { EVENT_STYLE, formatDuration } from '../lib/style';
 import type { MatchEvent } from '../lib/types';
 import { SPEEDS } from './usePlayback';
 
+/** Every storm death in the data happens after minute 10.9: the deadly-storm period, shown on the timeline. */
+const STORM_FROM_MS = 10.9 * 60_000;
+
 interface Props {
   t: number;
   duration: number;
   playing: boolean;
   speed: number;
   events: MatchEvent[];
+  /** The event pointed at anywhere: its tick is highlighted and pulses. */
+  active: MatchEvent | null;
+  onPoint: (e: MatchEvent | null) => void;
   onToggle: () => void;
   onPause: () => void;
   onSeek: (t: number) => void;
@@ -23,7 +29,7 @@ export function isTyping(el: EventTarget | null): boolean {
 }
 
 /** Play / pause, a scrubber with a tick for every fight and death, and the playback speed. Space plays. */
-export function PlaybackBar({ t, duration, playing, speed, events, onToggle, onPause, onSeek, onSpeed }: Props) {
+export function PlaybackBar({ t, duration, playing, speed, events, active, onPoint, onToggle, onPause, onSeek, onSpeed }: Props) {
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       if (e.code !== 'Space' || isTyping(e.target)) return;
@@ -54,11 +60,31 @@ export function PlaybackBar({ t, duration, playing, speed, events, onToggle, onP
         {formatDuration(t)} <span className="muted">/ {formatDuration(duration)}</span>
       </span>
       <div className="scrub">
-        <div className="ticks" aria-hidden>
+        {duration > STORM_FROM_MS && (
+          <div
+            className="storm-band"
+            style={{ left: `${(STORM_FROM_MS / duration) * 100}%` }}
+            title="Storm deaths happen only from minute 10.9 on (seen in the data). Where the storm is, is not logged: it is needed in the telemetry next time."
+          >
+            storm
+          </div>
+        )}
+        <div className="ticks">
           {duration > 0 &&
             ticks.map((e, i) => (
-              <span key={i} style={{ left: `${(e[0] / duration) * 100}%`, background: EVENT_STYLE[e[1]].color }} />
+              <span
+                key={i}
+                className={e === active ? 'active' : ''}
+                style={{ left: `${(e[0] / duration) * 100}%`, background: EVENT_STYLE[e[1]].color }}
+                onMouseEnter={() => onPoint(e)}
+                onMouseLeave={() => onPoint(null)}
+                onClick={() => onSeek(e[0])}
+                title={`${formatDuration(e[0])} · ${EVENT_STYLE[e[1]].label}`}
+              />
             ))}
+          {active && duration > 0 && !ticks.includes(active) && (
+            <span className="active" style={{ left: `${(active[0] / duration) * 100}%`, background: EVENT_STYLE[active[1]].color }} />
+          )}
         </div>
         <input
           type="range"

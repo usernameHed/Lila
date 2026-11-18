@@ -1,11 +1,11 @@
 import { describe, expect, it } from 'vitest';
-import { ALL, DEFAULT_VIEW, legendOnly, legendToggle, parseView, resolveSelection, toggleLayer, toggleMatch, viewHash, type View } from './view';
+import { ALL, DEFAULT_VIEW, legendToggle, parseView, resolveSelection, setMany, toggleLayer, toggleMatch, viewHash, type View } from './view';
 
 describe('view in the URL', () => {
   it('round-trips a view', () => {
-    const v = { mode: 'heat', map: 'Lockdown', day: '2026-02-12', matches: [], layers: ['kills', 'storm'], kills: 'bots', deaths: 'both', mono: true, players: 'all', hidden: [], heatUnder: false, view3d: false, colorBy: 'player', exaggeration: 4, terrain: true } as View;
+    const v: View = { ...DEFAULT_VIEW, mode: 'replay', map: 'Lockdown', day: '2026-02-12', layers: ['kills', 'storm'], kills: 'bots', heatUnder: true, heatMono: true, mono: true };
     expect(parseView(viewHash(v))).toEqual(v);
-    const r: View = { ...DEFAULT_VIEW, mode: 'replay', matches: ['abc-123', 'def-456'], players: 'once', hidden: ['loot', 'fights'], heatUnder: true, layers: ['traffic', 'kills'], view3d: true, colorBy: 'height', exaggeration: 6, terrain: false };
+    const r: View = { ...DEFAULT_VIEW, mode: 'replay', matches: ['abc-123', 'def-456'], players: 'once', hidden: ['loot', 'fights', 'botPath'], heatUnder: true, layers: [], view3d: true, exaggeration: 6, terrain: false };
     expect(parseView(viewHash(r))).toEqual(r);
     const all: View = { ...DEFAULT_VIEW, mode: 'replay', matches: ALL };
     expect(viewHash(all)).toContain('match=all');
@@ -13,7 +13,7 @@ describe('view in the URL', () => {
   });
 
   it('falls back to defaults on junk', () => {
-    expect(parseView('#mode=x&map=Nowhere&day=yesterday&layer=lava')).toEqual(DEFAULT_VIEW);
+    expect(parseView('#mode=x&map=Nowhere&day=yesterday&layer=lava')).toEqual({ ...DEFAULT_VIEW, layers: [] });
     expect(parseView('')).toEqual(DEFAULT_VIEW);
     expect(parseView('#match=a,a,<script>,b').matches).toEqual(['a', 'b']);
   });
@@ -35,26 +35,31 @@ describe('match selection', () => {
 });
 
 describe('heatmap kinds', () => {
-  it('reads old single-kind links and keeps drawing order', () => {
-    expect(parseView('#mode=heat&layer=storm').layers).toEqual(['storm']);
-    expect(parseView('#mode=heat&layer=storm,traffic,lava').layers).toEqual(['traffic', 'storm']);
+  it('opens old Heatmaps links in the replay, heatmap on, paths hidden, drawing order kept', () => {
+    const v = parseView('#mode=heat&map=Lockdown&layer=storm,traffic,lava');
+    expect(v.mode).toBe('replay');
+    expect(v.heatUnder).toBe(true);
+    expect(v.hidden).toEqual(['humanPath', 'botPath']);
+    expect(v.layers).toEqual(['traffic', 'storm']);
   });
-  it('toggles kinds in drawing order, never down to none', () => {
+  it('toggles kinds in drawing order, down to none', () => {
     expect(toggleLayer(['kills'], 'traffic')).toEqual(['traffic', 'kills']);
     expect(toggleLayer(['traffic', 'kills'], 'traffic')).toEqual(['kills']);
-    expect(toggleLayer(['kills'], 'kills')).toEqual(['kills']);
+    expect(toggleLayer(['kills'], 'kills')).toEqual([]);
   });
 });
 
 describe('legend clicks', () => {
-  const all = ['a', 'b', 'c'];
-  it('shows one kind alone, then everything again', () => {
-    expect(legendOnly([], 'b', all)).toEqual(['a', 'c']);
-    expect(legendOnly(['a', 'c'], 'b', all)).toEqual([]);
-    expect(legendOnly(['a'], 'b', all)).toEqual(['a', 'c']);
-  });
   it('toggles one kind', () => {
     expect(legendToggle([], 'a')).toEqual(['a']);
     expect(legendToggle(['a', 'b'], 'a')).toEqual(['b']);
+  });
+});
+
+describe('setMany', () => {
+  it('ticks or unticks a whole day, never down to nothing', () => {
+    expect(setMany(['a'], ['b', 'c'], true)).toEqual(['a', 'b', 'c']);
+    expect(setMany(['a', 'b', 'c'], ['b', 'c'], false)).toEqual(['a']);
+    expect(setMany(['b'], ['b'], false)).toEqual(['b']);
   });
 });

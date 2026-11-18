@@ -123,7 +123,7 @@ fights can be drawn as killer → victim lines. Asks, smallest change first:
 | `Kill`, `BotKill`, `Killed`, `BotKilled` | other side's id and position, weapon, distance, line of sight | Lines of fire for every fight, sightline heatmaps, weapon range by area |
 | Every position sample | facing (yaw), and 1-2 s sampling in combat instead of ~5 s | Where players look, what they see from each corner |
 | New: `Extracted` | extraction point id, time, loot value carried | Real extraction rate (today "survived" = no death logged) |
-| New: storm state | storm edge position or phase per match, every 10 s | Draw the storm moving on the replay (asked for; not possible today: the data has no storm position); who it catches and why |
+| **New: storm zone (needed next time)** | storm edge position or radius per match, every 5-10 s | Draw the storm moving on the replay (asked for; impossible today: only its victims are logged); who it catches and why |
 | New: `MatchStart` | humans and bots in the match, spawn point, mode, party size | Matchmaking analysis; spawn heatmaps; first-match filter |
 | Every row | wall-clock UTC time; `ts` stored in its real unit (seconds today, typed as ms) | Order a player's matches, sessions, retention by match number |
 | `Loot` | item id, rarity or value, container id | Loot value heatmaps: where the rich loot is, not just the count |

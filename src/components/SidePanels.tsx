@@ -1,7 +1,8 @@
-// The left panel's mode-specific parts: Match replay, Heatmaps, Overview. App owns the state; these only show it.
+// The panels around the map: left (which matches, legend), right (heatmap), and the Overview's table of contents.
+// App owns the state; these only show it.
 import type { LegendKey } from '../lib/draw';
 import type { HeatData, HeatLayer, MatchSummary, Who } from '../lib/types';
-import { ALL, type View } from '../lib/view';
+import { ALL, ALL_LAYERS, type View } from '../lib/view';
 import { Choice } from './Choice';
 import { LayerList } from './Heat';
 import { Legend } from './Legend';
@@ -12,7 +13,6 @@ type Update = (patch: Partial<View>) => void;
 
 export interface LayerHandlers {
   onToggle: (l: HeatLayer) => void;
-  onOnly: (l: HeatLayer) => void;
   onWho: (kind: 'kills' | 'deaths', who: Who) => void;
 }
 
@@ -23,14 +23,13 @@ interface ReplayProps {
   selected: MatchSummary[];
   onOnlyMatch: (id: string) => void;
   onToggleMatch: (id: string) => void;
+  onSetMany: (ids: string[], on: boolean) => void;
   counts: Partial<Record<LegendKey, number>>;
   hidden: LegendKey[];
+  pointedKind: LegendKey | null;
   onLegendToggle: (k: LegendKey) => void;
-  onLegendOnly: (k: LegendKey) => void;
+  onLegendAll: (show: boolean) => void;
   onHover: (k: LegendKey | null) => void;
-  heat: HeatData | null;
-  days: string[];
-  layers: LayerHandlers;
 }
 
 export function ReplaySide(p: ReplayProps) {
@@ -38,12 +37,17 @@ export function ReplaySide(p: ReplayProps) {
   return (
     <>
       <section>
-        <h2>Players</h2>
-        <Choice label="Which matches" options={[['all', 'All'], ['once', 'Played only once'], ['pvp', 'Fought a player']]} value={view.players} onChange={(players) => update({ players })} />
+        <h2>Matches</h2>
+        <Choice
+          label="Which matches"
+          options={[['all', 'All'], ['once', 'Played only once'], ['pvp', 'Fought a player']]}
+          value={view.players}
+          onChange={(players) => update({ players })}
+        />
       </section>
       <section className="grow">
         <h2 className="with-actions">
-          Match <span className="count">{selected.length > 1 ? `${selected.length} of ${matches.length}` : matches.length}</span>
+          <span className="count">{selected.length > 1 ? `${selected.length} of ${matches.length} selected` : `${matches.length} matches`}</span>
           <span className="actions">
             <button onClick={() => update({ matches: ALL })} disabled={selected.length === matches.length}>
               Select all
@@ -53,45 +57,47 @@ export function ReplaySide(p: ReplayProps) {
             </button>
           </span>
         </h2>
-        <MatchList matches={matches} selected={selected} mono={view.mono} onOnly={p.onOnlyMatch} onToggle={p.onToggleMatch} />
+        <MatchList matches={matches} selected={selected} mono={view.mono} onOnly={p.onOnlyMatch} onToggle={p.onToggleMatch} onSetMany={p.onSetMany} />
       </section>
       {selected.length > 1 && (
         <section>
-          <h2>Colors</h2>
+          <h2>Match colors</h2>
           <Choice label="Match colors" options={[['each', 'One per match'], ['mono', 'One color']]} value={view.mono ? 'mono' : 'each'} onChange={(c) => update({ mono: c === 'mono' })} />
         </section>
       )}
       <section>
         <h2>
-          Legend <span className="muted hint">hover to spot, click for only one</span>
+          Legend <span className="muted hint">hover to spot it on the map</span>
         </h2>
-        <Legend counts={p.counts} hidden={p.hidden} onToggle={p.onLegendToggle} onOnly={p.onLegendOnly} onHover={p.onHover} />
-      </section>
-      <section>
-        <h2>Heatmap under the replay</h2>
-        <Choice label="Heatmap under the replay" options={[['off', 'Off'], ['on', 'On']]} value={view.heatUnder ? 'on' : 'off'} onChange={(v) => update({ heatUnder: v === 'on' })} />
-        {view.heatUnder && (
-          <div className="under-layers">
-            <LayerList heat={p.heat} days={p.days} layers={view.layers} kills={view.kills} deaths={view.deaths} mono={false} {...p.layers} />
-          </div>
-        )}
+        <Legend counts={p.counts} hidden={p.hidden} active={p.pointedKind} onToggle={p.onLegendToggle} onAll={p.onLegendAll} onHover={p.onHover} />
       </section>
     </>
   );
 }
 
-export function HeatSide({ view, update, heat, days, layers }: { view: View; update: Update; heat: HeatData | null; days: string[]; layers: LayerHandlers }) {
+/** The heatmap, on the right of the map: on or off, which kinds, colors. */
+export function HeatPanel({ view, update, heat, days, layers }: { view: View; update: Update; heat: HeatData | null; days: string[]; layers: LayerHandlers }) {
   return (
-    <section className="grow">
-      <h2>
-        Show <span className="muted hint">tick boxes to stack kinds</span>
-      </h2>
-      <LayerList heat={heat} days={days} layers={view.layers} kills={view.kills} deaths={view.deaths} mono={view.mono} {...layers} />
-      <div className="heat-options">
-        <h2>Colors</h2>
-        <Choice label="Heatmap colors" options={[['each', 'One per kind'], ['mono', 'One color']]} value={view.mono ? 'mono' : 'each'} onChange={(c) => update({ mono: c === 'mono' })} />
-      </div>
-    </section>
+    <aside className="heat-panel">
+      <h2>Heatmap</h2>
+      <Choice label="Heatmap" options={[['off', 'Off'], ['on', 'On']]} value={view.heatUnder ? 'on' : 'off'} onChange={(v) => update({ heatUnder: v === 'on' })} />
+      {view.heatUnder && (
+        <>
+          <div className="all-none">
+            <button onClick={() => update({ layers: [...ALL_LAYERS] })} disabled={view.layers.length === ALL_LAYERS.length}>
+              All
+            </button>
+            <button onClick={() => update({ layers: [] })} disabled={!view.layers.length}>
+              None
+            </button>
+          </div>
+          <LayerList heat={heat} days={days} layers={view.layers} kills={view.kills} deaths={view.deaths} mono={view.heatMono} {...layers} />
+          <h2>Colors</h2>
+          <Choice label="Heatmap colors" options={[['each', 'One per kind'], ['mono', 'One color']]} value={view.heatMono ? 'mono' : 'each'} onChange={(c) => update({ heatMono: c === 'mono' })} />
+          <p className="muted small">Brighter = more. Hide the paths in the legend for the heatmap alone.</p>
+        </>
+      )}
+    </aside>
   );
 }
 

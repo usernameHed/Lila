@@ -79,7 +79,7 @@ describe('one color and toon bands', () => {
     const k = new Float32Array(grid * grid);
     k[3 * grid + 3] = 1;
     k[3 * grid + 4] = 1;
-    const { pixels, size } = render(k, grid, [255, 0, 0]);
+    const { pixels, size } = render(k, grid, [255, 0, 0], true);
     expect(size).toBe(grid * BAND_SCALE);
     const alphas = new Set<number>();
     const reds = new Set<number>();

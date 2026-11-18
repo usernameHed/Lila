@@ -2,12 +2,11 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { loadHeat } from '../lib/data';
 import { uvToPixel } from '../lib/coords';
 import { drawFightLine, drawHeat, heatCanvas } from '../lib/draw';
-import { blur, normalize, powerGrid, render, strongest, sumDays } from '../lib/heat';
+import { contourPath } from '../lib/contours';
+import { bandEdges, blur, edgeColor, normalize, powerGrid, render, strongest, sumDays } from '../lib/heat';
 import { HEAT_LAYERS, MONO_RGB, WHO_LABEL, rgbCss } from '../lib/style';
-import type { HeatData, HeatLayer, MapConfig, MapId, Who } from '../lib/types';
+import type { HeatData, HeatLayer, MapId, Who } from '../lib/types';
 import { Choice } from './Choice';
-import { MapCanvas } from './MapCanvas';
-import { SightControls, useSightTool } from './SightTool';
 
 const KINDS = Object.keys(HEAT_LAYERS) as HeatLayer[]; // drawing order
 const WHOS: Who[] = ['bots', 'players', 'both'];
@@ -83,15 +82,28 @@ export function useHeatDraw(heat: HeatData | null, days: string[], o: HeatOption
       // Sparse kinds (storm deaths: 39 in all) get a wider blur, so single events stay visible.
       return normalize(blur(values, heat.grid, total < 200 ? 3 : 2));
     });
-    const out = o.mono ? (grids.length ? [render(strongest(grids), heat.grid, MONO_RGB)] : []) : grids.map((k, i) => render(k, heat.grid, HEAT_LAYERS[kinds[i]].rgb));
-    return out.map((p) => heatCanvas(p.pixels, p.size));
+    // Each picture: the band fills (an image) and the band edges (vector paths, stroked at screen resolution).
+    const make = (k: Float32Array, rgb: [number, number, number]) => {
+      const fill = render(k, heat.grid, rgb);
+      return { canvas: heatCanvas(fill.pixels, fill.size), edges: bandEdges(k, heat.grid).map(contourPath), stroke: edgeColor(rgb) };
+    };
+    return o.mono ? (grids.length ? [make(strongest(grids), MONO_RGB)] : []) : grids.map((k, i) => make(k, HEAT_LAYERS[kinds[i]].rgb));
   }, [heat, days, o.layers, o.kills, o.deaths, o.mono]);
 
   const fights = useMemo(() => (heat && o.layers.includes('fire') ? fightsOf(heat, days) : []), [heat, days, o.layers]);
 
   return useCallback(
     (ctx: CanvasRenderingContext2D, size: number) => {
-      for (const p of pictures) drawHeat(ctx, p, size);
+      for (const p of pictures) {
+        drawHeat(ctx, p.canvas, size);
+        ctx.save();
+        ctx.scale(size, size);
+        ctx.lineWidth = 1.4 / size; // 1.4 screen pixels whatever the zoom
+        ctx.lineJoin = 'round';
+        ctx.strokeStyle = p.stroke;
+        for (const edge of p.edges) ctx.stroke(edge);
+        ctx.restore();
+      }
       for (const [, ku, kv, vu, vv, bot, , , inferred] of fights) drawFightLine(ctx, uvToPixel(ku, kv, uvUnits, size), uvToPixel(vu, vv, uvUnits, size), bot, inferred ? 0.55 : 1);
     },
     [pictures, fights, uvUnits],
@@ -102,13 +114,12 @@ interface ListProps extends HeatOptions {
   heat: HeatData | null;
   days: string[];
   onToggle: (l: HeatLayer) => void;
-  onOnly: (l: HeatLayer) => void;
   onWho: (kind: 'kills' | 'deaths', who: Who) => void;
 }
 
-/** Every kind in its color: click a row to show it alone, its box to add or remove it; kills and deaths also
- * pick bots, players or both. */
-export function LayerList({ heat, days, onToggle, onOnly, onWho, ...o }: ListProps) {
+/** Every kind in its color: click a row (or its box) to show or hide it; kills and deaths also pick bots, players
+ * or both. */
+export function LayerList({ heat, days, onToggle, onWho, ...o }: ListProps) {
   return (
     <div className="segmented layers">
       {KINDS.map((id) => {
@@ -127,7 +138,7 @@ export function LayerList({ heat, days, onToggle, onOnly, onWho, ...o }: ListPro
                 title={on ? 'Hide this kind' : 'Add this kind to the map'}
                 style={on ? { background: rgbCss(color), borderColor: rgbCss(color) } : { borderColor: rgbCss(color, 0.7) }}
               />
-              <button className="layer-name" onClick={() => onOnly(id)} title={`Show only ${hint}`}>
+              <button className="layer-name" onClick={() => onToggle(id)} aria-pressed={on} title={hint}>
                 {label}
                 <span className="count">{count(heat, id, split ? who : 'both', days)?.toLocaleString('en') ?? ''}</span>
               </button>
@@ -139,47 +150,5 @@ export function LayerList({ heat, days, onToggle, onOnly, onWho, ...o }: ListPro
         );
       })}
     </div>
-  );
-}
-
-const ramp = (rgb: [number, number, number]) => `linear-gradient(90deg, ${rgbCss(rgb, 0.25)}, ${rgbCss(rgb, 1)})`;
-
-export function HeatStage({ mapConfig, heat, days, matchCount, uvUnits, ...o }: HeatOptions & { mapConfig: MapConfig; heat: HeatData | null; days: string[]; matchCount: number; uvUnits: number }) {
-  const map = mapConfig.id;
-  const heatDraw = useHeatDraw(heat, days, o, uvUnits);
-  // Line of sight from a clicked spot, over the heatmap: e.g. what a power position commands.
-  const [sightOn, setSightOn] = useState(false);
-  const sight = useSightTool(mapConfig, uvUnits, sightOn);
-  const draw = useCallback(
-    (ctx: CanvasRenderingContext2D, size: number) => {
-      heatDraw(ctx, size);
-      sight.draw(ctx, size);
-    },
-    [heatDraw, sight],
-  );
-  const fights = heat && o.layers.includes('fire') ? fightsOf(heat, days).length : 0;
-  const who = (l: HeatLayer) => (l === 'kills' ? o.kills : l === 'deaths' ? o.deaths : 'both');
-  return (
-    <>
-      <div className="stage-tools">
-        <SightControls on={sightOn} onChange={setSightOn} share={sight.share} spot={!!sight.spot} />
-      </div>
-      <MapCanvas map={map} draw={draw} dim={0.5} uvUnits={uvUnits} onPick={sightOn ? sight.onPick : undefined} />
-      <div className="heat-caption">
-        <span className="kinds">
-          {o.layers.map((l) => (
-            <span key={l} className="kind">
-              <span className="ramp" style={{ background: ramp(o.mono ? MONO_RGB : HEAT_LAYERS[l].rgb) }} />
-              {HEAT_LAYERS[l].label}
-              {who(l) !== 'both' && ` (${WHO_LABEL[who(l)].toLowerCase()})`}: <span className="muted">{HEAT_LAYERS[l].hint}</span>
-            </span>
-          ))}
-        </span>
-        <span className="muted">
-          {matchCount} match{matchCount === 1 ? '' : 'es'}
-          {o.layers.includes('fire') && ` · ${fights} fight line${fights === 1 ? '' : 's'}`} · brighter = more
-        </span>
-      </div>
-    </>
   );
 }

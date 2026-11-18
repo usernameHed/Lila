@@ -1,3 +1,5 @@
+import { isolines } from './contours';
+
 // Heatmaps: per-day grids from the pipeline, summed over the chosen days, blurred, then drawn as toon bands.
 
 /** Sum the sparse per-day grids ([cell, count, ...]) of the given days into one dense grid. */
@@ -131,7 +133,7 @@ const EDGE_PX = 0.9; // half-width of the outline, in pixels of the band picture
  * local slope), so pixels that straddle an edge blend the two bands and the outline smoothly, like vector art.
  * RGBA at (grid x BAND_SCALE) per side.
  */
-function toBands(k: Float32Array, grid: number, rgb: Rgb): Uint8ClampedArray<ArrayBuffer> {
+function toBands(k: Float32Array, grid: number, rgb: Rgb, outline: boolean): Uint8ClampedArray<ArrayBuffer> {
   const n = grid * BAND_SCALE;
   const up = upscale(k, grid, BAND_SCALE);
   const fills = Array.from({ length: BANDS + 1 }, (_, b) => (b ? colorAt(b / BANDS, rgb) : ([0, 0, 0, 0] as const)));
@@ -157,7 +159,7 @@ function toBands(k: Float32Array, grid: number, rgb: Rgb): Uint8ClampedArray<Arr
       let g = (lo[1] * lo[3] * (1 - cover) + hi[1] * hi[3] * cover) / (a || 1);
       let b = (lo[2] * lo[3] * (1 - cover) + hi[2] * hi[3] * cover) / (a || 1);
       // Outline: full at the edge, fading out over EDGE_PX on each side.
-      const line = Math.max(0, Math.min(1, EDGE_PX + 0.5 - Math.abs(d)));
+      const line = outline ? Math.max(0, Math.min(1, EDGE_PX + 0.5 - Math.abs(d))) : 0;
       if (line > 0) {
         const la = 235 * line;
         const outA = la + a * (1 - line);
@@ -176,10 +178,23 @@ function toBands(k: Float32Array, grid: number, rgb: Rgb): Uint8ClampedArray<Arr
   return px;
 }
 
-/** The picture for one intensity grid: toon band pixels and their size per side. */
-export function render(k: Float32Array, grid: number, rgb: Rgb) {
-  return { pixels: toBands(k, grid, rgb), size: grid * BAND_SCALE };
+/**
+ * The fill picture for one intensity grid: toon band pixels and their size per side. With `outline`, band edges
+ * get a raster outline; the app instead draws vector outlines on top (see bandEdges), sharp at any zoom.
+ */
+export function render(k: Float32Array, grid: number, rgb: Rgb, outline = false) {
+  return { pixels: toBands(k, grid, rgb, outline), size: grid * BAND_SCALE };
 }
+
+/** The band edges as contour segments (0-1 map units), one list per edge level, traced on a 4x smoothed field. */
+export function bandEdges(k: Float32Array, grid: number): number[][] {
+  const f = 4;
+  const up = upscale(k, grid, f);
+  return BAND_EDGES.map((level) => isolines(up, grid * f, level));
+}
+
+/** The outline color of a kind: its own hue, darkened. */
+export const edgeColor = (rgb: Rgb) => `rgba(${rgb.map((c) => Math.round(c * 0.3)).join(',')}, 0.95)`;
 
 /** Power positions: how many times the map's average kill rate (kills per minute spent) a spot has. */
 export const POWER_FULL = 4; // 4x the map average or more = the hottest band
