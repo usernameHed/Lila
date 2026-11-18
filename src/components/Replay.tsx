@@ -117,6 +117,7 @@ export function ReplayStage({ summaries, uvUnits }: { summaries: MatchSummary[];
         speed={play.speed}
         events={events}
         onToggle={play.toggle}
+        onPause={play.pause}
         onSeek={play.seek}
         onSpeed={play.setSpeed}
       />

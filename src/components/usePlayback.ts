@@ -42,7 +42,9 @@ export function usePlayback(duration: number, resetKey: unknown) {
     });
   }, [duration]);
 
+  const pause = useCallback(() => setPlaying(false), []);
+
   const seek = useCallback((value: number) => setT(Math.max(0, Math.min(duration, value))), [duration]);
 
-  return { t, playing, speed, setSpeed, toggle, seek };
+  return { t, playing, speed, setSpeed, toggle, pause, seek };
 }

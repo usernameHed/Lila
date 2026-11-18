@@ -10,20 +10,31 @@ interface Props {
   speed: number;
   events: MatchEvent[];
   onToggle: () => void;
+  onPause: () => void;
   onSeek: (t: number) => void;
   onSpeed: (s: number) => void;
 }
 
+/** Where Space keeps its usual meaning: typing and dropdowns. Everywhere else it plays and pauses. */
+export function isTyping(el: EventTarget | null): boolean {
+  if (!(el instanceof HTMLElement)) return false;
+  if (el.isContentEditable || el.closest('textarea, select')) return true;
+  return el instanceof HTMLInputElement && !['range', 'checkbox', 'radio', 'button', 'submit'].includes(el.type);
+}
+
 /** Play / pause, a scrubber with a tick for every fight and death, and the playback speed. Space plays. */
-export function PlaybackBar({ t, duration, playing, speed, events, onToggle, onSeek, onSpeed }: Props) {
+export function PlaybackBar({ t, duration, playing, speed, events, onToggle, onPause, onSeek, onSpeed }: Props) {
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
-      if (e.code !== 'Space' || (e.target as HTMLElement).closest('input, select, textarea')) return;
+      if (e.code !== 'Space' || isTyping(e.target)) return;
       e.preventDefault();
+      if (e.repeat) return; // a held key toggles once
+      // A focused button or checkbox would also act on Space (on key up): take the focus off it first.
+      if (document.activeElement instanceof HTMLElement) document.activeElement.blur();
       onToggle();
     };
-    window.addEventListener('keydown', onKey);
-    return () => window.removeEventListener('keydown', onKey);
+    window.addEventListener('keydown', onKey, true);
+    return () => window.removeEventListener('keydown', onKey, true);
   }, [onToggle]);
 
   // One tick per fight or death; past a few hundred they would only blur into a bar, so none are drawn.
@@ -56,6 +67,7 @@ export function PlaybackBar({ t, duration, playing, speed, events, onToggle, onS
           step={250}
           value={t}
           onChange={(e) => onSeek(Number(e.target.value))}
+          onPointerDown={onPause} // grabbing the timeline stops the replay where you drop it
           aria-label="Match time"
         />
       </div>
