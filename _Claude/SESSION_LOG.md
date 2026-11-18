@@ -8,12 +8,19 @@ about 300 lines, move the oldest entries word for word to `SESSION_HISTORY.md` (
 - Live: https://lila.belfiore.me: match replay with playback, heatmaps (traffic, kills, deaths, storm, loot),
   map and day filters, shareable URLs.
 - Due 2026-11-23 (assumed: received 2026-11-18).
-- Still open: INSIGHTS.md, ARCHITECTURE.md, walkthrough, design pass (references first), hover details on
+- Still open: walkthrough, design pass (references first), hover details on
   markers.
 - Auto-deploy: push to `main` deploys (repo secret `CLOUDFLARE_API_TOKEN` = Cloudflare token "LILA GitHub deploy",
   Ugo's account, zone belfiore.me, added by Ugo 2026-11-18).
 
 ---
+
+## 2026-11-18 (desktop session): INSIGHTS.md and ARCHITECTURE.md
+
+- Insights (numbers from `pipeline/insights.py`): storm is a clock (0 deaths before 10.9 min, 28% of 11+ min runs,
+  victims carry 18 loot); PvE in practice (99.9% of kills are bots, 1 human per match: ask the data team); Ambrose
+  center = 54% of deaths for 35% of time, south-center pays more loot at 0.35x the death rate.
+- ARCHITECTURE.md: one page, data flow, coordinate mapping, assumptions and trade-off tables.
 
 ## 2026-11-18 (desktop session): playback, heatmaps, data fixes
 

@@ -5,8 +5,9 @@ maps, built from 5 days of production telemetry (Feb 10-14, 2026).
 
 **Live: https://lila.belfiore.me**
 
-> Work in progress (assignment for LILA Games, Product Engineer, Gaming). `ARCHITECTURE.md` and `INSIGHTS.md`
-> are coming.
+Built for LILA Games' Product Engineer assignment. Read next: **[ARCHITECTURE.md](ARCHITECTURE.md)** (how it
+works, the coordinate mapping, assumptions, trade-offs) and **[INSIGHTS.md](INSIGHTS.md)** (three things the
+tool shows about the game).
 
 ## What it does
 
@@ -65,6 +66,7 @@ No environment variables are needed: the app is fully static.
 | Path | What |
 |---|---|
 | `pipeline/build.py` | Parquet to JSON: decodes events, groups by match, maps world coordinates to map UV |
+| `pipeline/insights.py` | The numbers behind INSIGHTS.md, from the processed files |
 | `public/data/` | `index.json` (maps, days, matches), `matches/<id>.json` (paths and events), `heat/<map>.json` (per-day grids) |
 | `public/minimaps/` | The three minimaps, 2048 x 2048 JPEG |
 | `src/lib/` | Pure logic: coordinate mapping, playback clock, heatmap binning and colors, URL view, drawing (with tests) |
