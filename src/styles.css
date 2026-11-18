@@ -6,6 +6,7 @@
   --text: #e8e9ec;
   --muted: #8b909a;
   --accent: #e5484d;
+  --ok: #4fd18b;
   color-scheme: dark;
   font-family: Inter, ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif;
   font-size: 14px;
@@ -127,3 +128,13 @@ select {
 .matches li button { flex: 1; min-width: 0; }
 .matches li.on button, .matches button.on { background: transparent; border-color: transparent; }
 .stage-note { font-size: 13px; padding: 0 2px; }
+
+/* Update button: the same green pill as Ugo's dashboard */
+.side header.brand { display: flex; align-items: flex-start; justify-content: space-between; gap: 8px; }
+.update-btn {
+  display: inline-flex; align-items: center; gap: 6px; padding: 6px 12px; border-radius: 999px; flex: none;
+  background: rgba(79, 209, 139, 0.14); border: 1px solid var(--ok); color: var(--ok); font-weight: 700; cursor: pointer;
+  animation: pop 0.3s ease-out;
+}
+.update-btn:hover { background: rgba(79, 209, 139, 0.24); }
+@keyframes pop { from { transform: scale(0.6); opacity: 0; } }

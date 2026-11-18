@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { HeatStage, LayerList, useHeat } from './components/Heat';
 import { Legend } from './components/Legend';
 import { MatchList, ReplayStage } from './components/Replay';
+import { UpdateButton } from './components/UpdateButton';
 import { loadIndex } from './lib/data';
 import { MAP_LABEL, formatDay } from './lib/style';
 import type { EventType, Index, MapId } from './lib/types';
@@ -49,9 +50,12 @@ export function App() {
   return (
     <div className="app">
       <aside className="side">
-        <header>
-          <h1>LILA BLACK</h1>
-          <p className="sub">Player journeys · Feb 10-14, 2026</p>
+        <header className="brand">
+          <div>
+            <h1>LILA BLACK</h1>
+            <p className="sub">Player journeys · Feb 10-14, 2026</p>
+          </div>
+          <UpdateButton />
         </header>
 
         <div className="tabs" role="tablist">

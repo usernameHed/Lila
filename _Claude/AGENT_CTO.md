@@ -26,6 +26,7 @@ only loads what one view needs. Trade-offs are listed in `ARCHITECTURE.md`.
 | Playback clock, heatmap math, URL view | `src/lib/timeline.ts`, `src/lib/heat.ts`, `src/lib/view.ts` (all tested) |
 | Canvas drawing, labels and colors | `src/lib/draw.ts`, `src/lib/style.ts` |
 | Data loading and cache | `src/lib/data.ts` |
+| New version check (green Update button, like the dashboard, no service worker) | `src/lib/update.ts`, `vite.config.ts` (`__BUILD__`, `build.txt`) |
 | Screens and parts | `src/App.tsx`, `src/components/` (Replay, Heat, PlaybackBar, MapCanvas, Legend) |
 | Deploy | `wrangler.jsonc`, `npm run deploy`; push to `main` deploys via `.github/workflows/deploy.yml` once the secret exists |
 

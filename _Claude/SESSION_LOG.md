@@ -15,6 +15,12 @@ about 300 lines, move the oldest entries word for word to `SESSION_HISTORY.md` (
 
 ---
 
+## 2026-11-18 (desktop session): Update button
+
+- Asked: an Update button when a new version is out, like the dashboard and Rina's Recipes. Done: same green pill
+  and logic, without a service worker (no offline need): build name in the app and `/build.txt`, checked on open,
+  focus and every 5 min; click = reload, view kept (URL). Tested with two real builds on `vite preview`.
+
 ## 2026-11-18 (desktop session): several matches replayed together
 
 - Asked: see multiple match replays at the same time. Done: checkboxes, Select all / Clear, URL `match=a,b` or
