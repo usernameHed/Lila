@@ -4,6 +4,7 @@ Input : data/raw/player_data/February_*/<user_id>_<match_id>.nakama-0  (one parq
 Output: public/data/index.json            maps, days and one summary row per match
         public/data/matches/<match>.json  one file per match: players' paths and events, in map UV
         public/data/heat/<map>.json       per-day heatmap grids (traffic, kills, deaths, storm, loot)
+        public/data/bundles/<map>_<day>.json  every match of one map and day, for multi-match replay
         public/minimaps/<map>.jpg         the minimaps, 2048 x 2048 JPEG
 
 Coordinates are stored as map UV (0-1, see MAPS) times 10,000, rounded: 1 unit = 0.1 m on the largest map,
@@ -129,16 +130,24 @@ def build() -> None:
             m["days"].add(day)
             m["rows"].append(row)
 
-    (OUT / "matches").mkdir(parents=True, exist_ok=True)
-    for old in (OUT / "matches").glob("*.json"):
-        old.unlink()
+    for folder in ("matches", "bundles"):
+        (OUT / folder).mkdir(parents=True, exist_ok=True)
+        for old in (OUT / folder).glob("*.json"):
+            old.unlink()
 
     summaries = []
+    bundles: dict[tuple[str, str], list] = defaultdict(list)
     heat: dict = defaultdict(lambda: defaultdict(lambda: defaultdict(lambda: defaultdict(int))))
     for match_id, m in sorted(matches.items()):
-        summary = write_match(match_id, m, heat)
+        data, summary = build_match(match_id, m, heat)
+        write_json(OUT / "matches" / f"{data['id']}.json", data)
+        bundles[(data["map"], data["day"])].append(data)
         summaries.append(summary)
     write_heat(heat)
+    # One file per map and day with all its matches: replaying many matches at once costs a few requests,
+    # not one per match. Single-match replay keeps using the small per-match files.
+    for (map_id, day), items in bundles.items():
+        write_json(OUT / "bundles" / f"{map_id}_{day}.json", items)
 
     days = sorted({s["day"] for s in summaries})
     index = {
@@ -193,7 +202,8 @@ def classify_bots(rows: list[dict]) -> dict[str, bool]:
     return result
 
 
-def write_match(match_id: str, m: dict, heat) -> dict:
+def build_match(match_id: str, m: dict, heat) -> tuple[dict, dict]:
+    """The match file's content and its summary row for the index; adds its points to the heat grids."""
     rows = sorted(m["rows"], key=lambda r: (r["sec"], r["user"]))
     t0 = rows[0]["sec"]
     players: dict[str, dict] = {}
@@ -226,11 +236,8 @@ def write_match(match_id: str, m: dict, heat) -> dict:
 
     short_id = match_id.removesuffix(".nakama-0")
     player_list = [{k: v for k, v in p.items() if k != "index"} for p in players.values()]
-    write_json(
-        OUT / "matches" / f"{short_id}.json",
-        {"id": short_id, "map": m["map"], "day": day, "players": player_list, "events": events},
-    )
-    return {
+    data = {"id": short_id, "map": m["map"], "day": day, "players": player_list, "events": events}
+    return data, {
         "id": short_id,
         "map": m["map"],
         "day": day,

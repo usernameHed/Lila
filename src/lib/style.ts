@@ -10,6 +10,12 @@ export const MAP_LABEL: Record<MapId, string> = {
 
 export const PATH_COLOR = { human: '#4cc9f0', bot: '#f4a261' };
 
+/** One color per match when several are replayed together (bots keep their dashed orange). */
+export const MATCH_COLORS = ['#4cc9f0', '#80ed99', '#ff70a6', '#c77dff', '#ffffff', '#00f5d4', '#f9f871', '#7aa2ff', '#ff9e9e', '#b5e48c', '#e0aaff', '#9ef0ff'];
+
+/** Above this many matches, one color for all players and no loot markers: the map stays readable. */
+export const MANY_MATCHES = MATCH_COLORS.length;
+
 export type MarkerShape = 'cross' | 'skull' | 'diamond' | 'storm';
 
 export const EVENT_STYLE: Record<EventType, { label: string; color: string; shape: MarkerShape; size: number }> = {

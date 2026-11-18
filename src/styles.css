@@ -109,3 +109,21 @@ select {
   .playback { flex-wrap: wrap; }
   .scrub { order: 3; flex-basis: 100%; }
 }
+
+/* Multi-match selection */
+.with-actions { display: flex; align-items: center; }
+.with-actions .count { margin-left: 6px; padding-left: 0; }
+.with-actions .actions { margin-left: auto; display: flex; gap: 4px; }
+.with-actions .actions button {
+  padding: 2px 8px; font-size: 11px; letter-spacing: 0; text-transform: none; font-weight: 500;
+  background: transparent; border: 1px solid var(--line); border-radius: 5px; cursor: pointer; color: var(--text);
+}
+.with-actions .actions button:disabled { opacity: 0.35; cursor: default; }
+.matches li { display: flex; align-items: stretch; border-radius: 6px; }
+.matches li.on { background: #22262e; }
+.matches li .pick { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; padding: 0 2px 0 8px; cursor: pointer; }
+.matches li .pick input { accent-color: var(--accent); margin: 0; cursor: pointer; }
+.matches li .dot { width: 8px; height: 8px; border-radius: 50%; }
+.matches li button { flex: 1; min-width: 0; }
+.matches li.on button, .matches button.on { background: transparent; border-color: transparent; }
+.stage-note { font-size: 13px; padding: 0 2px; }

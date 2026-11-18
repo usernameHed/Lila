@@ -7,7 +7,8 @@ Details in `README.md` and `ARCHITECTURE.md`. Data facts in `_Claude/DATA.md`. T
 - **Data pipeline**: Python 3 + pyarrow (`pipeline/build.py`), run once offline. Reads the 1,243 parquet files,
   decodes events, groups by match, converts world (x, z) to map UV (0-1), writes small static JSON:
   `public/data/index.json` (maps, days, matches), `public/data/matches/<match>.json` (one file per match) and
-  `public/data/heat/<map>.json` (per-day 128 x 128 grids for each heatmap layer).
+  `public/data/heat/<map>.json` (per-day 128 x 128 grids for each heatmap layer) and
+  `public/data/bundles/<map>_<day>.json` (all matches of a map and day, for multi-match replay).
   Minimaps downscaled to 2048 px JPEG in `public/minimaps/`.
 - **App**: Vite + React + TypeScript (`src/`), rendering on a 2D canvas (thousands of points, fast), no backend.
 - **Hosting**: Cloudflare Worker `lila` with static assets (`wrangler.jsonc`), Ugo's own account. Static only:

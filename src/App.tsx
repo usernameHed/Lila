@@ -4,8 +4,8 @@ import { Legend } from './components/Legend';
 import { MatchList, ReplayStage } from './components/Replay';
 import { loadIndex } from './lib/data';
 import { MAP_LABEL, formatDay } from './lib/style';
-import type { Index, MapId } from './lib/types';
-import { parseView, viewHash, type Mode, type View } from './lib/view';
+import type { EventType, Index, MapId } from './lib/types';
+import { ALL, parseView, resolveSelection, toggleMatch, viewHash, type Mode, type View } from './lib/view';
 
 export function App() {
   const [index, setIndex] = useState<Index | null>(null);
@@ -34,15 +34,15 @@ export function App() {
   );
   const days = useMemo(() => (view.day === 'all' ? (index?.days ?? []) : [view.day]), [index, view.day]);
 
-  // Keep a match selected: the first of the list when the filters drop the current one.
-  useEffect(() => {
-    if (!index) return;
-    if (!matches.length) update({ match: null });
-    else if (!matches.some((m) => m.id === view.match)) update({ match: matches[0].id });
-  }, [index, matches, view.match]);
+  const selected = useMemo(() => resolveSelection(view.matches, matches), [view.matches, matches]);
+  const selectedIds = selected.map((m) => m.id);
+  const counts = useMemo(() => {
+    const out: Partial<Record<EventType, number>> = {};
+    for (const m of selected) for (const [k, n] of Object.entries(m.events)) out[k as EventType] = (out[k as EventType] ?? 0) + (n ?? 0);
+    return out;
+  }, [selected]);
 
   const heat = useHeat(view.map);
-  const selected = matches.find((m) => m.id === view.match);
 
   if (error) return <div className="fatal">Could not load the data: {error}</div>;
 
@@ -90,14 +90,27 @@ export function App() {
         {view.mode === 'replay' ? (
           <>
             <section className="grow">
-              <h2>
-                Match <span className="count">{matches.length}</span>
+              <h2 className="with-actions">
+                Match <span className="count">{selected.length > 1 ? `${selected.length} of ${matches.length}` : matches.length}</span>
+                <span className="actions">
+                  <button onClick={() => update({ matches: ALL })} disabled={selected.length === matches.length}>
+                    Select all
+                  </button>
+                  <button onClick={() => update({ matches: selectedIds.slice(0, 1) })} disabled={selected.length < 2}>
+                    Clear
+                  </button>
+                </span>
               </h2>
-              <MatchList matches={matches} selected={view.match} onSelect={(id) => update({ match: id })} />
+              <MatchList
+                matches={matches}
+                selected={selected}
+                onOnly={(id) => update({ matches: [id] })}
+                onToggle={(id) => update({ matches: toggleMatch(selectedIds, id) })}
+              />
             </section>
             <section>
               <h2>Legend</h2>
-              <Legend counts={selected?.events ?? {}} />
+              <Legend counts={counts} />
             </section>
           </>
         ) : (
@@ -112,7 +125,7 @@ export function App() {
         {!index ? (
           <div className="empty">Loading…</div>
         ) : view.mode === 'replay' ? (
-          <ReplayStage summary={selected} uvUnits={index.uvUnits} />
+          <ReplayStage summaries={selected} uvUnits={index.uvUnits} />
         ) : (
           <HeatStage map={view.map} heat={heat} days={days} layer={view.layer} matchCount={matches.length} />
         )}

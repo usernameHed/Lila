@@ -26,7 +26,9 @@ export function PlaybackBar({ t, duration, playing, speed, events, onToggle, onS
     return () => window.removeEventListener('keydown', onKey);
   }, [onToggle]);
 
-  const ticks = events.filter((e) => e[1] !== 'loot');
+  // One tick per fight or death; past a few hundred they would only blur into a bar, so none are drawn.
+  const fights = events.filter((e) => e[1] !== 'loot');
+  const ticks = fights.length <= 300 ? fights : [];
 
   return (
     <div className="playback">

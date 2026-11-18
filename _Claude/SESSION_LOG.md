@@ -5,8 +5,8 @@ about 300 lines, move the oldest entries word for word to `SESSION_HISTORY.md` (
 
 ## Where things stand
 
-- Live: https://lila.belfiore.me: match replay with playback, heatmaps (traffic, kills, deaths, storm, loot),
-  map and day filters, shareable URLs.
+- Live: https://lila.belfiore.me: match replay with playback (one or many matches together), heatmaps
+  (traffic, kills, deaths, storm, loot), map and day filters, shareable URLs.
 - Due 2026-11-23 (assumed: received 2026-11-18).
 - Still open: walkthrough, design pass (references first), hover details on
   markers.
@@ -14,6 +14,13 @@ about 300 lines, move the oldest entries word for word to `SESSION_HISTORY.md` (
   Ugo's account, zone belfiore.me, added by Ugo 2026-11-18).
 
 ---
+
+## 2026-11-18 (desktop session): several matches replayed together
+
+- Asked: see multiple match replays at the same time. Done: checkboxes, Select all / Clear, URL `match=a,b` or
+  `match=all`, one clock from each match's 0:00, 12 match colors, above 12 one color, smaller markers, no loot.
+- Loading: up to 5 matches = their files, above = map-day bundles (`public/data/bundles/`). All 566 Ambrose
+  matches: 5 requests, 60 fps measured while playing. 16 tests.
 
 ## 2026-11-18 (desktop session): INSIGHTS.md and ARCHITECTURE.md
 

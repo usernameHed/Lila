@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { loadMatch } from '../lib/data';
-import { drawMatch } from '../lib/draw';
-import { formatDay, formatDuration } from '../lib/style';
+import { loadMatches } from '../lib/data';
+import { drawMatches } from '../lib/draw';
+import { MANY_MATCHES, MATCH_COLORS, formatDay, formatDuration } from '../lib/style';
 import { matchEnd } from '../lib/timeline';
 import type { Match, MatchSummary } from '../lib/types';
 import { MapCanvas } from './MapCanvas';
@@ -17,15 +17,31 @@ export function outcome(m: MatchSummary): string {
   return 'Survived';
 }
 
-export function MatchList({ matches, selected, onSelect }: { matches: MatchSummary[]; selected: string | null; onSelect: (id: string) => void }) {
+interface ListProps {
+  matches: MatchSummary[];
+  selected: MatchSummary[];
+  onOnly: (id: string) => void;
+  onToggle: (id: string) => void;
+}
+
+/** Click a row to replay that match alone; tick boxes to replay several together. */
+export function MatchList({ matches, selected, onOnly, onToggle }: ListProps) {
+  const order = new Map(selected.map((s, i) => [s.id, i]));
+  const multi = selected.length > 1 && selected.length <= MANY_MATCHES;
   return (
     <ul className="matches">
       {matches.map((m) => {
         const kills = (m.events.killBot ?? 0) + (m.events.killPlayer ?? 0);
         const end = outcome(m);
+        const i = order.get(m.id);
+        const on = i !== undefined;
         return (
-          <li key={m.id}>
-            <button className={m.id === selected ? 'on' : ''} onClick={() => onSelect(m.id)}>
+          <li key={m.id} className={on ? 'on' : ''}>
+            <label className="pick" title="Replay together with the other ticked matches">
+              <input type="checkbox" checked={on} onChange={() => onToggle(m.id)} aria-label={`Add match of ${formatDay(m.day)} to the replay`} />
+              {multi && on && <span className="dot" style={{ background: MATCH_COLORS[i] }} />}
+            </label>
+            <button onClick={() => onOnly(m.id)}>
               <span className="when">
                 {formatDay(m.day)} <span className="muted">· {formatDuration(m.durationMs)}</span>
               </span>
@@ -42,50 +58,64 @@ export function MatchList({ matches, selected, onSelect }: { matches: MatchSumma
   );
 }
 
-/** The selected match on its map, with playback. */
-export function ReplayStage({ summary, uvUnits }: { summary: MatchSummary | undefined; uvUnits: number }) {
-  const [match, setMatch] = useState<Match | null>(null);
+/** Every selected match on its map, all starting together at 0:00, with one playback. */
+export function ReplayStage({ summaries, uvUnits }: { summaries: MatchSummary[]; uvUnits: number }) {
+  const [loaded, setLoaded] = useState<Match[]>([]);
+  const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const key = summaries.map((s) => s.id).join(',');
 
   useEffect(() => {
-    if (!summary) return setMatch(null);
+    if (!summaries.length) return setLoaded([]);
     let live = true;
+    setLoading(true);
     setError(null);
-    loadMatch(summary.id).then(
-      (m) => live && setMatch(m),
-      (e: Error) => live && setError(e.message),
+    loadMatches(summaries).then(
+      (ms) => live && (setLoaded(ms), setLoading(false)),
+      (e: Error) => live && (setError(e.message), setLoading(false)),
     );
     return () => {
       live = false;
     };
-  }, [summary]);
+  }, [key]); // `key` stands for `summaries`, whose array identity changes on every render
 
-  const current = match && match.id === summary?.id ? match : null;
+  // Keep showing the previous selection until the new one has arrived, never a half-loaded mix.
+  const current = loaded.map((m) => m.id).join(',') === key ? loaded : null;
+  const shown = current ?? loaded;
   const duration = useMemo(
-    () => (current ? matchEnd(current.players.map((p) => p.path), current.events.map((e) => e[0])) : 0),
+    () => (current ? matchEnd(current.flatMap((m) => m.players.map((p) => p.path)), current.flatMap((m) => m.events.map((e) => e[0]))) : 0),
     [current],
   );
-  const play = usePlayback(duration, current?.id);
+  const play = usePlayback(duration, current ? key : null);
+  const events = useMemo(() => (current ?? []).flatMap((m) => m.events), [current]);
 
   const draw = useCallback(
     (ctx: CanvasRenderingContext2D, size: number) => {
-      if (current) drawMatch(ctx, current, uvUnits, size, play.t, play.playing);
+      if (shown.length) drawMatches(ctx, shown, uvUnits, size, current ? play.t : Infinity, play.playing);
     },
-    [current, uvUnits, play.t, play.playing],
+    [shown, current, uvUnits, play.t, play.playing],
   );
 
-  if (!summary) return <div className="empty">No match for these filters.</div>;
+  if (!summaries.length) return <div className="empty">No match for these filters.</div>;
 
+  const many = summaries.length > MANY_MATCHES;
   return (
     <>
-      <MapCanvas map={summary.map} draw={draw} />
-      {error && <div className="empty">Could not load this match: {error}</div>}
+      {summaries.length > 1 && (
+        <div className="stage-note">
+          <strong>{summaries.length} matches</strong> replayed together, each from its own start (0:00).
+          {many && <span className="muted"> Above {MANY_MATCHES} matches: one color for all players, loot hidden.</span>}
+          {loading && <span className="muted"> Loading…</span>}
+        </div>
+      )}
+      <MapCanvas map={summaries[0].map} draw={draw} />
+      {error && <div className="empty">Could not load: {error}</div>}
       <PlaybackBar
         t={play.t}
         duration={duration}
         playing={play.playing}
         speed={play.speed}
-        events={current?.events ?? []}
+        events={events}
         onToggle={play.toggle}
         onSeek={play.seek}
         onSpeed={play.setSpeed}

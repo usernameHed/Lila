@@ -1,13 +1,30 @@
 // Canvas drawing for the map: a match at a given time, and heatmap pixels.
 import { uvToPixel } from './coords';
-import { EVENT_LAYER, EVENT_STYLE, PATH_COLOR, type MarkerShape } from './style';
+import { EVENT_LAYER, EVENT_STYLE, MANY_MATCHES, MATCH_COLORS, PATH_COLOR, type MarkerShape } from './style';
 import { positionAt, samplesUntil } from './timeline';
-import type { Match } from './types';
+import type { Match, MatchEvent } from './types';
 
 /** How long (match time) a fresh event keeps a ring around it during playback. */
 const FRESH_MS = 8000;
 
-export function drawMatch(ctx: CanvasRenderingContext2D, match: Match, uvUnits: number, size: number, t: number, playing: boolean) {
+interface Look {
+  human: string; // player path color
+  faint: boolean; // many matches at once: thinner, lighter lines, no loot
+}
+
+/** Several matches on one clock: all start at t = 0 (each match's own clock). */
+export function drawMatches(ctx: CanvasRenderingContext2D, matches: Match[], uvUnits: number, size: number, t: number, playing: boolean) {
+  const many = matches.length > MANY_MATCHES;
+  matches.forEach((m, i) =>
+    drawPaths(ctx, m, uvUnits, size, t, playing, { human: many ? PATH_COLOR.human : MATCH_COLORS[i], faint: many }),
+  );
+  // Events after every path, so no marker is hidden under another match's lines.
+  const events = matches.flatMap((m) => m.events).filter((e) => e[0] <= t && !(many && e[1] === 'loot'));
+  drawEvents(ctx, events, uvUnits, size, t, playing, many ? 0.55 : 1);
+}
+
+/** The paths of one match up to time t, with each player's current position while it moves. */
+function drawPaths(ctx: CanvasRenderingContext2D, match: Match, uvUnits: number, size: number, t: number, playing: boolean, look: Look) {
   const px = (u: number, v: number) => uvToPixel(u, v, uvUnits, size);
 
   // Bots first, so human paths stay on top.
@@ -15,12 +32,12 @@ export function drawMatch(ctx: CanvasRenderingContext2D, match: Match, uvUnits: 
   for (const p of players) {
     const n = samplesUntil(p.path, t);
     if (!n) continue;
-    const color = p.bot ? PATH_COLOR.bot : PATH_COLOR.human;
+    const color = p.bot ? PATH_COLOR.bot : look.human;
     ctx.beginPath();
-    ctx.lineWidth = p.bot ? 1.25 : 2.25;
+    ctx.lineWidth = (p.bot ? 1.25 : 2.25) * (look.faint ? 0.5 : 1);
     ctx.strokeStyle = color;
     ctx.setLineDash(p.bot ? [4, 3] : []);
-    ctx.globalAlpha = p.bot ? 0.7 : 0.95;
+    ctx.globalAlpha = (p.bot ? 0.7 : 0.95) * (look.faint ? 0.22 : 1);
     for (let i = 0; i < n * 3; i += 3) {
       const { x, y } = px(p.path[i + 1], p.path[i + 2]);
       if (i === 0) ctx.moveTo(x, y);
@@ -31,13 +48,18 @@ export function drawMatch(ctx: CanvasRenderingContext2D, match: Match, uvUnits: 
       const { x, y } = px(head.u, head.v);
       ctx.lineTo(x, y);
       ctx.stroke();
-      if (playing || t < p.path[p.path.length - 3]) drawHead(ctx, x, y, color, p.bot);
+      ctx.globalAlpha = 1;
+      if (playing || t < p.path[p.path.length - 3]) drawHead(ctx, x, y, color, p.bot || look.faint);
     } else ctx.stroke();
   }
   ctx.setLineDash([]);
   ctx.globalAlpha = 1;
+}
 
-  const events = match.events.filter((e) => e[0] <= t).sort((a, b) => EVENT_LAYER[a[1]] - EVENT_LAYER[b[1]]);
+/** Event markers; `scale` shrinks them when many matches share the map. */
+function drawEvents(ctx: CanvasRenderingContext2D, all: MatchEvent[], uvUnits: number, size: number, t: number, playing: boolean, scale: number) {
+  const px = (u: number, v: number) => uvToPixel(u, v, uvUnits, size);
+  const events = [...all].sort((a, b) => EVENT_LAYER[a[1]] - EVENT_LAYER[b[1]]);
   for (const [time, type, u, v] of events) {
     const { x, y } = px(u, v);
     const style = EVENT_STYLE[type];
@@ -46,11 +68,11 @@ export function drawMatch(ctx: CanvasRenderingContext2D, match: Match, uvUnits: 
       ctx.strokeStyle = style.color;
       ctx.lineWidth = 2;
       ctx.globalAlpha = 1 - (t - time) / FRESH_MS;
-      ctx.arc(x, y, style.size + 4 + ((t - time) / FRESH_MS) * 10, 0, Math.PI * 2);
+      ctx.arc(x, y, style.size * scale + 4 + ((t - time) / FRESH_MS) * 10, 0, Math.PI * 2);
       ctx.stroke();
       ctx.globalAlpha = 1;
     }
-    drawMarker(ctx, style.shape, style.color, x, y, style.size);
+    drawMarker(ctx, style.shape, style.color, x, y, style.size * scale);
   }
 }
 

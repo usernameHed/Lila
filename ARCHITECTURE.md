@@ -22,11 +22,13 @@ player_data/February_XX/*.nakama-0  (1,243 parquet files)
        ├─ world (x, z) -> map UV (0-1) x 10,000, integers
        ├─ public/data/index.json          136 KB: maps, days, one summary row per match
        ├─ public/data/matches/<id>.json   796 files, ~5 KB each: paths [t, u, v...] + events
+       ├─ public/data/bundles/<map>_<day>.json  15 files: every match of one map and day (largest 173 KB gzipped)
        ├─ public/data/heat/<map>.json     per-day 128 x 128 grids: traffic, kills, deaths, storm, loot
        └─ public/minimaps/<map>.jpg       2048 x 2048, ~300 KB each
 browser
   ├─ loads index.json once: filters and match list work with no further request
-  ├─ Match replay: fetches one match file, draws paths up to time t (interpolated between samples)
+  ├─ Match replay: 1-5 matches -> their own files; more -> the map-day bundles (566 matches = 5 requests);
+  │    draws every path up to time t (interpolated between samples), all matches on one clock
   └─ Heatmaps: fetches one heat file per map, sums the chosen days, blurs, colors, stretches over the map
 ```
 
@@ -71,4 +73,5 @@ pixelX = u * imageSize             pixelY = (1 - v) * imageSize        (images s
 | SVG or a map library (Leaflet, deck.gl) | Plain canvas | A fixed square image needs no tiles or projections; canvas is the fastest and smallest option |
 | Heatmap from raw points in the browser | Per-day grids from the pipeline | Traffic is 51k points; grids of non-empty cells make one small file per map and still filter by day |
 | Max-scaled colors | 98th percentile + square root scale | One extreme hot spot would otherwise wash out every other area |
+| One request per match for multi-replay | Map-day bundles above 5 matches | Never hundreds of requests; one match alone stays a 5 KB load. 566 matches replay at 60 fps |
 | Full-size minimaps | 2048 px JPEG | ~300 KB instead of 3-12 MB, still sharp on a retina laptop |

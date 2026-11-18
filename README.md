@@ -14,6 +14,9 @@ tool shows about the game).
 - **Match replay**: pick a map, a day and a match; every player's path is drawn on the minimap (players solid
   blue, bots dashed orange) with a marker for each kill, death, storm death and loot. Play it at 10x, 30x or
   60x (Space plays and pauses), or scrub the timeline, which carries a tick for every fight and death.
+- **Several matches at once**: tick matches in the list (or "Select all") to replay them together, all from
+  their own 0:00, one color per match. With every match of a map selected, you see where all players are at
+  minute 8, where fights start, who is still out at minute 11.
 - **Heatmaps**: where players spend time, kill, die, get caught by the storm and loot, per map, for one day or
   all five.
 - **Shareable views**: the URL holds the mode, map, day, match and layer, so a link opens exactly that view.
@@ -67,7 +70,7 @@ No environment variables are needed: the app is fully static.
 |---|---|
 | `pipeline/build.py` | Parquet to JSON: decodes events, groups by match, maps world coordinates to map UV |
 | `pipeline/insights.py` | The numbers behind INSIGHTS.md, from the processed files |
-| `public/data/` | `index.json` (maps, days, matches), `matches/<id>.json` (paths and events), `heat/<map>.json` (per-day grids) |
+| `public/data/` | `index.json` (maps, days, matches), `matches/<id>.json` (paths and events), `bundles/<map>_<day>.json` (all matches of a map and day), `heat/<map>.json` (per-day grids) |
 | `public/minimaps/` | The three minimaps, 2048 x 2048 JPEG |
 | `src/lib/` | Pure logic: coordinate mapping, playback clock, heatmap binning and colors, URL view, drawing (with tests) |
 | `src/components/` | Map canvas, match replay, playback bar, heatmaps, legend |
