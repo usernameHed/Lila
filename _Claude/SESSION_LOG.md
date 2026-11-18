@@ -15,6 +15,13 @@ about 300 lines, move the oldest entries word for word to `SESSION_HISTORY.md` (
 
 ---
 
+## 2026-11-18 (desktop session): playback keys, heatmap colors and stacking
+
+- Ugo: grabbing the timeline must pause; Space stopped working once the timeline had focus. Fixed (pause on pointer
+  down; Space toggles anywhere but text fields and dropdowns, focused control blurred first). Tested with real clicks.
+- Ugo: color the heatmaps (red kills, green traffic) and show several at once. Done: one hue per kind (traffic green,
+  loot yellow, kills red, deaths white, storm violet), toggles on the left, URL `layer=traffic,kills`; old links work.
+
 ## 2026-11-18 (desktop session): Update button
 
 - Asked: an Update button when a new version is out, like the dashboard and Rina's Recipes. Done: same green pill

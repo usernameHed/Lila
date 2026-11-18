@@ -34,13 +34,16 @@ export const EVENT_LAYER: Record<EventType, number> = {
   loot: 0, botKill: 1, botDeath: 1, killBot: 2, killPlayer: 2, diedToBot: 3, diedToPlayer: 3, storm: 3,
 };
 
-export const HEAT_LAYERS: Record<HeatLayer, { label: string; hint: string }> = {
-  traffic: { label: 'Traffic', hint: 'Where players spend time (position samples, humans only)' },
-  kills: { label: 'Kills', hint: 'Where players kill bots and other players' },
-  deaths: { label: 'Deaths', hint: 'Where players die: to bots, players or the storm' },
-  storm: { label: 'Storm deaths', hint: 'Where the storm catches players' },
-  loot: { label: 'Loot', hint: 'Where players pick up items' },
+/** Heatmap kinds, in drawing order (traffic at the bottom, the rarest on top), each with its own color. */
+export const HEAT_LAYERS: Record<HeatLayer, { label: string; hint: string; rgb: [number, number, number] }> = {
+  traffic: { label: 'Traffic', hint: 'where players spend time', rgb: [61, 220, 132] },
+  loot: { label: 'Loot', hint: 'where players pick up items', rgb: [255, 209, 102] },
+  kills: { label: 'Kills', hint: 'where players kill bots and players', rgb: [255, 51, 85] },
+  deaths: { label: 'Deaths', hint: 'where players die, to anything', rgb: [240, 244, 255] },
+  storm: { label: 'Storm deaths', hint: 'where the storm catches players', rgb: [179, 136, 255] },
 };
+
+export const rgbCss = ([r, g, b]: [number, number, number], a = 1) => `rgba(${r},${g},${b},${a})`;
 
 export function formatDay(day: string): string {
   return new Date(`${day}T00:00:00Z`).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', timeZone: 'UTC' });

@@ -54,38 +54,28 @@ export function scaleTop(values: Float32Array, q = 0.98): number {
   return nz[Math.min(nz.length - 1, Math.floor(q * nz.length))];
 }
 
-// Transparent -> deep purple -> red -> orange -> pale yellow: reads on both dark and colorful minimaps.
-const STOPS: [number, number, number, number, number][] = [
-  [0, 20, 0, 60, 0],
-  [0.2, 90, 20, 140, 150],
-  [0.5, 220, 40, 60, 200],
-  [0.8, 255, 150, 30, 225],
-  [1, 255, 245, 180, 240],
-];
+export type Rgb = [number, number, number];
 
-export function colorAt(k: number): [number, number, number, number] {
+/**
+ * One color per heatmap kind: transparent where nothing happens, then the kind's color getting more opaque, and
+ * paler toward white at the very hottest spots, so several kinds can sit on the map together and stay apart.
+ */
+export function colorAt(k: number, rgb: Rgb): [number, number, number, number] {
   const x = Math.max(0, Math.min(1, k));
-  for (let i = 1; i < STOPS.length; i++) {
-    const [p1, ...c1] = STOPS[i];
-    const [p0, ...c0] = STOPS[i - 1];
-    if (x <= p1) {
-      const f = (x - p0) / (p1 - p0);
-      return c0.map((c, j) => Math.round(c + (c1[j] - c) * f)) as [number, number, number, number];
-    }
-  }
-  return STOPS[STOPS.length - 1].slice(1) as [number, number, number, number];
+  const white = Math.max(0, (x - 0.75) / 0.25) * 0.45;
+  const [r, g, b] = rgb.map((c) => Math.round(c + (255 - c) * white));
+  return [r, g, b, x ? Math.round(20 + 215 * x * x) : 0];
 }
 
-/** RGBA pixels (grid x grid) for the grid, with a square-root scale so quieter areas stay visible. */
-export function toPixels(values: Float32Array, grid: number): Uint8ClampedArray<ArrayBuffer> {
+/** RGBA pixels (grid x grid) in the kind's color, with a square-root scale so quieter areas stay visible. */
+export function toPixels(values: Float32Array, grid: number, rgb: Rgb): Uint8ClampedArray<ArrayBuffer> {
   const top = scaleTop(values);
   const px = new Uint8ClampedArray(new ArrayBuffer(grid * grid * 4));
   if (!top) return px;
   const floor = top * 0.01;
   for (let i = 0; i < values.length; i++) {
     if (values[i] <= floor) continue;
-    const c = colorAt(Math.sqrt(values[i] / top));
-    px.set(c, i * 4);
+    px.set(colorAt(Math.sqrt(values[i] / top), rgb), i * 4);
   }
   return px;
 }

@@ -29,7 +29,8 @@ browser
   ├─ loads index.json once: filters and match list work with no further request
   ├─ Match replay: 1-5 matches -> their own files; more -> the map-day bundles (566 matches = 5 requests);
   │    draws every path up to time t (interpolated between samples), all matches on one clock
-  └─ Heatmaps: fetches one heat file per map, sums the chosen days, blurs, colors, stretches over the map
+  └─ Heatmaps: fetches one heat file per map; for each kind shown, sums the chosen days, blurs, colors it in
+       its own hue, and stacks the kinds over the map (traffic at the bottom, storm deaths on top)
 ```
 
 Files are cached in memory after their first load. The view (mode, map, day, match, layer) lives in the URL
@@ -73,5 +74,6 @@ pixelX = u * imageSize             pixelY = (1 - v) * imageSize        (images s
 | SVG or a map library (Leaflet, deck.gl) | Plain canvas | A fixed square image needs no tiles or projections; canvas is the fastest and smallest option |
 | Heatmap from raw points in the browser | Per-day grids from the pipeline | Traffic is 51k points; grids of non-empty cells make one small file per map and still filter by day |
 | Max-scaled colors | 98th percentile + square root scale | One extreme hot spot would otherwise wash out every other area |
+| One shared color ramp | One hue per kind, opacity = intensity | Several kinds can be stacked and still told apart (kills over traffic, deaths over loot) |
 | One request per match for multi-replay | Map-day bundles above 5 matches | Never hundreds of requests; one match alone stays a 5 KB load. 566 matches replay at 60 fps |
 | Full-size minimaps | 2048 px JPEG | ~300 KB instead of 3-12 MB, still sharp on a retina laptop |

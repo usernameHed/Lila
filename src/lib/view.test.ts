@@ -1,9 +1,9 @@
 import { describe, expect, it } from 'vitest';
-import { ALL, DEFAULT_VIEW, parseView, resolveSelection, toggleMatch, viewHash, type View } from './view';
+import { ALL, DEFAULT_VIEW, parseView, resolveSelection, toggleLayer, toggleMatch, viewHash, type View } from './view';
 
 describe('view in the URL', () => {
   it('round-trips a view', () => {
-    const v = { mode: 'heat', map: 'Lockdown', day: '2026-02-12', matches: [], layer: 'kills' } as View;
+    const v = { mode: 'heat', map: 'Lockdown', day: '2026-02-12', matches: [], layers: ['kills', 'storm'] } as View;
     expect(parseView(viewHash(v))).toEqual(v);
     const r: View = { ...DEFAULT_VIEW, matches: ['abc-123', 'def-456'] };
     expect(parseView(viewHash(r))).toEqual(r);
@@ -31,5 +31,17 @@ describe('match selection', () => {
     expect(toggleMatch(['a'], 'b')).toEqual(['a', 'b']);
     expect(toggleMatch(['a', 'b'], 'a')).toEqual(['b']);
     expect(toggleMatch(['a'], 'a')).toEqual(['a']);
+  });
+});
+
+describe('heatmap kinds', () => {
+  it('reads old single-kind links and keeps drawing order', () => {
+    expect(parseView('#mode=heat&layer=storm').layers).toEqual(['storm']);
+    expect(parseView('#mode=heat&layer=storm,traffic,lava').layers).toEqual(['traffic', 'storm']);
+  });
+  it('toggles kinds in drawing order, never down to none', () => {
+    expect(toggleLayer(['kills'], 'traffic')).toEqual(['traffic', 'kills']);
+    expect(toggleLayer(['traffic', 'kills'], 'traffic')).toEqual(['kills']);
+    expect(toggleLayer(['kills'], 'kills')).toEqual(['kills']);
   });
 });

@@ -25,9 +25,16 @@ describe('heatmap', () => {
   });
 
   it('leaves empty cells transparent and colors the hottest ones', () => {
-    const px = toPixels(new Float32Array([0, 10, 0, 0]), 2);
+    const px = toPixels(new Float32Array([0, 10, 0, 0]), 2, [255, 0, 0]);
     expect(px[3]).toBe(0);
     expect(px[7]).toBeGreaterThan(200);
-    expect(colorAt(0)[3]).toBe(0);
+    expect(colorAt(0, [255, 0, 0])[3]).toBe(0);
+  });
+
+  it("keeps the kind's color, paler only at the hottest spots", () => {
+    expect(colorAt(0.5, [61, 220, 132]).slice(0, 3)).toEqual([61, 220, 132]);
+    const hot = colorAt(1, [61, 220, 132]);
+    expect(hot[0]).toBeGreaterThan(61);
+    expect(hot[1]).toBeGreaterThanOrEqual(220);
   });
 });

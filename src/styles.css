@@ -101,8 +101,12 @@ select {
 
 .heat-caption { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 8px; padding: 8px 12px; background: var(--panel); border: 1px solid var(--line); border-radius: 10px; font-size: 13px; }
 .heat-caption > span:last-child { display: flex; align-items: center; gap: 6px; }
-.ramp { display: inline-block; width: 90px; height: 8px; border-radius: 4px; }
-.ramp-label { font-size: 12px; }
+.ramp { display: inline-block; width: 28px; height: 8px; border-radius: 4px; margin-right: 6px; vertical-align: middle; }
+.heat-caption .kinds { display: flex; flex-wrap: wrap; gap: 4px 16px; }
+.heat-caption .kind { white-space: nowrap; }
+.layers .swatch-box { width: 12px; height: 12px; margin-right: 10px; border-radius: 3px; border: 2px solid; flex: none; }
+.layers button.on { box-shadow: none; }
+.side h2 .hint { text-transform: none; letter-spacing: 0; font-weight: 400; margin-left: 6px; }
 
 @media (max-width: 760px) {
   .stage { height: auto; }

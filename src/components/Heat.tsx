@@ -1,16 +1,18 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { loadHeat } from '../lib/data';
 import { drawHeat } from '../lib/draw';
-import { blur, colorAt, sumDays, toPixels } from '../lib/heat';
-import { HEAT_LAYERS } from '../lib/style';
+import { blur, sumDays, toPixels } from '../lib/heat';
+import { HEAT_LAYERS, rgbCss } from '../lib/style';
 import type { HeatData, HeatLayer, MapId } from '../lib/types';
 import { MapCanvas } from './MapCanvas';
 
-/** Total count per layer for the chosen days (for the layer list). */
+const KINDS = Object.keys(HEAT_LAYERS) as HeatLayer[]; // drawing order
+
+/** Total count per kind for the chosen days (for the list on the left). */
 function totals(heat: HeatData | null, days: string[]): Partial<Record<HeatLayer, number>> {
   if (!heat) return {};
   const out: Partial<Record<HeatLayer, number>> = {};
-  for (const layer of Object.keys(HEAT_LAYERS) as HeatLayer[]) {
+  for (const layer of KINDS) {
     let n = 0;
     for (const d of days) {
       const cells = heat.layers[layer][d] ?? [];
@@ -34,48 +36,61 @@ export function useHeat(map: MapId) {
   return heat;
 }
 
-export function LayerList({ heat, days, layer, onLayer }: { heat: HeatData | null; days: string[]; layer: HeatLayer; onLayer: (l: HeatLayer) => void }) {
+const ramp = (rgb: [number, number, number]) => `linear-gradient(90deg, ${rgbCss(rgb, 0.25)}, ${rgbCss(rgb, 1)})`;
+
+/** Every heatmap kind as a toggle in its own color: tick several to see them together. */
+export function LayerList({ heat, days, layers, onToggle }: { heat: HeatData | null; days: string[]; layers: HeatLayer[]; onToggle: (l: HeatLayer) => void }) {
   const counts = useMemo(() => totals(heat, days), [heat, days]);
   return (
-    <div className="segmented">
-      {(Object.keys(HEAT_LAYERS) as HeatLayer[]).map((id) => (
-        <button key={id} className={id === layer ? 'on' : ''} onClick={() => onLayer(id)} title={HEAT_LAYERS[id].hint}>
-          {HEAT_LAYERS[id].label}
-          <span className="count">{counts[id]?.toLocaleString('en') ?? ''}</span>
-        </button>
-      ))}
+    <div className="segmented layers">
+      {KINDS.map((id) => {
+        const on = layers.includes(id);
+        const { label, hint, rgb } = HEAT_LAYERS[id];
+        return (
+          <button key={id} className={on ? 'on' : ''} onClick={() => onToggle(id)} aria-pressed={on} title={`Show ${hint}`}>
+            <span className="swatch-box" style={on ? { background: rgbCss(rgb), borderColor: rgbCss(rgb) } : { borderColor: rgbCss(rgb, 0.7) }} />
+            {label}
+            <span className="count">{counts[id]?.toLocaleString('en') ?? ''}</span>
+          </button>
+        );
+      })}
     </div>
   );
 }
 
-const RAMP = `linear-gradient(90deg, ${[0.15, 0.4, 0.6, 0.8, 1].map((k) => `rgba(${colorAt(k).slice(0, 3).join(',')},1)`).join(', ')})`;
-
-export function HeatStage({ map, heat, days, layer, matchCount }: { map: MapId; heat: HeatData | null; days: string[]; layer: HeatLayer; matchCount: number }) {
-  const pixels = useMemo(() => {
-    if (!heat || heat.layers[layer] === undefined) return null;
-    const grid = heat.grid;
-    // Sparse layers (storm deaths: 39 in total) get a wider blur so single events stay visible.
-    const sum = sumDays(heat.layers[layer], days, grid);
-    const total = sum.reduce((a, b) => a + b, 0);
-    return toPixels(blur(sum, grid, total < 200 ? 3 : 2), grid);
-  }, [heat, days, layer]);
+export function HeatStage({ map, heat, days, layers, matchCount }: { map: MapId; heat: HeatData | null; days: string[]; layers: HeatLayer[]; matchCount: number }) {
+  // One picture per kind shown, each in its color, stacked in drawing order (traffic at the bottom).
+  const pictures = useMemo(() => {
+    if (!heat) return [];
+    return KINDS.filter((l) => layers.includes(l) && heat.layers[l]).map((l) => {
+      const sum = sumDays(heat.layers[l], days, heat.grid);
+      const total = sum.reduce((a, b) => a + b, 0);
+      // Sparse kinds (storm deaths: 39 in all) get a wider blur, so single events stay visible.
+      return toPixels(blur(sum, heat.grid, total < 200 ? 3 : 2), heat.grid, HEAT_LAYERS[l].rgb);
+    });
+  }, [heat, days, layers]);
 
   const draw = useCallback(
     (ctx: CanvasRenderingContext2D, size: number) => {
-      if (pixels && heat) drawHeat(ctx, pixels, heat.grid, size);
+      if (heat) for (const px of pictures) drawHeat(ctx, px, heat.grid, size);
     },
-    [pixels, heat],
+    [pictures, heat],
   );
 
   return (
     <>
-      <MapCanvas map={map} draw={draw} dim={0.45} />
+      <MapCanvas map={map} draw={draw} dim={0.5} />
       <div className="heat-caption">
-        <span>{HEAT_LAYERS[layer].hint}</span>
+        <span className="kinds">
+          {layers.map((l) => (
+            <span key={l} className="kind">
+              <span className="ramp" style={{ background: ramp(HEAT_LAYERS[l].rgb) }} />
+              {HEAT_LAYERS[l].label}: <span className="muted">{HEAT_LAYERS[l].hint}</span>
+            </span>
+          ))}
+        </span>
         <span className="muted">
-          {matchCount} match{matchCount === 1 ? '' : 'es'} · <span className="ramp-label">fewer</span>
-          <span className="ramp" style={{ background: RAMP }} />
-          <span className="ramp-label">more</span>
+          {matchCount} match{matchCount === 1 ? '' : 'es'} · brighter = more
         </span>
       </div>
     </>

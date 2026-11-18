@@ -6,7 +6,7 @@ import { UpdateButton } from './components/UpdateButton';
 import { loadIndex } from './lib/data';
 import { MAP_LABEL, formatDay } from './lib/style';
 import type { EventType, Index, MapId } from './lib/types';
-import { ALL, parseView, resolveSelection, toggleMatch, viewHash, type Mode, type View } from './lib/view';
+import { ALL, parseView, resolveSelection, toggleLayer, toggleMatch, viewHash, type Mode, type View } from './lib/view';
 
 export function App() {
   const [index, setIndex] = useState<Index | null>(null);
@@ -119,8 +119,8 @@ export function App() {
           </>
         ) : (
           <section className="grow">
-            <h2>Show</h2>
-            <LayerList heat={heat} days={days} layer={view.layer} onLayer={(layer) => update({ layer })} />
+            <h2>Show <span className="muted hint">tick several to stack them</span></h2>
+            <LayerList heat={heat} days={days} layers={view.layers} onToggle={(l) => update({ layers: toggleLayer(view.layers, l) })} />
           </section>
         )}
       </aside>
@@ -131,7 +131,7 @@ export function App() {
         ) : view.mode === 'replay' ? (
           <ReplayStage summaries={selected} uvUnits={index.uvUnits} />
         ) : (
-          <HeatStage map={view.map} heat={heat} days={days} layer={view.layer} matchCount={matches.length} />
+          <HeatStage map={view.map} heat={heat} days={days} layers={view.layers} matchCount={matches.length} />
         )}
       </main>
     </div>

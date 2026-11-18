@@ -17,8 +17,8 @@ tool shows about the game).
 - **Several matches at once**: tick matches in the list (or "Select all") to replay them together, all from
   their own 0:00, one color per match. With every match of a map selected, you see where all players are at
   minute 8, where fights start, who is still out at minute 11.
-- **Heatmaps**: where players spend time, kill, die, get caught by the storm and loot, per map, for one day or
-  all five.
+- **Heatmaps**: where players spend time (green), kill (red), die (white), get caught by the storm (violet) and
+  loot (yellow), per map, for one day or all five. Tick several kinds to stack them on the map.
 - **Shareable views**: the URL holds the mode, map, day, match and layer, so a link opens exactly that view.
 - **Update button**: when a newer version is deployed, an open page shows a green Update button (checked on
   open, on return to the tab and every 5 minutes); it reloads onto the new version and keeps the view.
