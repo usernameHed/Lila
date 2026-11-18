@@ -67,15 +67,83 @@ export function colorAt(k: number, rgb: Rgb): [number, number, number, number] {
   return [r, g, b, x ? Math.round(20 + 215 * x * x) : 0];
 }
 
-/** RGBA pixels (grid x grid) in the kind's color, with a square-root scale so quieter areas stay visible. */
-export function toPixels(values: Float32Array, grid: number, rgb: Rgb): Uint8ClampedArray<ArrayBuffer> {
+export type Look = 'smooth' | 'bands';
+
+/** Intensity 0-1 per cell: square-root scale up to the 98th percentile, so quieter areas stay visible. */
+export function normalize(values: Float32Array): Float32Array {
   const top = scaleTop(values);
-  const px = new Uint8ClampedArray(new ArrayBuffer(grid * grid * 4));
-  if (!top) return px;
-  const floor = top * 0.01;
+  const out = new Float32Array(values.length);
+  if (!top) return out;
   for (let i = 0; i < values.length; i++) {
-    if (values[i] <= floor) continue;
-    px.set(colorAt(Math.sqrt(values[i] / top), rgb), i * 4);
+    const k = values[i] / top;
+    out[i] = k <= 0.01 ? 0 : Math.min(1, Math.sqrt(k));
   }
+  return out;
+}
+
+/** One-color mode: every kind scaled to its own range, then the strongest per cell (no kind drowns another). */
+export function strongest(layers: Float32Array[]): Float32Array {
+  const out = new Float32Array(layers[0]?.length ?? 0);
+  for (const l of layers) for (let i = 0; i < l.length; i++) out[i] = Math.max(out[i], l[i]);
+  return out;
+}
+
+/** Smooth: RGBA (grid x grid), opacity follows intensity. */
+export function toPixels(k: Float32Array, grid: number, rgb: Rgb): Uint8ClampedArray<ArrayBuffer> {
+  const px = new Uint8ClampedArray(new ArrayBuffer(grid * grid * 4));
+  for (let i = 0; i < k.length; i++) if (k[i] > 0) px.set(colorAt(k[i], rgb), i * 4);
   return px;
+}
+
+export const BANDS = 4;
+export const BAND_SCALE = 4; // bands are drawn at 4x the grid, so their edges are crisp
+
+/** Bilinear upscale of a square grid, so band edges follow smooth curves instead of grid squares. */
+export function upscale(k: Float32Array, grid: number, f: number): Float32Array {
+  const n = grid * f;
+  const out = new Float32Array(n * n);
+  for (let y = 0; y < n; y++) {
+    const gy = Math.min(grid - 1, Math.max(0, (y + 0.5) / f - 0.5));
+    const y0 = Math.floor(gy), y1 = Math.min(grid - 1, y0 + 1), ty = gy - y0;
+    for (let x = 0; x < n; x++) {
+      const gx = Math.min(grid - 1, Math.max(0, (x + 0.5) / f - 0.5));
+      const x0 = Math.floor(gx), x1 = Math.min(grid - 1, x0 + 1), tx = gx - x0;
+      const top = k[y0 * grid + x0] * (1 - tx) + k[y0 * grid + x1] * tx;
+      const bottom = k[y1 * grid + x0] * (1 - tx) + k[y1 * grid + x1] * tx;
+      out[y * n + x] = top * (1 - ty) + bottom * ty;
+    }
+  }
+  return out;
+}
+
+/** Intensity 0-1 to a band 0..BANDS (0 = nothing). */
+export const bandOf = (k: number) => (k < 0.18 ? 0 : Math.min(BANDS, Math.ceil(k * BANDS)));
+
+/**
+ * Toon look (cel shading): a few flat bands of the kind's color instead of a gradient, each band edge drawn
+ * as a dark outline. RGBA at (grid x BAND_SCALE) per side.
+ */
+export function toBands(k: Float32Array, grid: number, rgb: Rgb): Uint8ClampedArray<ArrayBuffer> {
+  const n = grid * BAND_SCALE;
+  const up = upscale(k, grid, BAND_SCALE);
+  const band = new Uint8Array(n * n);
+  for (let i = 0; i < up.length; i++) band[i] = bandOf(up[i]);
+  const fills = Array.from({ length: BANDS + 1 }, (_, b) => (b ? colorAt(b / BANDS, rgb) : null));
+  const edge: [number, number, number, number] = [...(rgb.map((c) => Math.round(c * 0.35)) as Rgb), 235];
+  const px = new Uint8ClampedArray(new ArrayBuffer(n * n * 4));
+  for (let y = 0; y < n; y++)
+    for (let x = 0; x < n; x++) {
+      const i = y * n + x;
+      const b = band[i];
+      if (!b) continue;
+      const lower = (j: number) => band[j] < b;
+      const isEdge = (x > 0 && lower(i - 1)) || (x < n - 1 && lower(i + 1)) || (y > 0 && lower(i - n)) || (y < n - 1 && lower(i + n));
+      px.set(isEdge ? edge : (fills[b] as number[]), i * 4);
+    }
+  return px;
+}
+
+/** The picture for one intensity grid, in the chosen look: pixels and their size per side. */
+export function render(k: Float32Array, grid: number, rgb: Rgb, look: Look) {
+  return look === 'bands' ? { pixels: toBands(k, grid, rgb), size: grid * BAND_SCALE } : { pixels: toPixels(k, grid, rgb), size: grid };
 }

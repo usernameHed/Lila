@@ -3,7 +3,7 @@ import { BUNDLE_ABOVE, planLoads } from './data';
 import type { MatchSummary } from './types';
 
 const summary = (id: string, day: string): MatchSummary => ({
-  id, map: 'Lockdown', day, durationMs: 1, humans: 1, bots: 0, rows: 1, events: {},
+  id, map: 'Lockdown', day, durationMs: 1, humans: 1, bots: 0, rows: 1, fights: 0, events: {},
 });
 
 describe('planLoads', () => {

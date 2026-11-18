@@ -1,4 +1,4 @@
-import type { EventType, HeatLayer, MapId } from './types';
+import type { EventType, HeatLayer, MapId, Who } from './types';
 
 // One place for labels and colors, shared by the canvas and the legend.
 
@@ -9,6 +9,9 @@ export const MAP_LABEL: Record<MapId, string> = {
 };
 
 export const PATH_COLOR = { human: '#4cc9f0', bot: '#f4a261' };
+
+/** Killer-to-victim line when a player is the killer (a bot killer uses the bot color). */
+export const FIRE_COLOR = '#ff8c42';
 
 /** One color per match when several are replayed together (bots keep their dashed orange). */
 export const MATCH_COLORS = ['#4cc9f0', '#80ed99', '#ff70a6', '#c77dff', '#ffffff', '#00f5d4', '#f9f871', '#7aa2ff', '#ff9e9e', '#b5e48c', '#e0aaff', '#9ef0ff'];
@@ -35,13 +38,19 @@ export const EVENT_LAYER: Record<EventType, number> = {
 };
 
 /** Heatmap kinds, in drawing order (traffic at the bottom, the rarest on top), each with its own color. */
-export const HEAT_LAYERS: Record<HeatLayer, { label: string; hint: string; rgb: [number, number, number] }> = {
+export const HEAT_LAYERS: Record<HeatLayer, { label: string; hint: string; rgb: [number, number, number]; split?: true }> = {
   traffic: { label: 'Traffic', hint: 'where players spend time', rgb: [61, 220, 132] },
   loot: { label: 'Loot', hint: 'where players pick up items', rgb: [255, 209, 102] },
-  kills: { label: 'Kills', hint: 'where players kill bots and players', rgb: [255, 51, 85] },
-  deaths: { label: 'Deaths', hint: 'where players die, to anything', rgb: [240, 244, 255] },
+  fire: { label: 'Line of fire', hint: 'killer to victim, for the fights where both ends are recorded', rgb: [255, 140, 66] },
+  kills: { label: 'Position when killing', hint: 'where players stand when they kill', rgb: [255, 51, 85], split: true },
+  deaths: { label: 'Position when killed', hint: 'where players die to bots or players', rgb: [240, 244, 255], split: true },
   storm: { label: 'Storm deaths', hint: 'where the storm catches players', rgb: [179, 136, 255] },
 };
+
+/** One-color mode, for heatmaps and for replays of several matches. */
+export const MONO_RGB: [number, number, number] = [76, 201, 240];
+
+export const WHO_LABEL: Record<Who, string> = { bots: 'Bots', players: 'Players', both: 'Both' };
 
 export const rgbCss = ([r, g, b]: [number, number, number], a = 1) => `rgba(${r},${g},${b},${a})`;
 

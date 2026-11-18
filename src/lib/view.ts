@@ -1,5 +1,6 @@
 // The view (what is on screen) lives in the URL hash, so a Level Designer can share exactly what they see.
-import type { HeatLayer, MapId } from './types';
+import type { Look } from './heat';
+import type { HeatLayer, MapId, Who } from './types';
 
 export type Mode = 'replay' | 'heat';
 
@@ -11,14 +12,22 @@ export interface View {
   matches: string[] | typeof ALL;
   /** Heatmap kinds shown together, at least one. */
   layers: HeatLayer[];
+  /** Kills and deaths: against bots, players or both. */
+  kills: Who;
+  deaths: Who;
+  /** One color for everything (heatmap kinds, or replayed matches) instead of one color each. */
+  mono: boolean;
+  /** Heatmap look: smooth gradient or toon bands. */
+  look: Look;
 }
 
 export const ALL = 'all';
 
-export const DEFAULT_VIEW: View = { mode: 'replay', map: 'AmbroseValley', day: 'all', matches: [], layers: ['traffic'] };
+export const DEFAULT_VIEW: View = { mode: 'replay', map: 'AmbroseValley', day: 'all', matches: [], layers: ['traffic'], kills: 'both', deaths: 'both', mono: false, look: 'smooth' };
 
 const MAPS: MapId[] = ['AmbroseValley', 'GrandRift', 'Lockdown'];
-const LAYERS: HeatLayer[] = ['traffic', 'loot', 'kills', 'deaths', 'storm']; // drawing order
+const LAYERS: HeatLayer[] = ['traffic', 'loot', 'fire', 'kills', 'deaths', 'storm']; // drawing order
+const WHO: Who[] = ['both', 'bots', 'players'];
 
 /** Read a view from a hash like "#mode=heat&map=Lockdown&layer=kills". Unknown values fall back to defaults. */
 export function parseView(hash: string): View {
@@ -32,6 +41,10 @@ export function parseView(hash: string): View {
     day: day && /^\d{4}-\d{2}-\d{2}$/.test(day) ? day : 'all',
     matches: parseMatches(q.get('match')),
     layers: parseLayers(q.get('layer')),
+    kills: pick('kills', WHO, 'both'),
+    deaths: pick('deaths', WHO, 'both'),
+    mono: q.get('mono') === '1',
+    look: pick<Look>('look', ['smooth', 'bands'], 'smooth'),
   };
 }
 
@@ -59,7 +72,13 @@ export function viewHash(v: View): string {
   const q = new URLSearchParams({ mode: v.mode, map: v.map });
   if (v.day !== 'all') q.set('day', v.day);
   if (v.mode === 'replay' && v.matches.length) q.set('match', v.matches === ALL ? ALL : v.matches.join(','));
-  if (v.mode === 'heat') q.set('layer', v.layers.join(','));
+  if (v.mode === 'heat') {
+    q.set('layer', v.layers.join(','));
+    if (v.kills !== 'both' && v.layers.includes('kills')) q.set('kills', v.kills);
+    if (v.deaths !== 'both' && v.layers.includes('deaths')) q.set('deaths', v.deaths);
+    if (v.look !== 'smooth') q.set('look', v.look);
+  }
+  if (v.mono) q.set('mono', '1');
   return `#${q}`;
 }
 

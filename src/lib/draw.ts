@@ -1,6 +1,6 @@
 // Canvas drawing for the map: a match at a given time, and heatmap pixels.
 import { uvToPixel } from './coords';
-import { EVENT_LAYER, EVENT_STYLE, MANY_MATCHES, MATCH_COLORS, PATH_COLOR, type MarkerShape } from './style';
+import { EVENT_LAYER, EVENT_STYLE, FIRE_COLOR, MANY_MATCHES, MATCH_COLORS, PATH_COLOR, type MarkerShape } from './style';
 import { positionAt, samplesUntil } from './timeline';
 import type { Match, MatchEvent } from './types';
 
@@ -12,15 +12,18 @@ interface Look {
   faint: boolean; // many matches at once: thinner, lighter lines, no loot
 }
 
-/** Several matches on one clock: all start at t = 0 (each match's own clock). */
-export function drawMatches(ctx: CanvasRenderingContext2D, matches: Match[], uvUnits: number, size: number, t: number, playing: boolean) {
+/** Several matches on one clock: all start at t = 0 (each match's own clock). `mono`: one color for all. */
+export function drawMatches(ctx: CanvasRenderingContext2D, matches: Match[], uvUnits: number, size: number, t: number, playing: boolean, mono = false) {
   const many = matches.length > MANY_MATCHES;
   matches.forEach((m, i) =>
-    drawPaths(ctx, m, uvUnits, size, t, playing, { human: many ? PATH_COLOR.human : MATCH_COLORS[i], faint: many }),
+    drawPaths(ctx, m, uvUnits, size, t, playing, { human: many || mono ? PATH_COLOR.human : MATCH_COLORS[i], faint: many }),
   );
+
   // Events after every path, so no marker is hidden under another match's lines.
   const events = matches.flatMap((m) => m.events).filter((e) => e[0] <= t && !(many && e[1] === 'loot'));
   drawEvents(ctx, events, uvUnits, size, t, playing, many ? 0.55 : 1);
+  // Killer-to-victim lines last: short (median ~12 m), they would hide under the markers.
+  for (const m of matches) drawFights(ctx, m, uvUnits, size, t);
 }
 
 /** The paths of one match up to time t, with each player's current position while it moves. */
@@ -76,6 +79,34 @@ function drawEvents(ctx: CanvasRenderingContext2D, all: MatchEvent[], uvUnits: n
   }
 }
 
+/** Killer to victim, for the kills whose victim's death is recorded too: a line with an arrow at the victim. */
+function drawFights(ctx: CanvasRenderingContext2D, match: Match, uvUnits: number, size: number, t: number) {
+  for (const [time, ku, kv, vu, vv, killer] of match.fights ?? []) {
+    if (time > t) continue;
+    const a = uvToPixel(ku, kv, uvUnits, size);
+    const b = uvToPixel(vu, vv, uvUnits, size);
+    const color = match.players[killer]?.bot ? PATH_COLOR.bot : FIRE_COLOR;
+    ctx.save();
+    ctx.strokeStyle = color;
+    ctx.fillStyle = color;
+    ctx.lineWidth = 2.5;
+    ctx.setLineDash([4, 3]);
+    ctx.beginPath();
+    ctx.moveTo(a.x, a.y);
+    ctx.lineTo(b.x, b.y);
+    ctx.stroke();
+    const angle = Math.atan2(b.y - a.y, b.x - a.x);
+    ctx.setLineDash([]);
+    ctx.beginPath();
+    ctx.moveTo(b.x, b.y);
+    ctx.lineTo(b.x - 9 * Math.cos(angle - 0.45), b.y - 9 * Math.sin(angle - 0.45));
+    ctx.lineTo(b.x - 9 * Math.cos(angle + 0.45), b.y - 9 * Math.sin(angle + 0.45));
+    ctx.closePath();
+    ctx.fill();
+    ctx.restore();
+  }
+}
+
 function drawHead(ctx: CanvasRenderingContext2D, x: number, y: number, color: string, bot: boolean) {
   ctx.beginPath();
   ctx.arc(x, y, bot ? 3.5 : 5.5, 0, Math.PI * 2);
@@ -86,14 +117,14 @@ function drawHead(ctx: CanvasRenderingContext2D, x: number, y: number, color: st
   ctx.stroke();
 }
 
-/** Heatmap pixels (grid x grid RGBA) stretched over the map with smoothing. */
-export function drawHeat(ctx: CanvasRenderingContext2D, pixels: Uint8ClampedArray<ArrayBuffer>, grid: number, size: number) {
+/** Heatmap pixels (n x n RGBA) stretched over the map; smoothed for the gradient look, crisp for toon bands. */
+export function drawHeat(ctx: CanvasRenderingContext2D, pixels: Uint8ClampedArray<ArrayBuffer>, n: number, size: number, smooth: boolean) {
   const off = document.createElement('canvas');
-  off.width = grid;
-  off.height = grid;
-  off.getContext('2d')?.putImageData(new ImageData(pixels, grid, grid), 0, 0);
+  off.width = n;
+  off.height = n;
+  off.getContext('2d')?.putImageData(new ImageData(pixels, n, n), 0, 0);
   ctx.save();
-  ctx.imageSmoothingEnabled = true;
+  ctx.imageSmoothingEnabled = smooth || n < size; // bands are 512 px: smoothing only blends their edges slightly
   ctx.imageSmoothingQuality = 'high';
   ctx.drawImage(off, 0, 0, size, size);
   ctx.restore();

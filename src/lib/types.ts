@@ -13,12 +13,21 @@ export type EventType =
   | 'botKill'
   | 'botDeath';
 
-export type HeatLayer = 'traffic' | 'kills' | 'deaths' | 'storm' | 'loot';
+/** Heatmap kinds as the app shows them. */
+export type HeatLayer = 'traffic' | 'loot' | 'fire' | 'kills' | 'deaths' | 'storm';
+
+/** Who the other side of a kill or death was. */
+export type Who = 'both' | 'bots' | 'players';
 
 export interface HeatData {
   grid: number; // cells per side, row 0 at the top of the image
-  layers: Record<HeatLayer, Record<string, number[]>>; // layer -> day -> flat [cell, count, cell, count, ...]
+  // pipeline layer (traffic, loot, killsBot, killsPlayer, deathsBot, deathsPlayer, storm, fire)
+  // -> day -> flat [cell, count, cell, count, ...]
+  layers: Record<string, Record<string, number[]>>;
 }
+
+/** A kill whose victim's death is also recorded: [t, killer u, killer v, victim u, victim v, killer, victim]. */
+export type Fight = [number, number, number, number, number, number, number];
 
 export interface MapConfig {
   id: MapId;
@@ -35,6 +44,7 @@ export interface MatchSummary {
   humans: number;
   bots: number;
   rows: number;
+  fights: number; // kills whose victim's death is also recorded (see Fight)
   events: Partial<Record<EventType, number>>;
 }
 
@@ -60,4 +70,5 @@ export interface Match {
   day: string;
   players: Player[];
   events: MatchEvent[];
+  fights: Fight[];
 }

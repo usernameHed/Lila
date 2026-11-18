@@ -61,4 +61,9 @@ px = u * imageWidth              py = (1 - v) * imageHeight     (image origin to
   `February_11`, identical row for row (its bots are only in `February_11`). The pipeline reads each file name
   once (first day wins), so the match is dated Feb 10 and its 88 rows are not counted twice. Raw rows 89,104,
   rows used 89,016.
+- **Killer-victim pairs are rare.** A kill row stores only the emitter's position and time: no victim id, no
+  victim position, no aim or facing. A pair exists only when the other side's file exists too (bot files: 52
+  matches). Rule: same match, kill and death categories that match, within 1 s and 60 m: 39 fights (median 8.7 m).
+  Without the 60 m cap 3 false pairs appeared (88, 199, 389 m). Estimating victims from the nearest recorded bot
+  was tested and rejected: nearest bot a median 105 m away, only 22 more within 40 m.
 - Checked: no match is on two maps; 210 duplicate position samples (same t, u, v), harmless.

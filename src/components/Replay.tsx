@@ -20,14 +20,15 @@ export function outcome(m: MatchSummary): string {
 interface ListProps {
   matches: MatchSummary[];
   selected: MatchSummary[];
+  mono: boolean;
   onOnly: (id: string) => void;
   onToggle: (id: string) => void;
 }
 
 /** Click a row to replay that match alone; tick boxes to replay several together. */
-export function MatchList({ matches, selected, onOnly, onToggle }: ListProps) {
+export function MatchList({ matches, selected, mono, onOnly, onToggle }: ListProps) {
   const order = new Map(selected.map((s, i) => [s.id, i]));
-  const multi = selected.length > 1 && selected.length <= MANY_MATCHES;
+  const multi = !mono && selected.length > 1 && selected.length <= MANY_MATCHES;
   return (
     <ul className="matches">
       {matches.map((m) => {
@@ -49,7 +50,10 @@ export function MatchList({ matches, selected, onOnly, onToggle }: ListProps) {
               <span className="who">
                 {kills} kill{kills === 1 ? '' : 's'} · {m.events.loot ?? 0} loot
               </span>
-              <span className="who">{m.bots ? `${m.bots} bots tracked` : ''}</span>
+              <span className="who">
+                {m.bots ? `${m.bots} bots tracked` : ''}
+                {m.fights ? ` · ${m.fights} fight line${m.fights === 1 ? '' : 's'}` : ''}
+              </span>
             </button>
           </li>
         );
@@ -59,7 +63,7 @@ export function MatchList({ matches, selected, onOnly, onToggle }: ListProps) {
 }
 
 /** Every selected match on its map, all starting together at 0:00, with one playback. */
-export function ReplayStage({ summaries, uvUnits }: { summaries: MatchSummary[]; uvUnits: number }) {
+export function ReplayStage({ summaries, uvUnits, mono }: { summaries: MatchSummary[]; uvUnits: number; mono: boolean }) {
   const [loaded, setLoaded] = useState<Match[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -91,9 +95,9 @@ export function ReplayStage({ summaries, uvUnits }: { summaries: MatchSummary[];
 
   const draw = useCallback(
     (ctx: CanvasRenderingContext2D, size: number) => {
-      if (shown.length) drawMatches(ctx, shown, uvUnits, size, current ? play.t : Infinity, play.playing);
+      if (shown.length) drawMatches(ctx, shown, uvUnits, size, current ? play.t : Infinity, play.playing, mono);
     },
-    [shown, current, uvUnits, play.t, play.playing],
+    [shown, current, uvUnits, play.t, play.playing, mono],
   );
 
   if (!summaries.length) return <div className="empty">No match for these filters.</div>;

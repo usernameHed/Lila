@@ -15,6 +15,13 @@ about 300 lines, move the oldest entries word for word to `SESSION_HISTORY.md` (
 
 ---
 
+## 2026-11-18 (desktop session): one color, bots / players, fight lines, toon heatmaps
+
+- Ugo: one-color option (both modes), "Kill" -> "Position when killing", bots / players / both, kill-death pairs with
+  a line-of-fire heatmap (he chose lines + heatmap knowing only ~39 pairs exist), toon (BotW-like) heatmap. All done.
+- Pairs: same second + within 60 m (3 false pairs at 88-389 m dropped). Ugo asked why not extrapolate: no victim
+  data in 95% of kills; nearest-bot estimate rejected (median 105 m). Heat list: row = only that kind, box = toggle.
+
 ## 2026-11-18 (desktop session): playback keys, heatmap colors and stacking
 
 - Ugo: grabbing the timeline must pause; Space stopped working once the timeline had focus. Fixed (pause on pointer

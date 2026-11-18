@@ -104,7 +104,17 @@ select {
 .ramp { display: inline-block; width: 28px; height: 8px; border-radius: 4px; margin-right: 6px; vertical-align: middle; }
 .heat-caption .kinds { display: flex; flex-wrap: wrap; gap: 4px 16px; }
 .heat-caption .kind { white-space: nowrap; }
-.layers .swatch-box { width: 12px; height: 12px; margin-right: 10px; border-radius: 3px; border: 2px solid; flex: none; }
+.layers .layer-row { display: flex; align-items: center; }
+.layers .swatch-box {
+  width: 14px; height: 14px; margin: 0 2px 0 10px; padding: 0; border-radius: 3px; border: 2px solid; flex: none;
+  background: transparent; cursor: pointer;
+}
+.layers .swatch-box:hover { outline: 2px solid rgba(255, 255, 255, 0.25); outline-offset: 2px; }
+.layers .layer-name {
+  display: flex; align-items: center; flex: 1; min-width: 0; padding: 7px 10px; text-align: left;
+  background: transparent; border: 0; border-radius: 6px; cursor: pointer;
+}
+.layers .layer:not(.on):hover { background: #1d2026; }
 .layers button.on { box-shadow: none; }
 .side h2 .hint { text-transform: none; letter-spacing: 0; font-weight: 400; margin-left: 6px; }
 
@@ -142,3 +152,14 @@ select {
 }
 .update-btn:hover { background: rgba(79, 209, 139, 0.24); }
 @keyframes pop { from { transform: scale(0.6); opacity: 0; } }
+
+/* Small exclusive choices (bots / players / both, smooth / toon, colors) */
+.choice { display: inline-flex; gap: 2px; padding: 2px; background: #1d2026; border-radius: 6px; }
+.choice button { padding: 3px 10px; border: 0; border-radius: 4px; background: transparent; color: var(--muted); cursor: pointer; font-size: 12px; }
+.choice button.on { background: #2a2f38; color: var(--text); }
+.layers .layer { display: flex; flex-direction: column; border-radius: 6px; }
+.layers .layer.on { background: #22262e; }
+.layers .layer.on > button { background: transparent; border-color: transparent; }
+.layers .layer .choice { margin: 0 10px 8px 32px; align-self: flex-start; }
+.heat-options { display: grid; gap: 6px; margin-top: 16px; justify-items: start; }
+.heat-options h2 { margin: 6px 0 0; }

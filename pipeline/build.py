@@ -17,6 +17,7 @@ Run: .venv/bin/python pipeline/build.py   (or npm run data)
 from __future__ import annotations
 
 import json
+import math
 import re
 import sys
 from collections import defaultdict
@@ -54,14 +55,25 @@ CATEGORY = {
     (True, "BotKilled"): "botDeath",
 }
 
-# Heatmap layers (human point of view) and the categories feeding them. "traffic" = human position samples.
+# Heatmap layers (human point of view) and the categories feeding them. "traffic" = human position samples,
+# "fire" = the line between killer and victim of each paired fight (see pair_fights). The app adds layers up:
+# kills = killsBot + killsPlayer, deaths = deathsBot + deathsPlayer (storm deaths are their own kind).
 HEAT_LAYERS = {
     "traffic": set(),
-    "kills": {"killPlayer", "killBot"},
-    "deaths": {"diedToPlayer", "diedToBot", "storm"},
-    "storm": {"storm"},
     "loot": {"loot"},
+    "killsBot": {"killBot"},
+    "killsPlayer": {"killPlayer"},
+    "deathsBot": {"diedToBot"},
+    "deathsPlayer": {"diedToPlayer"},
+    "storm": {"storm"},
+    "fire": set(),
 }
+# A kill and its victim's death are two events in two files; same match, same second (the clock's resolution) = a pair.
+PAIR_WITHIN_MS = 1000
+# ... and close enough to be the same fight: before this rule 38 pairs lay within 39 m, then a gap (88, 199, 389 m: two unrelated
+# events in the same second). Beyond this range a pair is dropped.
+PAIR_MAX_METERS = 60
+PAIRS = [("killBot", "botDeath"), ("botKill", "diedToBot"), ("killPlayer", "diedToPlayer")]
 DAY_DIR = re.compile(r"^February_(\d+)$")
 BOT_ID = re.compile(r"^\d+$")
 
@@ -202,6 +214,37 @@ def classify_bots(rows: list[dict]) -> dict[str, bool]:
     return result
 
 
+def pair_fights(events: list, scale: float) -> list:
+    """[t, killer u, killer v, victim u, victim v, killer index, victim index] for each kill whose victim's death is
+    also recorded. Only possible when both files exist: 39 fights in the whole dataset (bot files: 52 matches)."""
+    fights = []
+    for kill_cat, death_cat in PAIRS:
+        deaths = [e for e in events if e[1] == death_cat]
+        used: set[int] = set()
+        for t, cat, u, v, killer in events:
+            if cat != kill_cat:
+                continue
+            max_uv = PAIR_MAX_METERS / scale * UV_UNITS
+            near = [
+                (abs(d[0] - t), i)
+                for i, d in enumerate(deaths)
+                if i not in used and abs(d[0] - t) <= PAIR_WITHIN_MS and math.hypot(d[2] - u, d[3] - v) <= max_uv
+            ]
+            if not near:
+                continue
+            _, i = min(near)
+            used.add(i)
+            d = deaths[i]
+            fights.append([t, u, v, d[2], d[3], killer, d[4]])
+    return sorted(fights)
+
+
+def line_cells(u0: int, v0: int, u1: int, v1: int) -> set[int]:
+    """Heat cells crossed by the segment between two UV points (each cell once per line)."""
+    steps = max(1, int(max(abs(u1 - u0), abs(v1 - v0)) * HEAT_GRID / UV_UNITS * 2))
+    return {heat_cell(round(u0 + (u1 - u0) * k / steps), round(v0 + (v1 - v0) * k / steps)) for k in range(steps + 1)}
+
+
 def build_match(match_id: str, m: dict, heat) -> tuple[dict, dict]:
     """The match file's content and its summary row for the index; adds its points to the heat grids."""
     rows = sorted(m["rows"], key=lambda r: (r["sec"], r["user"]))
@@ -234,9 +277,14 @@ def build_match(match_id: str, m: dict, heat) -> tuple[dict, dict]:
             if category in cats:
                 map_heat[layer][day][heat_cell(u, v)] += 1
 
+    fights = pair_fights(events, MAPS[m["map"]]["scale"])
+    for _, ku, kv, vu, vv, _, _ in fights:
+        for cell in line_cells(ku, kv, vu, vv):
+            map_heat["fire"][day][cell] += 1
+
     short_id = match_id.removesuffix(".nakama-0")
     player_list = [{k: v for k, v in p.items() if k != "index"} for p in players.values()]
-    data = {"id": short_id, "map": m["map"], "day": day, "players": player_list, "events": events}
+    data = {"id": short_id, "map": m["map"], "day": day, "players": player_list, "events": events, "fights": fights}
     return data, {
         "id": short_id,
         "map": m["map"],
@@ -245,6 +293,7 @@ def build_match(match_id: str, m: dict, heat) -> tuple[dict, dict]:
         "humans": sum(not p["bot"] for p in player_list),
         "bots": sum(p["bot"] for p in player_list),
         "rows": len(rows),
+        "fights": len(fights),
         "events": dict(sorted(counts.items())),
     }
 

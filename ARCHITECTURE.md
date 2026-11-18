@@ -64,6 +64,7 @@ pixelX = u * imageSize             pixelY = (1 - v) * imageSize        (images s
 | One match crosses midnight: the same human file is in `February_10` and `February_11`, row for row | Read once (first day wins): 89,016 rows used |
 | 794 of 796 matches have a single human | Shown as is, and called out in INSIGHTS.md |
 | No extraction event | "Survived" = no death event in the log |
+| A kill row holds only the killer's position: no victim id, position or aim | Killer-victim pairs only where both ends are recorded (same match, same second, within 60 m): 39 fights. Not estimated elsewhere: 95% of kills happen in matches with no bot file, and the nearest recorded bot is a median 105 m away |
 
 ## Trade-offs
 
@@ -75,5 +76,6 @@ pixelX = u * imageSize             pixelY = (1 - v) * imageSize        (images s
 | Heatmap from raw points in the browser | Per-day grids from the pipeline | Traffic is 51k points; grids of non-empty cells make one small file per map and still filter by day |
 | Max-scaled colors | 98th percentile + square root scale | One extreme hot spot would otherwise wash out every other area |
 | One shared color ramp | One hue per kind, opacity = intensity | Several kinds can be stacked and still told apart (kills over traffic, deaths over loot) |
+| Gradient only | Also a toon look: 4 flat bands with outlines, computed at 4x the grid | Bands read like contour lines: "how hot" at a glance, closer to a level designer's map |
 | One request per match for multi-replay | Map-day bundles above 5 matches | Never hundreds of requests; one match alone stays a 5 KB load. 566 matches replay at 60 fps |
 | Full-size minimaps | 2048 px JPEG | ~300 KB instead of 3-12 MB, still sharp on a retina laptop |

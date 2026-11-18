@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { HeatStage, LayerList, useHeat } from './components/Heat';
 import { Legend } from './components/Legend';
+import { Choice } from './components/Choice';
 import { MatchList, ReplayStage } from './components/Replay';
 import { UpdateButton } from './components/UpdateButton';
 import { loadIndex } from './lib/data';
@@ -44,6 +45,7 @@ export function App() {
   }, [selected]);
 
   const heat = useHeat(view.map);
+  const fights = useMemo(() => matches.reduce((n, m) => n + m.fights, 0), [matches]);
 
   if (error) return <div className="fatal">Could not load the data: {error}</div>;
 
@@ -108,10 +110,17 @@ export function App() {
               <MatchList
                 matches={matches}
                 selected={selected}
+                mono={view.mono}
                 onOnly={(id) => update({ matches: [id] })}
                 onToggle={(id) => update({ matches: toggleMatch(selectedIds, id) })}
               />
             </section>
+            {selected.length > 1 && (
+              <section>
+                <h2>Colors</h2>
+                <Choice label="Match colors" options={[['each', 'One per match'], ['mono', 'One color']]} value={view.mono ? 'mono' : 'each'} onChange={(c) => update({ mono: c === 'mono' })} />
+              </section>
+            )}
             <section>
               <h2>Legend</h2>
               <Legend counts={counts} />
@@ -119,8 +128,26 @@ export function App() {
           </>
         ) : (
           <section className="grow">
-            <h2>Show <span className="muted hint">tick several to stack them</span></h2>
-            <LayerList heat={heat} days={days} layers={view.layers} onToggle={(l) => update({ layers: toggleLayer(view.layers, l) })} />
+            <h2>Show <span className="muted hint">tick boxes to stack kinds</span></h2>
+            <LayerList
+              heat={heat}
+              days={days}
+              fights={fights}
+              layers={view.layers}
+              kills={view.kills}
+              deaths={view.deaths}
+              mono={view.mono}
+              look={view.look}
+              onToggle={(l) => update({ layers: toggleLayer(view.layers, l) })}
+              onOnly={(l) => update({ layers: [l] })}
+              onWho={(kind, who) => update({ [kind]: who })}
+            />
+            <div className="heat-options">
+              <h2>Look</h2>
+              <Choice label="Heatmap look" options={[['smooth', 'Smooth'], ['bands', 'Toon']]} value={view.look} onChange={(look) => update({ look })} />
+              <h2>Colors</h2>
+              <Choice label="Heatmap colors" options={[['each', 'One per kind'], ['mono', 'One color']]} value={view.mono ? 'mono' : 'each'} onChange={(c) => update({ mono: c === 'mono' })} />
+            </div>
           </section>
         )}
       </aside>
@@ -129,9 +156,20 @@ export function App() {
         {!index ? (
           <div className="empty">Loading…</div>
         ) : view.mode === 'replay' ? (
-          <ReplayStage summaries={selected} uvUnits={index.uvUnits} />
+          <ReplayStage summaries={selected} uvUnits={index.uvUnits} mono={view.mono} />
         ) : (
-          <HeatStage map={view.map} heat={heat} days={days} layers={view.layers} matchCount={matches.length} />
+          <HeatStage
+            map={view.map}
+            heat={heat}
+            days={days}
+            matchCount={matches.length}
+            fights={fights}
+            layers={view.layers}
+            kills={view.kills}
+            deaths={view.deaths}
+            mono={view.mono}
+            look={view.look}
+          />
         )}
       </main>
     </div>

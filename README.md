@@ -16,9 +16,12 @@ tool shows about the game).
   60x (Space plays and pauses), or scrub the timeline, which carries a tick for every fight and death.
 - **Several matches at once**: tick matches in the list (or "Select all") to replay them together, all from
   their own 0:00, one color per match. With every match of a map selected, you see where all players are at
-  minute 8, where fights start, who is still out at minute 11.
-- **Heatmaps**: where players spend time (green), kill (red), die (white), get caught by the storm (violet) and
-  loot (yellow), per map, for one day or all five. Tick several kinds to stack them on the map.
+  minute 8, where fights start, who is still out at minute 11. "One color" draws them all in the same color.
+- **Heatmaps**: where players spend time (green), stand when killing (red), get killed (white), get caught by the
+  storm (violet), loot (yellow), and the line of fire between killer and victim (orange), per map, for one day or
+  all five. Click a kind to show it alone, tick its box to stack several. Kills and deaths split into bots,
+  players or both. Two looks: smooth, or toon (flat bands with outlines); one color per kind, or one for all.
+- **Fight lines**: in replay, a dashed arrow from killer to victim for the 39 kills whose victim is also recorded.
 - **Shareable views**: the URL holds the mode, map, day, match and layer, so a link opens exactly that view.
 - **Update button**: when a newer version is deployed, an open page shows a green Update button (checked on
   open, on return to the tab and every 5 minutes); it reloads onto the new version and keeps the view.
