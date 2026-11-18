@@ -110,12 +110,12 @@ it gets a "first 3 matches" filter and a before / after comparison.
 - **No order within a day**: there is no wall clock, so "first match" means "a player's only match", and
   return is counted by day, not by session.
 - **Time spent is position samples** (every ~5 s): it measures time, not distance.
-- **Killer → victim lines exist for 45 fights only**: 39 recorded, 6 inferred from a nearby bot path (see below).
+- **Killer → victim lines exist for 42 fights only**: 36 recorded, 6 inferred from a nearby bot path (see below).
 
 ## What to log next (so the tool can answer more)
 
 Today a kill row holds only the killer's own position and the time: **no victim id, no victim position, no aim
-or facing**. A victim is known only when its own file exists (bot files: 52 of 796 matches), so 39 of ~2,650
+or facing**. A victim is known only when its own file exists (bot files: 52 of 796 matches), so 36 of ~2,650
 fights can be drawn as killer → victim lines. Asks, smallest change first:
 
 | Event | Add | Unlocks |
@@ -128,6 +128,7 @@ fights can be drawn as killer → victim lines. Asks, smallest change first:
 | Every row | wall-clock UTC time; `ts` stored in its real unit (seconds today, typed as ms) | Order a player's matches, sessions, retention by match number |
 | `Loot` | item id, rarity or value, container id | Loot value heatmaps: where the rich loot is, not just the count |
 | Bots | every bot logged in every match, with an archetype or difficulty tier | Bot placement and tuning per area |
+| Level geometry | the collision mesh or navmesh, exported once per map version | Real line of sight (walls, cover), sniper spots, and whether each power position can be reached from several routes |
 | Ids | test accounts flagged (user 1429 plays like a human with a bot-style id) | Clean data without guesswork |
 
 The tool is ready for each of these: the pipeline maps any (x, z) to the minimap, and a new event is a new

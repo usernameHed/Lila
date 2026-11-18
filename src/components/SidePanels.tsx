@@ -39,7 +39,7 @@ export function ReplaySide(p: ReplayProps) {
     <>
       <section>
         <h2>Players</h2>
-        <Choice label="Which players" options={[['all', 'All'], ['once', 'Played only once']]} value={view.players} onChange={(players) => update({ players })} />
+        <Choice label="Which matches" options={[['all', 'All'], ['once', 'Played only once'], ['pvp', 'Fought a player']]} value={view.players} onChange={(players) => update({ players })} />
       </section>
       <section className="grow">
         <h2 className="with-actions">

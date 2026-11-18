@@ -66,6 +66,7 @@ HEAT_LAYERS = {
     "deathsBot": {"diedToBot"},
     "deathsPlayer": {"diedToPlayer"},
     "storm": {"storm"},
+    "killsRaised": set(),  # player kills made RAISED_METERS above the estimated ground (filled in build_match)
 }
 # A kill and its victim's death are two events in two files; same match, same second (the clock's resolution) = a pair.
 PAIR_WITHIN_MS = 1000
@@ -162,8 +163,9 @@ def build() -> None:
     summaries = []
     bundles: dict[tuple[str, str], list] = defaultdict(list)
     heat: dict = defaultdict(lambda: defaultdict(lambda: defaultdict(lambda: defaultdict(int))))
+    terrain = build_terrain(matches)  # first: "raised kills" are judged against the ground
     for match_id, m in sorted(matches.items()):
-        data, summary = build_match(match_id, m, heat)
+        data, summary = build_match(match_id, m, heat, terrain[m["map"]])
         write_json(OUT / "matches" / f"{data['id']}.json", data)
         bundles[(data["map"], data["day"])].append(data)
         summaries.append(summary)
@@ -173,7 +175,6 @@ def build() -> None:
             for _, ku, kv, vu, vv, killer, _, kh, vh, inferred in d["fights"]:
                 fights_by_map[d["map"]].append([d["day"], ku, kv, vu, vv, d["players"][killer]["bot"], kh, vh, inferred])
     write_heat(heat, fights_by_map)
-    write_terrain(matches)
     # One file per map and day with all its matches: replaying many matches at once costs a few requests,
     # not one per match. Single-match replay keeps using the small per-match files.
     for (map_id, day), items in bundles.items():
@@ -217,15 +218,17 @@ TERRAIN_GRID = 96  # ~9 m cells on Ambrose Valley: enough for hills and plateaus
 TERRAIN_LOW = 0.1  # per cell, the 10th percentile of heights: the ground under players, not the upper floors
 
 
-def write_terrain(matches: dict) -> None:
-    """public/data/terrain/<map>.json: an estimated ground height per cell, from every position (players and bots).
+def build_terrain(matches: dict) -> dict[str, list[float]]:
+    """Estimated ground height per cell (meters), from every position (players and bots); also written to
+    public/data/terrain/<map>.json.
 
     The data has no terrain, but every path is walked ground (or a floor). Per cell: a low percentile of the heights
-    seen there; cells nobody walked are filled from their neighbors (repeated averaging), then lightly smoothed.
-    {grid, h: [decimeters, row 0 at the top of the image], known: share of cells with data}.
+    seen there; cells nobody walked take the height of the nearest walked ones (flood fill), then light smoothing.
+    File: {grid, h: [decimeters, row 0 at the top of the image], known: share of cells with data}.
     """
-    (OUT / "terrain").mkdir(parents=True, exist_ok=True)
     g = TERRAIN_GRID
+    terrain: dict[str, list[float]] = {}
+    known_share: dict[str, float] = {}
     for map_id in MAPS:
         cells: dict[int, list[float]] = defaultdict(list)
         for m in matches.values():
@@ -242,20 +245,25 @@ def write_terrain(matches: dict) -> None:
             ys.sort()
             h[i] = ys[int(TERRAIN_LOW * (len(ys) - 1))]
             known[i] = True
-        floor = min(h[i] for i in range(g * g) if known[i])
-        for i in range(g * g):
-            if not known[i]:
-                h[i] = floor
-        # Fill unknown cells: each takes the mean of its 4 neighbors, many times (a discrete Laplace fill).
-        for _ in range(300):
-            nxt = h[:]
-            for i in range(g * g):
-                if known[i]:
-                    continue
+        # Fill unknown cells from the nearest walked cells: a flood fill outward, ring by ring, each new cell taking
+        # the mean of its already-filled neighbors. (Starting them at the map's lowest point and averaging made the
+        # unwalked areas sag into bowls under the paths.)
+        filled = known[:]
+        ring = [i for i in range(g * g) if known[i]]
+        while ring:
+            nxt_ring = []
+            for i in ring:
                 r, c = divmod(i, g)
-                ns = [h[j] for j in (i - g if r else -1, i + g if r < g - 1 else -1, i - 1 if c else -1, i + 1 if c < g - 1 else -1) if j >= 0]
-                nxt[i] = sum(ns) / len(ns)
-            h = nxt
+                for j in (i - g if r else -1, i + g if r < g - 1 else -1, i - 1 if c else -1, i + 1 if c < g - 1 else -1):
+                    if j >= 0 and not filled[j]:
+                        filled[j] = True
+                        nxt_ring.append(j)
+            done = set(nxt_ring)  # a ring reads only the cells filled before it
+            for j in nxt_ring:
+                r, c = divmod(j, g)
+                ns = [h[k] for k in (j - g if r else -1, j + g if r < g - 1 else -1, j - 1 if c else -1, j + 1 if c < g - 1 else -1) if k >= 0 and filled[k] and k not in done]
+                h[j] = sum(ns) / len(ns)
+            ring = nxt_ring
         # Light smoothing: per-cell noise (a few samples) would make spikes.
         for _ in range(2):
             nxt = h[:]
@@ -264,7 +272,23 @@ def write_terrain(matches: dict) -> None:
                 ns = [h[(rr) * g + cc] for rr in (r - 1, r, r + 1) for cc in (c - 1, c, c + 1) if 0 <= rr < g and 0 <= cc < g]
                 nxt[i] = sum(ns) / len(ns)
             h = nxt
-        write_json(OUT / "terrain" / f"{map_id}.json", {"grid": g, "h": [round(x * 10) for x in h], "known": round(sum(known) / len(known), 3)})
+        terrain[map_id] = h
+        known_share[map_id] = round(sum(known) / len(known), 3)
+    (OUT / "terrain").mkdir(parents=True, exist_ok=True)
+    for map_id, h in terrain.items():
+        write_json(OUT / "terrain" / f"{map_id}.json", {"grid": g, "h": [round(x * 10) for x in h], "known": known_share[map_id]})
+    return terrain
+
+
+RAISED_METERS = 3  # a kill made this far above the estimated ground: rooftop, tower, ledge
+
+
+def ground_at(terrain: list[float], u: int, v: int) -> float:
+    """Estimated ground height (m) under a UV point."""
+    g = TERRAIN_GRID
+    col = min(g - 1, max(0, u * g // UV_UNITS))
+    row = min(g - 1, max(0, (UV_UNITS - v) * g // UV_UNITS))
+    return terrain[row * g + col]
 
 
 def write_heat(heat, fights_by_map) -> None:
@@ -305,7 +329,7 @@ def classify_bots(rows: list[dict]) -> dict[str, bool]:
 
 def pair_fights(events: list, scale: float) -> list:
     """[t, killer u, killer v, victim u, victim v, killer index, victim index, killer h, victim h, inferred=0] for each
-    kill whose victim's death is also recorded. Only possible when both files exist: 39 fights (bot files: 52 matches)."""
+    kill whose victim's death is also recorded. Only possible when both files exist: 36 fights (bot files: 52 matches)."""
     fights = []
     for kill_cat, death_cat in PAIRS:
         deaths = [e for e in events if e[1] == death_cat]
@@ -317,7 +341,10 @@ def pair_fights(events: list, scale: float) -> list:
             near = [
                 (abs(d[0] - t), i)
                 for i, d in enumerate(deaths)
-                if i not in used and abs(d[0] - t) <= PAIR_WITHIN_MS and math.hypot(d[2] - u, d[3] - v) <= max_uv
+                if i not in used
+                and d[4] != killer  # never a player with themself (the PvP Kill + Killed of one player, see DATA.md)
+                and abs(d[0] - t) <= PAIR_WITHIN_MS
+                and math.hypot(d[2] - u, d[3] - v) <= max_uv
             ]
             if not near:
                 continue
@@ -373,7 +400,7 @@ def infer_fights(events: list, players: list[dict], scale: float, recorded: list
     return out
 
 
-def build_match(match_id: str, m: dict, heat) -> tuple[dict, dict]:
+def build_match(match_id: str, m: dict, heat, terrain: list[float]) -> tuple[dict, dict]:
     """The match file's content and its summary row for the index; adds its points to the heat grids."""
     rows = sorted(m["rows"], key=lambda r: (r["sec"], r["user"]))
     t0 = rows[0]["sec"]
@@ -405,6 +432,8 @@ def build_match(match_id: str, m: dict, heat) -> tuple[dict, dict]:
         for layer, cats in HEAT_LAYERS.items():
             if category in cats:
                 map_heat[layer][day][heat_cell(u, v)] += 1
+        if category in ("killBot", "killPlayer") and r["y"] - ground_at(terrain, u, v) > RAISED_METERS:
+            map_heat["killsRaised"][day][heat_cell(u, v)] += 1
 
     fights = pair_fights(events, MAPS[m["map"]]["scale"])
     fights = sorted(fights + infer_fights(events, list(players.values()), MAPS[m["map"]]["scale"], fights))

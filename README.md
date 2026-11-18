@@ -28,7 +28,7 @@ live views. It doubles as the walkthrough of the features below.
   players or both. Two looks: smooth, or toon (flat bands with outlines); one color per kind, or one for all.
 - **Players who played once**: a replay filter for the 107 matches that were a player's only one, to see what
   happened to the players who did not come back.
-- **Fight lines**: in replay, a dashed arrow from killer to victim for the 39 kills whose victim is also recorded.
+- **Fight lines**: in replay, a dashed arrow from killer to victim for the 36 kills whose victim is also recorded (plus 6 inferred).
 - **Shareable views**: the URL holds the mode, map, day, match and layer, so a link opens exactly that view.
 - **Update button**: when a newer version is deployed, an open page shows a green Update button (checked on
   open, on return to the tab and every 5 minutes); it reloads onto the new version and keeps the view.

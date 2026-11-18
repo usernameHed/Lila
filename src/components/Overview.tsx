@@ -98,6 +98,18 @@ export function Overview({ index }: { index: Index | null }) {
             <strong>Where the storm catches players</strong>
             <span>Storm deaths over traffic on Lockdown.</span>
           </a>
+          <a className="card" href="#mode=heat&map=AmbroseValley&layer=power,raised">
+            <strong>Power positions and line of sight</strong>
+            <span>Spots that win 3-5x more fights per minute, kills from rooftops; turn on Line of sight and click a spot to see what it commands.</span>
+          </a>
+          <a className="card" href="#mode=replay&map=AmbroseValley&players=pvp&match=all">
+            <strong>The only player vs player fights</strong>
+            <span>3 matches. Each time: a kill and a death at the same second and spot, the other player's file missing.</span>
+          </a>
+          <a className="card" href="#mode=replay&map=Lockdown&match=ead4c72d-0e3b-49b4-a91b-a9a21bed8012">
+            <strong>Click a player</strong>
+            <span>In any replay, click a path: its whole story, fights and events, past and future path.</span>
+          </a>
         </div>
         <p className="hint-line">Tips: click a row to show it alone, tick its box to add it · hover the legend to spot a kind on the map · every view is a link you can share.</p>
       </section>
@@ -155,8 +167,10 @@ export function Overview({ index }: { index: Index | null }) {
           <li><b>Same event, two meanings.</b> A human's <code>BotKill</code> is "I killed a bot", a bot's is "this bot killed someone": stored by meaning.</li>
           <li><b>One journey exported twice</b> (a match across midnight, Feb 10 and 11): read once.</li>
           <li><b>Event bytes decoded</b>, no file unreadable, no match on two maps.</li>
-          <li><b>Killer → victim pairs</b>: 39 where both events are recorded (same second, within 60 m), plus 6 inferred from a bot path that stops at the kill or a bot within 40 m of a death (drawn lighter). 95% of fights happen in matches with no bot recorded: there, the data has no victim at all.</li>
+          <li><b>Killer → victim pairs</b>: 36 where both events are recorded (same second, within 60 m), plus 6 inferred from a bot path that stops at the kill or a bot within 40 m of a death (drawn lighter). 95% of fights happen in matches with no bot recorded: there, the data has no victim at all.</li>
           <li><b>No storm position in the data</b>: the storm is not drawn (inferring it was tested and rejected).</li>
+          <li><b>Player vs player is 3 events.</b> In all 3, the only human recorded has a Kill and a Killed at the same second and the same spot, at the end of the match: a trade or a self-kill; the other player's file is missing. Kept visible on their own (filter "Fought a player").</li>
+          <li><b>Terrain and line of sight are estimates.</b> Ground height per 9 m cell comes from where players and bots walked; line of sight uses that ground only. Walls and buildings are not in the data: what it shows as visible is the most a spot could see.</li>
         </ul>
       </section>
 
@@ -191,6 +205,7 @@ export function Overview({ index }: { index: Index | null }) {
           <li><b>Facing</b> on position samples, 1-2 s sampling in combat → sightlines.</li>
           <li><b>Extraction</b> and <b>storm edge</b> events → real extraction rate, the storm drawn on the replay.</li>
           <li><b>Match start</b> (humans and bots in the match, spawn point) and <b>wall-clock time</b> → matchmaking and first-match analysis.</li>
+          <li><b>Level geometry</b> (collision mesh or navmesh export) → real line of sight with walls and cover, and whether each power position can be reached from several routes.</li>
           <li><b>Loot value</b>, every bot logged, test accounts flagged.</li>
         </ul>
       </section>

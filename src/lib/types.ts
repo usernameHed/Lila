@@ -14,7 +14,7 @@ export type EventType =
   | 'botDeath';
 
 /** Heatmap kinds as the app shows them. */
-export type HeatLayer = 'traffic' | 'loot' | 'fire' | 'kills' | 'deaths' | 'storm';
+export type HeatLayer = 'traffic' | 'loot' | 'power' | 'raised' | 'fire' | 'kills' | 'deaths' | 'storm';
 
 /** Who the other side of a kill or death was. */
 export type Who = 'both' | 'bots' | 'players';

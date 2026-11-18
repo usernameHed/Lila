@@ -43,9 +43,9 @@ paths follow roads on all three maps. In 3D: x east, z south, y = height above t
 | 17 numeric-id (bot-style) files move and loot like humans (mostly user 1429) | Bot or human decided by `BotPosition` / `Position`; the id only as a fallback |
 | `BotKill` means "I killed a bot" from a human, "this bot killed someone" from a bot | Stored as categories from the emitter's side; heatmaps use the player's side |
 | The same human file in `February_10` and `February_11` (a match across midnight) | Read once: 89,016 rows used |
-| No victim on a kill row; bot files for only 52 of 796 matches | 39 recorded pairs + 6 inferred (bot within 40 m / bot path ending at the kill), drawn lighter. No guess where no bot was recorded (95% of fights) |
+| No victim on a kill row; bot files for only 52 of 796 matches | 36 recorded pairs + 6 inferred (bot within 40 m / bot path ending at the kill), drawn lighter. No guess where no bot was recorded (95% of fights) |
 | No storm position, no extraction event | Storm not drawn (inference tested, too weak); "survived" = no death logged |
-| No terrain | Estimated: 10th percentile of heights per cell, unwalked cells filled from neighbors, labeled estimated |
+| No terrain, no level geometry | Ground estimated (10th percentile of heights per cell, gaps filled from the nearest walked cells); line of sight runs on that ground only and says so |
 
 ## Trade-offs
 
@@ -55,5 +55,5 @@ paths follow roads on all three maps. In 3D: x east, z south, y = height above t
 | SVG or a map library | Canvas (2D), three.js on demand (3D) | A fixed image needs no tiles; 3D answers "which floor", designers start top-down |
 | One request per match | Map-day bundles above 5 matches | 566 matches in 5 requests, replayed at 60 fps |
 | Raw points for heatmaps | Per-day grids, toon bands, one hue per kind | Small files that still filter by day; bands read like contours and kinds stack |
-| Line of fire as a heat grid | Arrows | 45 lines blur into noise as heat |
+| Line of fire as a heat grid | Arrows | 42 lines blur into noise as heat |
 | Guess missing victims or the storm | Show only what the data supports | A wrong line looks as true as a right one |

@@ -8,8 +8,12 @@ import type { LegendKey } from './lib/draw';
 import { UpdateButton } from './components/UpdateButton';
 import { loadIndex } from './lib/data';
 import { MAP_LABEL, formatDay } from './lib/style';
-import type { EventType, HeatLayer, Index, MapId, Who } from './lib/types';
+import type { EventType, HeatLayer, Index, MapId, MatchSummary, Who } from './lib/types';
 import { legendOnly, legendToggle, parseView, resolveSelection, toggleLayer, toggleMatch, viewHash, type Mode, type View } from './lib/view';
+
+/** The replay's Players filter. */
+const keepFor = (players: View['players'], m: MatchSummary) =>
+  players === 'all' || (players === 'once' ? m.onlyMatch : !!(m.events.killPlayer || m.events.diedToPlayer));
 
 const TAB_LABEL: Record<Mode, string> = { overview: 'Overview', replay: 'Match replay', heat: 'Heatmaps' };
 
@@ -40,7 +44,7 @@ export function App() {
         (m) =>
           m.map === view.map &&
           (view.day === 'all' || m.day === view.day) &&
-          (view.mode !== 'replay' || view.players === 'all' || m.onlyMatch),
+          (view.mode !== 'replay' || keepFor(view.players, m)),
       ),
     [index, view.map, view.day, view.mode, view.players],
   );
@@ -167,7 +171,7 @@ export function App() {
           />
         ) : (
           <HeatStage
-            map={view.map}
+            mapConfig={index.maps.find((m) => m.id === view.map) ?? index.maps[0]}
             heat={heat}
             days={days}
             matchCount={matches.length}

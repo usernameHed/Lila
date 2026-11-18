@@ -2,17 +2,20 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { loadHeat } from '../lib/data';
 import { uvToPixel } from '../lib/coords';
 import { drawFightLine, drawHeat, heatCanvas } from '../lib/draw';
-import { blur, normalize, render, strongest, sumDays } from '../lib/heat';
+import { blur, normalize, powerGrid, render, strongest, sumDays } from '../lib/heat';
 import { HEAT_LAYERS, MONO_RGB, WHO_LABEL, rgbCss } from '../lib/style';
-import type { HeatData, HeatLayer, MapId, Who } from '../lib/types';
+import type { HeatData, HeatLayer, MapConfig, MapId, Who } from '../lib/types';
 import { Choice } from './Choice';
 import { MapCanvas } from './MapCanvas';
+import { SightControls, useSightTool } from './SightTool';
 
 const KINDS = Object.keys(HEAT_LAYERS) as HeatLayer[]; // drawing order
 const WHOS: Who[] = ['bots', 'players', 'both'];
 
 /** Pipeline layers behind a kind: kills and deaths split by the other side (bots, players). */
 export function sourcesOf(kind: HeatLayer, who: Who): string[] {
+  if (kind === 'raised') return ['killsRaised'];
+  if (kind === 'power') return ['killsBot', 'killsPlayer'];
   if (kind !== 'kills' && kind !== 'deaths') return [kind];
   const [bots, players] = [`${kind}Bot`, `${kind}Player`];
   return who === 'bots' ? [bots] : who === 'players' ? [players] : [bots, players];
@@ -34,6 +37,7 @@ const fightsOf = (heat: HeatData, days: string[]) => heat.fights.filter((f) => d
 function count(heat: HeatData | null, kind: HeatLayer, who: Who, days: string[]): number | null {
   if (!heat) return null;
   if (kind === 'fire') return fightsOf(heat, days).length;
+  if (kind === 'power') return null; // a rate, not a count
   let n = 0;
   for (const s of sourcesOf(kind, who)) for (const d of days) {
     const cells = heat.layers[s]?.[d] ?? [];
@@ -72,6 +76,8 @@ export function useHeatDraw(heat: HeatData | null, days: string[], o: HeatOption
     if (!heat) return [];
     const kinds = KINDS.filter((l) => l !== 'fire' && o.layers.includes(l));
     const grids = kinds.map((l) => {
+      // Power: kills per time spent, already a 0-1 intensity.
+      if (l === 'power') return powerGrid(sum(heat, sourcesOf('power', 'both'), days), sum(heat, ['traffic'], days), heat.grid);
       const values = sum(heat, sourcesOf(l, l === 'kills' ? o.kills : o.deaths), days);
       const total = values.reduce((a, b) => a + b, 0);
       // Sparse kinds (storm deaths: 39 in all) get a wider blur, so single events stay visible.
@@ -138,13 +144,27 @@ export function LayerList({ heat, days, onToggle, onOnly, onWho, ...o }: ListPro
 
 const ramp = (rgb: [number, number, number]) => `linear-gradient(90deg, ${rgbCss(rgb, 0.25)}, ${rgbCss(rgb, 1)})`;
 
-export function HeatStage({ map, heat, days, matchCount, uvUnits, ...o }: HeatOptions & { map: MapId; heat: HeatData | null; days: string[]; matchCount: number; uvUnits: number }) {
-  const draw = useHeatDraw(heat, days, o, uvUnits);
+export function HeatStage({ mapConfig, heat, days, matchCount, uvUnits, ...o }: HeatOptions & { mapConfig: MapConfig; heat: HeatData | null; days: string[]; matchCount: number; uvUnits: number }) {
+  const map = mapConfig.id;
+  const heatDraw = useHeatDraw(heat, days, o, uvUnits);
+  // Line of sight from a clicked spot, over the heatmap: e.g. what a power position commands.
+  const [sightOn, setSightOn] = useState(false);
+  const sight = useSightTool(mapConfig, uvUnits, sightOn);
+  const draw = useCallback(
+    (ctx: CanvasRenderingContext2D, size: number) => {
+      heatDraw(ctx, size);
+      sight.draw(ctx, size);
+    },
+    [heatDraw, sight],
+  );
   const fights = heat && o.layers.includes('fire') ? fightsOf(heat, days).length : 0;
   const who = (l: HeatLayer) => (l === 'kills' ? o.kills : l === 'deaths' ? o.deaths : 'both');
   return (
     <>
-      <MapCanvas map={map} draw={draw} dim={0.5} />
+      <div className="stage-tools">
+        <SightControls on={sightOn} onChange={setSightOn} share={sight.share} spot={!!sight.spot} />
+      </div>
+      <MapCanvas map={map} draw={draw} dim={0.5} uvUnits={uvUnits} onPick={sightOn ? sight.onPick : undefined} />
       <div className="heat-caption">
         <span className="kinds">
           {o.layers.map((l) => (

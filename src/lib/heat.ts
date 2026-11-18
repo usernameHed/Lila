@@ -117,28 +117,61 @@ export function upscale(k: Float32Array, grid: number, f: number): Float32Array 
 }
 
 /** Intensity 0-1 to a band 0..BANDS (0 = nothing). */
-export const bandOf = (k: number) => (k < 0.18 ? 0 : Math.min(BANDS, Math.ceil(k * BANDS)));
+/** Where each band starts, in intensity (0-1): below the first, nothing is drawn. */
+export const BAND_EDGES = [0.18, 0.25, 0.5, 0.75];
+
+/** Intensity 0-1 to a band 0..BANDS (0 = nothing). */
+export const bandOf = (k: number) => BAND_EDGES.filter((e) => k > e).length;
+
+const EDGE_PX = 0.9; // half-width of the outline, in pixels of the band picture
 
 /**
- * Toon look (cel shading): a few flat bands of the kind's color instead of a gradient, each band edge drawn
- * as a dark outline. RGBA at (grid x BAND_SCALE) per side.
+ * Toon look (cel shading): flat bands of the kind's color with a dark outline at each band edge, anti-aliased.
+ * For every pixel, the distance to the nearest band edge is measured in pixels (value difference divided by the
+ * local slope), so pixels that straddle an edge blend the two bands and the outline smoothly, like vector art.
+ * RGBA at (grid x BAND_SCALE) per side.
  */
 function toBands(k: Float32Array, grid: number, rgb: Rgb): Uint8ClampedArray<ArrayBuffer> {
   const n = grid * BAND_SCALE;
   const up = upscale(k, grid, BAND_SCALE);
-  const band = new Uint8Array(n * n);
-  for (let i = 0; i < up.length; i++) band[i] = bandOf(up[i]);
-  const fills = Array.from({ length: BANDS + 1 }, (_, b) => (b ? colorAt(b / BANDS, rgb) : null));
-  const edge: [number, number, number, number] = [...(rgb.map((c) => Math.round(c * 0.35)) as Rgb), 235];
+  const fills = Array.from({ length: BANDS + 1 }, (_, b) => (b ? colorAt(b / BANDS, rgb) : ([0, 0, 0, 0] as const)));
+  const edge = rgb.map((c) => Math.round(c * 0.35)) as Rgb;
   const px = new Uint8ClampedArray(new ArrayBuffer(n * n * 4));
+  const at = (x: number, y: number) => up[Math.min(n - 1, Math.max(0, y)) * n + Math.min(n - 1, Math.max(0, x))];
   for (let y = 0; y < n; y++)
     for (let x = 0; x < n; x++) {
-      const i = y * n + x;
-      const b = band[i];
-      if (!b) continue;
-      const lower = (j: number) => band[j] < b;
-      const isEdge = (x > 0 && lower(i - 1)) || (x < n - 1 && lower(i + 1)) || (y > 0 && lower(i - n)) || (y < n - 1 && lower(i + n));
-      px.set(isEdge ? edge : (fills[b] as number[]), i * 4);
+      const v = up[y * n + x];
+      if (v < BAND_EDGES[0] - 0.05) continue; // far from any band: transparent
+      const slope = Math.hypot(at(x + 1, y) - at(x - 1, y), at(x, y + 1) - at(x, y - 1)) / 2 || 1e-6;
+      // The nearest band edge and the signed distance to it, in pixels (> 0: on the upper side).
+      let e = BAND_EDGES[0];
+      for (const t of BAND_EDGES) if (Math.abs(v - t) < Math.abs(v - e)) e = t;
+      const d = (v - e) / slope;
+      const upper = BAND_EDGES.indexOf(e) + 1; // band on the upper side of that edge
+      const cover = Math.max(0, Math.min(1, d + 0.5)); // share of the pixel on the upper side
+      const lo = fills[upper - 1];
+      const hi = fills[upper];
+      // Fill: the two bands mixed by coverage (premultiplied, so the transparent outside blends cleanly).
+      let a = lo[3] * (1 - cover) + hi[3] * cover;
+      let r = (lo[0] * lo[3] * (1 - cover) + hi[0] * hi[3] * cover) / (a || 1);
+      let g = (lo[1] * lo[3] * (1 - cover) + hi[1] * hi[3] * cover) / (a || 1);
+      let b = (lo[2] * lo[3] * (1 - cover) + hi[2] * hi[3] * cover) / (a || 1);
+      // Outline: full at the edge, fading out over EDGE_PX on each side.
+      const line = Math.max(0, Math.min(1, EDGE_PX + 0.5 - Math.abs(d)));
+      if (line > 0) {
+        const la = 235 * line;
+        const outA = la + a * (1 - line);
+        r = (edge[0] * la + r * a * (1 - line)) / (outA || 1);
+        g = (edge[1] * la + g * a * (1 - line)) / (outA || 1);
+        b = (edge[2] * la + b * a * (1 - line)) / (outA || 1);
+        a = outA;
+      }
+      if (a < 1) continue;
+      const i = (y * n + x) * 4;
+      px[i] = r;
+      px[i + 1] = g;
+      px[i + 2] = b;
+      px[i + 3] = a;
     }
   return px;
 }
@@ -146,4 +179,27 @@ function toBands(k: Float32Array, grid: number, rgb: Rgb): Uint8ClampedArray<Arr
 /** The picture for one intensity grid: toon band pixels and their size per side. */
 export function render(k: Float32Array, grid: number, rgb: Rgb) {
   return { pixels: toBands(k, grid, rgb), size: grid * BAND_SCALE };
+}
+
+/** Power positions: how many times the map's average kill rate (kills per minute spent) a spot has. */
+export const POWER_FULL = 4; // 4x the map average or more = the hottest band
+
+/**
+ * Kills per unit of time spent, per cell, as a 0-1 intensity: 0 at or below the map's average rate, 1 at
+ * POWER_FULL times it. Both grids are blurred first (a spot, not a single cell), and cells where players spent
+ * little time are left out: one lucky kill in an empty corner is not a strong position.
+ */
+export function powerGrid(kills: Float32Array, time: Float32Array, grid: number, minTime = 6): Float32Array {
+  const k = blur(kills, grid, 2);
+  const t = blur(time, grid, 2);
+  const totalK = kills.reduce((a, b) => a + b, 0);
+  const totalT = time.reduce((a, b) => a + b, 0);
+  const out = new Float32Array(k.length);
+  if (!totalK || !totalT) return out;
+  const avg = totalK / totalT;
+  for (let i = 0; i < out.length; i++) {
+    if (t[i] < minTime) continue;
+    out[i] = Math.max(0, Math.min(1, (k[i] / t[i] / avg - 1) / (POWER_FULL - 1)));
+  }
+  return out;
 }

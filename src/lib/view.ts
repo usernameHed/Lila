@@ -16,8 +16,8 @@ export interface View {
   deaths: Who;
   /** One color for everything (heatmap kinds, or replayed matches) instead of one color each. */
   mono: boolean;
-  /** Replay: every match, or only matches of players who never played again. */
-  players: 'all' | 'once';
+  /** Replay: every match, only matches of players who never played again, or only fights between players. */
+  players: 'all' | 'once' | 'pvp';
   /** Replay: legend rows turned off (event types, or 'fights' for the killer-to-victim lines). */
   hidden: string[];
   /** Replay: draw the chosen heatmap kinds under the replay. */
@@ -37,7 +37,7 @@ export const ALL = 'all';
 export const DEFAULT_VIEW: View = { mode: 'overview', map: 'AmbroseValley', day: 'all', matches: [], layers: ['traffic'], kills: 'both', deaths: 'both', mono: false, players: 'all', hidden: [], heatUnder: false, view3d: false, colorBy: 'player', exaggeration: 4, terrain: true };
 
 const MAPS: MapId[] = ['AmbroseValley', 'GrandRift', 'Lockdown'];
-const LAYERS: HeatLayer[] = ['traffic', 'loot', 'fire', 'kills', 'deaths', 'storm']; // drawing order
+const LAYERS: HeatLayer[] = ['traffic', 'loot', 'power', 'raised', 'fire', 'kills', 'deaths', 'storm']; // drawing order
 const WHO: Who[] = ['both', 'bots', 'players'];
 
 /** Read a view from a hash like "#mode=heat&map=Lockdown&layer=kills". Unknown values fall back to defaults. */
@@ -55,7 +55,7 @@ export function parseView(hash: string): View {
     kills: pick('kills', WHO, 'both'),
     deaths: pick('deaths', WHO, 'both'),
     mono: q.get('mono') === '1',
-    players: pick<View['players']>('players', ['all', 'once'], 'all'),
+    players: pick<View['players']>('players', ['all', 'once', 'pvp'], 'all'),
     hidden: (q.get('hide') ?? '').split(',').filter((k) => /^[a-zA-Z]{2,20}$/.test(k)),
     heatUnder: q.get('under') === '1',
     view3d: q.get('view') === '3d',
@@ -95,7 +95,7 @@ export function viewHash(v: View): string {
     if (v.deaths !== 'both' && v.layers.includes('deaths')) q.set('deaths', v.deaths);
   }
   if (v.mono) q.set('mono', '1');
-  if (v.mode === 'replay' && v.players === 'once') q.set('players', 'once');
+  if (v.mode === 'replay' && v.players !== 'all') q.set('players', v.players);
   if (v.mode === 'replay' && v.hidden.length) q.set('hide', v.hidden.join(','));
   if (v.mode === 'replay' && v.view3d) q.set('view', '3d');
   if (v.mode === 'replay' && v.view3d && v.exaggeration !== DEFAULT_VIEW.exaggeration) q.set('ex', String(v.exaggeration));

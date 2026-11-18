@@ -9,6 +9,7 @@ import type { MapConfig, Match, MatchSummary, Terrain } from '../lib/types';
 import { Choice } from './Choice';
 import { MapCanvas, type MapPick } from './MapCanvas';
 import { PlayerCard } from './PlayerCard';
+import { SightControls, useSightTool } from './SightTool';
 import { PlaybackBar } from './PlaybackBar';
 import { usePlayback } from './usePlayback';
 
@@ -160,6 +161,9 @@ export function ReplayStage({ summaries, uvUnits, mono, hidden, hover, under, ma
     ({ u, v, tolerance }: MapPick) => setFocus(pickPlayer(shown, current ? play.t : Infinity, u, v, tolerance)),
     [shown, current, play.t],
   );
+  // Line of sight: a click places the viewer instead of choosing a player (2D only).
+  const [sightOn, setSightOn] = useState(false);
+  const sight = useSightTool(mapConfig, uvUnits, sightOn && !view3d);
   const terrainData = useTerrain(view3d && terrain ? mapConfig.id : null);
   const heightRange = useMemo(
     () => (colorBy === 'height' ? { min: mapConfig.hMin * 10, max: mapConfig.hMax * 10 } : null),
@@ -172,8 +176,9 @@ export function ReplayStage({ summaries, uvUnits, mono, hidden, hover, under, ma
       if (shown.length)
         drawMatches(ctx, shown, uvUnits, size, current ? play.t : Infinity, play.playing, { mono, hidden: hiddenSet, hover, phase, heightRange });
       if (focusMatch && focus) drawFocus(ctx, focusMatch, focus.player, uvUnits, size, current ? play.t : Infinity);
+      sight.draw(ctx, size);
     },
-    [shown, current, uvUnits, play.t, play.playing, mono, hiddenSet, hover, phase, under, heightRange, focusMatch, focus],
+    [shown, current, uvUnits, play.t, play.playing, mono, hiddenSet, hover, phase, under, heightRange, focusMatch, focus, sight],
   );
 
   if (!summaries.length) return <div className="empty">No match for these filters.</div>;
@@ -196,6 +201,7 @@ export function ReplayStage({ summaries, uvUnits, mono, hidden, hover, under, ma
             {Math.round(mapConfig.hMin)} m <span className="ramp" style={{ background: HEIGHT_RAMP }} /> {Math.round(mapConfig.hMax)} m
           </span>
         )}
+        {!view3d && <SightControls on={sightOn} onChange={setSightOn} share={sight.share} spot={!!sight.spot} />}
         {view3d && (
           <Choice
             label="Ground"
@@ -230,7 +236,7 @@ export function ReplayStage({ summaries, uvUnits, mono, hidden, hover, under, ma
           />
         </Suspense>
       ) : (
-        <MapCanvas map={summaries[0].map} draw={draw} dim={under ? 0.4 : 0} uvUnits={uvUnits} onPick={onPick} />
+        <MapCanvas map={summaries[0].map} draw={draw} dim={under ? 0.4 : 0} uvUnits={uvUnits} onPick={sightOn ? sight.onPick : onPick} />
       )}
       {story && focus && (
         <PlayerCard

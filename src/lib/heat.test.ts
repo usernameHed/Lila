@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { BAND_SCALE, bandOf, blur, colorAt, normalize, render, scaleTop, strongest, sumDays, upscale } from './heat';
+import { BAND_SCALE, bandOf, blur, colorAt, normalize, powerGrid, render, scaleTop, strongest, sumDays, upscale } from './heat';
 
 describe('heatmap', () => {
   it('sums only the chosen days', () => {
@@ -52,6 +52,19 @@ describe('one color and toon bands', () => {
     expect([0.05, 0.2, 0.4, 0.6, 1].map(bandOf)).toEqual([0, 1, 2, 3, 4]);
   });
 
+  it('anti-aliases band edges: in-between colors only on a thin edge, flat bands elsewhere', () => {
+    const grid = 16;
+    const k = new Float32Array(grid * grid);
+    for (let y = 0; y < grid; y++) for (let x = 0; x < grid; x++) k[y * grid + x] = Math.max(0, 1 - Math.hypot(x - 8, y - 8) / 7);
+    const { pixels } = render(k, grid, [255, 0, 0]);
+    const alphas = new Map<number, number>();
+    let drawn = 0;
+    for (let i = 3; i < pixels.length; i += 4) if (pixels[i]) (drawn++, alphas.set(pixels[i], (alphas.get(pixels[i]) ?? 0) + 1));
+    const flat = [...alphas.values()].sort((a, b) => b - a).slice(0, 5).reduce((a, b) => a + b, 0);
+    expect(flat / drawn).toBeGreaterThan(0.6); // most pixels sit in a few flat bands...
+    expect(alphas.size).toBeGreaterThan(10); // ...and the edges have intermediate values (smooth, not stair-stepped)
+  });
+
   it('upscales smoothly and keeps the corners', () => {
     const up = upscale(new Float32Array([0, 1, 0, 1]), 2, 4);
     expect(up.length).toBe(64);
@@ -71,7 +84,22 @@ describe('one color and toon bands', () => {
     const alphas = new Set<number>();
     const reds = new Set<number>();
     for (let i = 0; i < pixels.length; i += 4) if (pixels[i + 3]) (alphas.add(pixels[i + 3]), reds.add(pixels[i]));
-    expect(alphas.size).toBeLessThanOrEqual(5); // 4 bands + the edge: flat, no gradient
+    expect(alphas.size).toBeGreaterThan(0);
     expect(Math.min(...reds)).toBeLessThan(100); // the dark outline
+  });
+});
+
+describe('powerGrid', () => {
+  it('is 0 at the map average, 1 at 4x, and ignores places nobody spends time', () => {
+    const grid = 16;
+    const time = new Float32Array(grid * grid).fill(100);
+    const kills = new Float32Array(grid * grid).fill(1);
+    for (let i = 0; i < 9; i++) kills[(6 + Math.floor(i / 3)) * grid + 6 + (i % 3)] = 8; // a hot 3x3 spot
+    for (let r = 0; r < 5; r++) for (let c = 0; c < 5; c++) time[r * grid + c] = 0; // an empty corner...
+    kills[2 * grid + 2] = 5; // ...with one lucky kill in it
+    const p = powerGrid(kills, time, grid);
+    expect(p[7 * grid + 7]).toBeGreaterThan(0.6); // the hot spot
+    expect(p[14 * grid + 14]).toBe(0); // an average place
+    expect(p[2 * grid + 2]).toBe(0);
   });
 });

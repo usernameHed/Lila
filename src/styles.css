@@ -114,7 +114,8 @@ select {
 .heat-caption > span:last-child { display: flex; align-items: center; gap: 6px; }
 .ramp { display: inline-block; width: 28px; height: 8px; border-radius: 4px; margin-right: 6px; vertical-align: middle; }
 .heat-caption .kinds { display: flex; flex-wrap: wrap; gap: 4px 16px; }
-.heat-caption .kind { white-space: nowrap; }
+.heat-caption .kind { white-space: normal; }
+.heat-caption { min-width: 0; }
 .layers .layer-row { display: flex; align-items: center; }
 .layers .swatch-box {
   width: 14px; height: 14px; margin: 0 2px 0 10px; padding: 0; border-radius: 3px; border: 2px solid; flex: none;
@@ -260,3 +261,4 @@ select {
 .story .time { color: var(--muted); font-variant-numeric: tabular-nums; min-width: 34px; }
 .go-btn { margin-top: 10px; width: 100%; padding: 7px; border: 1px solid var(--accent); border-radius: 6px; background: transparent; color: var(--text); cursor: pointer; }
 @media (max-width: 760px) { .player-card { width: auto; right: 10px; max-height: 60%; } }
+.sight-note { font-size: 12.5px; max-width: 560px; }

@@ -15,6 +15,16 @@ about 300 lines, move the oldest entries word for word to `SESSION_HISTORY.md` (
 
 ---
 
+## 2026-11-18 (desktop session): power positions, raised kills, line of sight, PvP filter
+
+- Ugo: "build both" (power positions, raised kills); line of sight even if approximate; PvP fights viewable apart.
+  Done: `killsRaised` heat layer (terrain built first), `powerGrid` (tested), viewshed on the terrain (tested,
+  250 m, 1.7 m eye, Line of sight switch in replay 2D and heatmaps), Players "Fought a player" (3 matches).
+- Found: the 3 PvP events are Kill + Killed at the same second and spot at match end (trade or self-kill); they had
+  been paired as a fight of a player with themself: fixed (36 recorded + 6 inferred = 42 lines).
+- Ugo: toon edges not clean -> anti-aliased (distance to the band edge in pixels); 3D terrain "bent" -> unwalked cells
+  had sunk (filled from the map's lowest point): now flood-filled from the nearest walked cells.
+
 ## 2026-11-18 (desktop session): click a player, 2D zoom, deeper pairs
 
 - Ugo: zoom in 2D; 3D dots stretched; click a dot / path for all its info; line of fire short? search deeper.
