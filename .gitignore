@@ -1,0 +1,26 @@
+### LILA raw data and brief: local only, never tracked
+player_data.zip
+data/raw/
+*.docx
+
+### Node / build
+node_modules/
+dist/
+.wrangler/
+
+### Python
+.venv/
+__pycache__/
+
+### Claude
+.claude/worktrees/
+.claude/settings.local.json
+
+### macOS
+.DS_Store
+._*
+
+### Editors
+.vscode/*
+!.vscode/extensions.json
+.idea/

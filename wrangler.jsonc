@@ -1,0 +1,14 @@
+// LILA BLACK Player Journey Visualizer: a static site (the Vite build in ./dist) served by Cloudflare.
+// Account: Ugo's own Cloudflare account (prefix wrangler with XDG_CONFIG_HOME=~/.config/wrangler-ugo on his Mac).
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "lila",
+  "account_id": "5e4452294cd5abe45582fff85c3d8b65",
+  "compatibility_date": "2026-11-01",
+  "workers_dev": false,
+  "routes": [{ "pattern": "lila.belfiore.me", "custom_domain": true }],
+  "assets": {
+    "directory": "./dist",
+    "not_found_handling": "single-page-application"
+  }
+}

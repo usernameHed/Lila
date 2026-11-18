@@ -1,0 +1,73 @@
+/* First pass: plain and readable. The design pass comes later, from references Ugo picks. */
+:root {
+  --bg: #0e0f12;
+  --panel: #16181d;
+  --line: #262a31;
+  --text: #e8e9ec;
+  --muted: #8b909a;
+  --accent: #e5484d;
+  color-scheme: dark;
+  font-family: Inter, ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif;
+  font-size: 14px;
+}
+
+* { box-sizing: border-box; }
+html, body, #root { height: 100%; margin: 0; }
+body { background: var(--bg); color: var(--text); }
+button, select { font: inherit; color: inherit; }
+
+.app { display: grid; grid-template-columns: 300px 1fr; height: 100%; }
+
+.side {
+  display: flex; flex-direction: column; gap: 18px; min-height: 0;
+  padding: 18px 16px; background: var(--panel); border-right: 1px solid var(--line); overflow: hidden;
+}
+.side header h1 { margin: 0; font-size: 18px; letter-spacing: 0.08em; }
+.side .sub { margin: 2px 0 0; color: var(--muted); }
+.side h2 {
+  margin: 0 0 8px; font-size: 11px; font-weight: 600; letter-spacing: 0.08em;
+  text-transform: uppercase; color: var(--muted);
+}
+.side section.grow { flex: 1; min-height: 120px; display: flex; flex-direction: column; }
+
+.count { margin-left: auto; padding-left: 8px; color: var(--muted); font-variant-numeric: tabular-nums; }
+
+.segmented { display: flex; flex-direction: column; gap: 4px; }
+.segmented button, .matches button {
+  display: flex; align-items: center; width: 100%; padding: 7px 10px; text-align: left;
+  background: transparent; border: 1px solid transparent; border-radius: 6px; cursor: pointer;
+}
+.segmented button:hover, .matches button:hover { background: #1d2026; }
+.segmented button.on, .matches button.on { background: #22262e; border-color: var(--line); }
+.segmented button.on { box-shadow: inset 3px 0 0 var(--accent); }
+
+select {
+  width: 100%; padding: 7px 10px; background: #1d2026; border: 1px solid var(--line); border-radius: 6px;
+}
+
+.matches { list-style: none; margin: 0; padding: 0; overflow-y: auto; flex: 1; }
+.matches button {
+  display: grid; grid-template-columns: 1fr auto; gap: 1px 8px; font-size: 13px;
+}
+.matches .when { font-weight: 600; }
+.matches .dur { color: var(--muted); font-variant-numeric: tabular-nums; }
+.matches .who, .matches .kills { color: var(--muted); font-size: 12px; }
+
+.legend { list-style: none; margin: 0; padding: 0; display: grid; gap: 4px; font-size: 13px; }
+.legend li { display: flex; align-items: center; gap: 8px; }
+.swatch.line { width: 18px; height: 3px; border-radius: 2px; }
+.swatch.dashed { background: repeating-linear-gradient(90deg, currentColor 0 4px, transparent 4px 7px); }
+
+.stage { min-width: 0; min-height: 0; padding: 16px; }
+.map-box { position: relative; width: 100%; height: 100%; display: grid; place-items: center; }
+.map-box canvas { border-radius: 8px; background: #000; }
+.map-loading { position: absolute; color: var(--muted); }
+
+.fatal { padding: 32px; color: var(--accent); }
+
+@media (max-width: 760px) {
+  .app { grid-template-columns: 1fr; grid-template-rows: auto auto; height: auto; }
+  .side { border-right: 0; border-bottom: 1px solid var(--line); overflow: visible; }
+  .side section.grow { max-height: 220px; }
+  .stage { padding: 16px; height: 100vw; }
+}
