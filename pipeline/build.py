@@ -170,8 +170,8 @@ def build() -> None:
     fights_by_map: dict[str, list] = defaultdict(list)
     for items in bundles.values():
         for d in items:
-            for _, ku, kv, vu, vv, killer, _, kh, vh in d["fights"]:
-                fights_by_map[d["map"]].append([d["day"], ku, kv, vu, vv, d["players"][killer]["bot"], kh, vh])
+            for _, ku, kv, vu, vv, killer, _, kh, vh, inferred in d["fights"]:
+                fights_by_map[d["map"]].append([d["day"], ku, kv, vu, vv, d["players"][killer]["bot"], kh, vh, inferred])
     write_heat(heat, fights_by_map)
     write_terrain(matches)
     # One file per map and day with all its matches: replaying many matches at once costs a few requests,
@@ -304,8 +304,8 @@ def classify_bots(rows: list[dict]) -> dict[str, bool]:
 
 
 def pair_fights(events: list, scale: float) -> list:
-    """[t, killer u, killer v, victim u, victim v, killer index, victim index, killer h, victim h] for each kill whose victim's death is
-    also recorded. Only possible when both files exist: 39 fights in the whole dataset (bot files: 52 matches)."""
+    """[t, killer u, killer v, victim u, victim v, killer index, victim index, killer h, victim h, inferred=0] for each
+    kill whose victim's death is also recorded. Only possible when both files exist: 39 fights (bot files: 52 matches)."""
     fights = []
     for kill_cat, death_cat in PAIRS:
         deaths = [e for e in events if e[1] == death_cat]
@@ -324,8 +324,53 @@ def pair_fights(events: list, scale: float) -> list:
             _, i = min(near)
             used.add(i)
             d = deaths[i]
-            fights.append([t, u, v, d[2], d[3], killer, d[4], h, d[5]])
+            fights.append([t, u, v, d[2], d[3], killer, d[4], h, d[5], 0])
     return sorted(fights)
+
+
+INFER_MAX_METERS = 40  # the recorded pairs all lie within 39 m
+INFER_PATH_END_MS = 10_000  # a bot whose path stops within 10 s of a kill: it is the one that died
+
+
+def infer_fights(events: list, players: list[dict], scale: float, recorded: list) -> list:
+    """Pairs the data does not record but supports, flagged inferred (last field 1). Only where bot paths exist:
+    - a player killed by a bot: the nearest bot alive at that moment, within INFER_MAX_METERS, is the killer;
+    - a player's bot kill: the nearest bot whose path ends within INFER_PATH_END_MS, within range, is the victim.
+    """
+    bots = [p for p in players if p["bot"] and len(p["path"]) >= 3]
+    if not bots:
+        return []
+    max_uv = INFER_MAX_METERS / scale * UV_UNITS
+    done = {(f[0], f[5]) for f in recorded} | {(f[0], f[6]) for f in recorded}
+
+    def sample(b: dict, t: int):
+        ts = b["path"][0::3]
+        k = min(range(len(ts)), key=lambda q: abs(ts[q] - t))
+        return b["path"][k * 3 + 1], b["path"][k * 3 + 2], b["h"][k]
+
+    out = []
+    for t, cat, u, v, who, h in events:
+        if players[who]["bot"] or (t, who) in done or cat not in ("diedToBot", "killBot"):
+            continue
+        best = None
+        for b in bots:
+            ts = b["path"][0::3]
+            if cat == "diedToBot" and not ts[0] - 5000 <= t <= ts[-1] + 5000:
+                continue
+            if cat == "killBot" and abs(ts[-1] - t) > INFER_PATH_END_MS:
+                continue
+            bu, bv, bh = sample(b, t) if cat == "diedToBot" else (b["path"][-2], b["path"][-1], b["h"][-1])
+            d = math.hypot(bu - u, bv - v)
+            if d <= max_uv and (best is None or d < best[0]):
+                best = (d, b["index"], bu, bv, bh)
+        if best is None:
+            continue
+        _, bi, bu, bv, bh = best
+        if cat == "diedToBot":  # the bot shot the player
+            out.append([t, bu, bv, u, v, bi, who, bh, h, 1])
+        else:  # the player shot the bot
+            out.append([t, u, v, bu, bv, who, bi, h, bh, 1])
+    return out
 
 
 def build_match(match_id: str, m: dict, heat) -> tuple[dict, dict]:
@@ -362,6 +407,7 @@ def build_match(match_id: str, m: dict, heat) -> tuple[dict, dict]:
                 map_heat[layer][day][heat_cell(u, v)] += 1
 
     fights = pair_fights(events, MAPS[m["map"]]["scale"])
+    fights = sorted(fights + infer_fights(events, list(players.values()), MAPS[m["map"]]["scale"], fights))
 
     short_id = match_id.removesuffix(".nakama-0")
     player_list = [{k: v for k, v in p.items() if k != "index"} for p in players.values()]

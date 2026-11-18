@@ -155,7 +155,7 @@ export function Overview({ index }: { index: Index | null }) {
           <li><b>Same event, two meanings.</b> A human's <code>BotKill</code> is "I killed a bot", a bot's is "this bot killed someone": stored by meaning.</li>
           <li><b>One journey exported twice</b> (a match across midnight, Feb 10 and 11): read once.</li>
           <li><b>Event bytes decoded</b>, no file unreadable, no match on two maps.</li>
-          <li><b>Killer → victim pairs</b> only where both are recorded (same second, within 60 m): 39 fights. Not estimated elsewhere: the data has no victim.</li>
+          <li><b>Killer → victim pairs</b>: 39 where both events are recorded (same second, within 60 m), plus 6 inferred from a bot path that stops at the kill or a bot within 40 m of a death (drawn lighter). 95% of fights happen in matches with no bot recorded: there, the data has no victim at all.</li>
           <li><b>No storm position in the data</b>: the storm is not drawn (inferring it was tested and rejected).</li>
         </ul>
       </section>

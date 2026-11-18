@@ -66,6 +66,11 @@ px = u * imageWidth              py = (1 - v) * imageHeight     (image origin to
   matches). Rule: same match, kill and death categories that match, within 1 s and 60 m: 39 fights (median 8.7 m).
   Without the 60 m cap 3 false pairs appeared (88, 199, 389 m). Estimating victims from the nearest recorded bot
   was tested and rejected: nearest bot a median 105 m away, only 22 more within 40 m.
+- **Deeper pairing (asked by Ugo)**: in matches with bot files, a bot alive within 40 m when a player dies to a
+  bot, or a bot whose path ends within 10 s and 40 m of a player's bot kill: 6 more pairs, flagged inferred.
+  Ceiling: 2,119 of 2,240 kills and 381 of 403 deaths are in matches with no bot recorded at all.
+- **Terrain**: estimated per map on a 96 grid (10th percentile height per cell, 21-36% of cells walked, the rest
+  filled by repeated neighbor averaging, 2 smoothing passes). Shown 2 m lower in 3D so paths stay on top.
 - **Height (`y`)**: meters, about 40 m of range per map with clusters (ground, upper floors, hills): Ambrose Valley
   100-163 m, Lockdown 33-71 m, Grand Rift 8-47 m. Index keeps each map's 1st-99th percentile as `hMin` / `hMax`.
 - **No storm data**: no storm event or edge position. Inference tested and rejected (late-match drift 55-67% one

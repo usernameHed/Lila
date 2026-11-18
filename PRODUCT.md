@@ -110,7 +110,7 @@ it gets a "first 3 matches" filter and a before / after comparison.
 - **No order within a day**: there is no wall clock, so "first match" means "a player's only match", and
   return is counted by day, not by session.
 - **Time spent is position samples** (every ~5 s): it measures time, not distance.
-- **Killer → victim lines exist for 39 fights only** (see below).
+- **Killer → victim lines exist for 45 fights only**: 39 recorded, 6 inferred from a nearby bot path (see below).
 
 ## What to log next (so the tool can answer more)
 

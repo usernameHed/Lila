@@ -25,11 +25,14 @@ export interface HeatData {
   // -> day -> flat [cell, count, cell, count, ...]
   layers: Record<string, Record<string, number[]>>;
   /** Killer-to-victim lines of this map: [day, killer u, killer v, victim u, victim v, killer is a bot]. */
-  fights: [string, number, number, number, number, boolean, number, number][];
+  fights: [string, number, number, number, number, boolean, number, number, number][]; // + inferred
 }
 
-/** A kill whose victim's death is also recorded: [t, killer u, v, victim u, v, killer, victim, killer h, victim h]. */
-export type Fight = [number, number, number, number, number, number, number, number, number];
+/**
+ * A killer-to-victim pair: [t, killer u, v, victim u, v, killer, victim, killer h, victim h, inferred].
+ * inferred = 0: both events recorded; 1: deduced from a nearby bot path (pipeline infer_fights).
+ */
+export type Fight = [number, number, number, number, number, number, number, number, number, number];
 
 export interface MapConfig {
   id: MapId;

@@ -41,7 +41,7 @@ export const EVENT_LAYER: Record<EventType, number> = {
 export const HEAT_LAYERS: Record<HeatLayer, { label: string; hint: string; rgb: [number, number, number]; split?: true }> = {
   traffic: { label: 'Traffic', hint: 'where players spend time', rgb: [61, 220, 132] },
   loot: { label: 'Loot', hint: 'where players pick up items', rgb: [255, 209, 102] },
-  fire: { label: 'Line of fire', hint: 'arrow from killer to victim, only for fights where both are recorded', rgb: [255, 140, 66] },
+  fire: { label: 'Line of fire', hint: 'arrow from killer to victim: 39 recorded fights, 6 inferred (lighter)', rgb: [255, 140, 66] },
   kills: { label: 'Position when killing', hint: 'where players stand when they kill', rgb: [255, 51, 85], split: true },
   deaths: { label: 'Position when killed', hint: 'where players die to bots or players', rgb: [240, 244, 255], split: true },
   storm: { label: 'Storm deaths', hint: 'where the storm catches players', rgb: [179, 136, 255] },

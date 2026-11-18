@@ -163,6 +163,7 @@ export function App() {
             exaggeration={view.exaggeration}
             terrain={view.terrain}
             onView={update}
+            onOnlyMatch={(id) => update({ matches: [id] })}
           />
         ) : (
           <HeatStage

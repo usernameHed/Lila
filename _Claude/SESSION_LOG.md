@@ -15,6 +15,13 @@ about 300 lines, move the oldest entries word for word to `SESSION_HISTORY.md` (
 
 ---
 
+## 2026-11-18 (desktop session): click a player, 2D zoom, deeper pairs
+
+- Ugo: zoom in 2D; 3D dots stretched; click a dot / path for all its info; line of fire short? search deeper.
+  Done: zoom / pan / reset (MapCanvas); heads counter-scaled; pick (lib/pick.ts, 2D by UV, 3D by screen projection)
+  -> focus highlight + PlayerCard (lib/story.ts); 6 inferred pairs (flagged, lighter). Arrow = killer -> victim,
+  short because fights are close (median 9 m). ARCHITECTURE.md trimmed to one page.
+
 ## 2026-11-18 (desktop session): Overview page, terrain, rubric pass
 
 - Ugo: rubric pasted; "no one reads docs": a summary in the page. Done: Overview tab (default landing): stats, 6 "try it"

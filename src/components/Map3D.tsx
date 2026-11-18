@@ -10,6 +10,7 @@ import type { LegendKey } from '../lib/draw';
 import { minimapUrl } from '../lib/data';
 import { EVENT_STYLE, FIRE_COLOR, MANY_MATCHES, MATCH_COLORS, PATH_COLOR, heightColor } from '../lib/style';
 import { heightAt, positionAt, samplesUntil } from '../lib/timeline';
+import { segmentDistance, type Focus } from '../lib/pick';
 import type { EventType, MapConfig, Match, Terrain } from '../lib/types';
 
 export interface Map3DProps {
@@ -26,6 +27,9 @@ export interface Map3DProps {
   terrain: Terrain | null;
   /** Heatmap painted on the ground with the minimap (null: minimap only). */
   overlay: ((ctx: CanvasRenderingContext2D, size: number) => void) | null;
+  /** The player in focus (highlighted), and a click on a path to choose one. */
+  focus: Focus | null;
+  onFocus: (f: Focus | null) => void;
 }
 
 /** Size of the ground texture: minimap + heatmap painted together. */
@@ -35,6 +39,10 @@ const TEXTURE_PX = 2048;
 const TERRAIN_SINK = 2;
 
 interface PathLine {
+  match: string;
+  player: number;
+  baseOpacity: number;
+  baseWidth: number;
   line: Line2;
   shadow: THREE.Line;
   head: THREE.Mesh;
@@ -89,7 +97,7 @@ function place(map: MapConfig, uvUnits: number, u: number, v: number, hDm: numbe
   return new THREE.Vector3((u / uvUnits) * map.scale, hDm / 10 - map.hMin, (1 - v / uvUnits) * map.scale);
 }
 
-export default function Map3D({ map, matches, uvUnits, t, hidden, byHeight, mono, exaggeration, terrain, overlay }: Map3DProps) {
+export default function Map3D({ map, matches, uvUnits, t, hidden, byHeight, mono, exaggeration, terrain, overlay, focus, onFocus }: Map3DProps) {
   const box = useRef<HTMLDivElement>(null);
   const three = useRef<{
     renderer: THREE.WebGLRenderer;
@@ -170,8 +178,58 @@ export default function Map3D({ map, matches, uvUnits, t, hidden, byHeight, mono
     };
   }, [map]);
 
+  // A click (not a drag) on a path: that player comes into focus; on nothing: focus cleared.
+  const onFocusRef = useRef(onFocus);
+  onFocusRef.current = onFocus;
   useEffect(() => {
+    const ctx = three.current;
+    if (!ctx) return;
+    const el = ctx.renderer.domElement;
+    let down: { x: number; y: number } | null = null;
+    const onDown = (e: PointerEvent) => (down = { x: e.clientX, y: e.clientY });
+    const onUp = (e: PointerEvent) => {
+      if (!down || Math.abs(e.clientX - down.x) + Math.abs(e.clientY - down.y) > 4) return;
+      // Screen-space pick: project each path's drawn points, nearest segment within 12 px (same rule as 2D).
+      const r = el.getBoundingClientRect();
+      const mx = e.clientX - r.left;
+      const my = e.clientY - r.top;
+      ctx.world.updateMatrixWorld();
+      const toScreen = (x: number, y: number, z: number) => {
+        const v = new THREE.Vector3(x, y, z).applyMatrix4(ctx.world.matrixWorld).project(ctx.camera);
+        return { x: ((v.x + 1) / 2) * r.width, y: ((1 - v.y) / 2) * r.height, behind: v.z > 1 };
+      };
+      let best: { d: number; p: PathLine } | null = null;
+      for (const path of built.current.paths) {
+        const geo = path.line.geometry as LineGeometry;
+        const start = geo.attributes.instanceStart as THREE.InterleavedBufferAttribute;
+        const end = geo.attributes.instanceEnd as THREE.InterleavedBufferAttribute;
+        const n = Math.min(start.count, geo.instanceCount); // only the part drawn so far
+        for (let k = 0; k < n; k++) {
+          const a = toScreen(start.getX(k), start.getY(k), start.getZ(k));
+          const b = toScreen(end.getX(k), end.getY(k), end.getZ(k));
+          if (a.behind || b.behind) continue;
+          const d = segmentDistance(mx, my, a.x, a.y, b.x, b.y);
+          if (d <= 12 && (!best || d < best.d)) best = { d, p: path };
+        }
+      }
+      const p = best?.p;
+      onFocusRef.current(p ? { match: p.match, player: p.player } : null);
+    };
+    el.addEventListener('pointerdown', onDown);
+    el.addEventListener('pointerup', onUp);
+    return () => {
+      el.removeEventListener('pointerdown', onDown);
+      el.removeEventListener('pointerup', onUp);
+    };
+  }, [map]);
+
+
+  // Heights stretch with the exaggeration; the player dots must not (they would become tall ellipses).
+  const exaggerationRef = useRef(exaggeration);
+  useEffect(() => {
+    exaggerationRef.current = exaggeration;
     if (three.current) three.current.world.scale.y = exaggeration;
+    for (const p of built.current.paths) p.head.scale.set(1, 1 / exaggeration, 1);
   }, [exaggeration]);
 
   // The ground's texture: the minimap, darkened and with the heatmap on top when one is shown (as in 2D).
@@ -232,8 +290,8 @@ export default function Map3D({ map, matches, uvUnits, t, hidden, byHeight, mono
     const paths: PathLine[] = [];
     const materials: LineMaterial[] = [];
     matches.forEach((m, mi) => {
-      for (const p of m.players) {
-        if (p.path.length < 6 || !p.h) continue;
+      m.players.forEach((p, pi) => {
+        if (p.path.length < 6 || !p.h) return;
         const n = p.path.length / 3;
         const pos = new Float32Array(n * 3);
         const flat = new Float32Array(n * 3);
@@ -267,10 +325,11 @@ export default function Map3D({ map, matches, uvUnits, t, hidden, byHeight, mono
         // The path's shadow on the ground: shows where a raised path is above the map.
         const shadow = new THREE.Line(shadowGeo, new THREE.LineBasicMaterial({ color: 0x000000, transparent: true, opacity: many ? 0.15 : 0.45 }));
         shadow.scale.y = 1;
-        const head = new THREE.Mesh(new THREE.SphereGeometry(p.bot ? 2 : 3.5, 12, 8), new THREE.MeshBasicMaterial({ color: base }));
+        const head = new THREE.Mesh(new THREE.SphereGeometry((p.bot ? 2 : 3.5) * (many ? 0.5 : 1), 12, 8), new THREE.MeshBasicMaterial({ color: base }));
+        head.scale.set(1, 1 / exaggerationRef.current, 1);
         content.add(line, shadow, head);
-        paths.push({ line, shadow, head, path: p.path, h: p.h });
-      }
+        paths.push({ match: m.id, player: pi, baseOpacity: material.opacity, baseWidth: material.linewidth, line, shadow, head, path: p.path, h: p.h });
+      });
     });
 
     const events = new Map<EventType, EventLayer>();
@@ -308,6 +367,17 @@ export default function Map3D({ map, matches, uvUnits, t, hidden, byHeight, mono
     lineMaterials.current = materials;
     resizeLines();
   }, [matches, map, uvUnits, byHeight, mono]);
+
+  // Focus: the chosen path bold and fully opaque, the others faded.
+  useEffect(() => {
+    for (const p of built.current.paths) {
+      const is = !!focus && p.match === focus.match && p.player === focus.player;
+      const m = p.line.material as LineMaterial;
+      m.opacity = focus ? (is ? 1 : 0.12) : p.baseOpacity;
+      m.linewidth = is ? 6 : p.baseWidth;
+      p.head.visible = p.head.visible && (!focus || is);
+    }
+  }, [focus, matches, byHeight, mono]);
 
   // Every frame of the playback: how much of each path, which events, where the heads are.
   useEffect(() => {

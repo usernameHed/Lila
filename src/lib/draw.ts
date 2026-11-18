@@ -39,8 +39,8 @@ export function drawMatches(ctx: CanvasRenderingContext2D, matches: Match[], uvU
   if (!hidden.has('fights')) {
     const fade = o.hover && o.hover !== 'fights' ? 0.25 : 1;
     for (const m of matches)
-      for (const [time, ku, kv, vu, vv, killer] of m.fights ?? [])
-        if (time <= t) drawFightLine(ctx, uvToPixel(ku, kv, uvUnits, size), uvToPixel(vu, vv, uvUnits, size), m.players[killer]?.bot ?? false, fade, o.hover === 'fights' ? pulse(o.phase) : 0);
+      for (const [time, ku, kv, vu, vv, killer, , , , inferred] of m.fights ?? [])
+        if (time <= t) drawFightLine(ctx, uvToPixel(ku, kv, uvUnits, size), uvToPixel(vu, vv, uvUnits, size), m.players[killer]?.bot ?? false, fade * (inferred ? 0.55 : 1), o.hover === 'fights' ? pulse(o.phase) : 0);
   }
 }
 
@@ -262,6 +262,68 @@ export function drawMarker(ctx: CanvasRenderingContext2D, shape: MarkerShape, co
       ctx.lineWidth = 1;
       ctx.stroke();
       break;
+  }
+  ctx.restore();
+}
+
+/**
+ * One player in focus: the rest of the map dims, the path so far is bold, the path still to come is a dashed
+ * ghost (where they will go), every one of their events shows (future ones faded), and their fights are drawn.
+ */
+export function drawFocus(ctx: CanvasRenderingContext2D, match: Match, index: number, uvUnits: number, size: number, t: number) {
+  const p = match.players[index];
+  if (!p) return;
+  const px = (u: number, v: number) => uvToPixel(u, v, uvUnits, size);
+  ctx.save();
+  ctx.fillStyle = 'rgba(8, 9, 12, 0.55)';
+  ctx.fillRect(0, 0, size, size);
+  const n = samplesUntil(p.path, t);
+  const line = (from: number, to: number) => {
+    ctx.beginPath();
+    for (let i = from; i < to; i++) {
+      const { x, y } = px(p.path[i * 3 + 1], p.path[i * 3 + 2]);
+      if (i === from) ctx.moveTo(x, y);
+      else ctx.lineTo(x, y);
+    }
+  };
+  const total = p.path.length / 3;
+  const color = p.bot ? PATH_COLOR.bot : '#ffffff';
+  // Future: where this player is going next.
+  line(Math.max(0, n - 1), total);
+  ctx.setLineDash([5, 5]);
+  ctx.lineWidth = 2;
+  ctx.strokeStyle = 'rgba(255,255,255,0.45)';
+  ctx.stroke();
+  ctx.setLineDash([]);
+  // Past: bold, on a dark outline.
+  line(0, n);
+  const head = positionAt(p.path, t);
+  if (head) {
+    const { x, y } = px(head.u, head.v);
+    ctx.lineTo(x, y);
+  }
+  ctx.lineJoin = 'round';
+  ctx.lineCap = 'round';
+  ctx.lineWidth = 7;
+  ctx.strokeStyle = 'rgba(0,0,0,0.8)';
+  ctx.stroke();
+  ctx.lineWidth = 3.5;
+  ctx.strokeStyle = color;
+  ctx.stroke();
+  for (const [time, type, u, v, who] of match.events) {
+    if (who !== index) continue;
+    const s = EVENT_STYLE[type];
+    const { x, y } = px(u, v);
+    ctx.globalAlpha = time <= t ? 1 : 0.4;
+    drawMarker(ctx, s.shape, s.color, x, y, s.size * 1.2);
+  }
+  ctx.globalAlpha = 1;
+  for (const [time, ku, kv, vu, vv, killer, victim, , , inferred] of match.fights ?? [])
+    if (killer === index || victim === index)
+      drawFightLine(ctx, px(ku, kv), px(vu, vv), match.players[killer]?.bot ?? false, (time <= t ? 1 : 0.4) * (inferred ? 0.7 : 1));
+  if (head) {
+    const { x, y } = px(head.u, head.v);
+    drawHead(ctx, x, y, color, false);
   }
   ctx.restore();
 }

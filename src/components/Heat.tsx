@@ -86,7 +86,7 @@ export function useHeatDraw(heat: HeatData | null, days: string[], o: HeatOption
   return useCallback(
     (ctx: CanvasRenderingContext2D, size: number) => {
       for (const p of pictures) drawHeat(ctx, p, size);
-      for (const [, ku, kv, vu, vv, bot] of fights) drawFightLine(ctx, uvToPixel(ku, kv, uvUnits, size), uvToPixel(vu, vv, uvUnits, size), bot);
+      for (const [, ku, kv, vu, vv, bot, , , inferred] of fights) drawFightLine(ctx, uvToPixel(ku, kv, uvUnits, size), uvToPixel(vu, vv, uvUnits, size), bot, inferred ? 0.55 : 1);
     },
     [pictures, fights, uvUnits],
   );

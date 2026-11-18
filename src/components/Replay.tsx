@@ -1,11 +1,14 @@
 import { Suspense, lazy, useCallback, useEffect, useMemo, useState } from 'react';
 import { loadMatches, loadTerrain } from '../lib/data';
-import { drawMatches, type LegendKey } from '../lib/draw';
-import { HEIGHT_RAMP, MANY_MATCHES, MATCH_COLORS, formatDay, formatDuration } from '../lib/style';
+import { drawFocus, drawMatches, type LegendKey } from '../lib/draw';
+import { pickPlayer, type Focus } from '../lib/pick';
+import { playerStory } from '../lib/story';
+import { HEIGHT_RAMP, MANY_MATCHES, MAP_LABEL, MATCH_COLORS, formatDay, formatDuration } from '../lib/style';
 import { matchEnd } from '../lib/timeline';
 import type { MapConfig, Match, MatchSummary, Terrain } from '../lib/types';
 import { Choice } from './Choice';
-import { MapCanvas } from './MapCanvas';
+import { MapCanvas, type MapPick } from './MapCanvas';
+import { PlayerCard } from './PlayerCard';
 import { PlaybackBar } from './PlaybackBar';
 import { usePlayback } from './usePlayback';
 
@@ -78,6 +81,8 @@ interface StageProps {
   exaggeration: number;
   terrain: boolean;
   onView: (patch: { view3d?: boolean; colorBy?: 'player' | 'height'; exaggeration?: number; terrain?: boolean }) => void;
+  /** Replay only this match (from the details card). */
+  onOnlyMatch: (id: string) => void;
 }
 
 const Map3D = lazy(() => import('./Map3D'));
@@ -112,7 +117,7 @@ function usePulse(active: boolean): number {
   return phase;
 }
 
-export function ReplayStage({ summaries, uvUnits, mono, hidden, hover, under, mapConfig, view3d, colorBy, exaggeration, terrain, onView }: StageProps) {
+export function ReplayStage({ summaries, uvUnits, mono, hidden, hover, under, mapConfig, view3d, colorBy, exaggeration, terrain, onView, onOnlyMatch }: StageProps) {
   const [loaded, setLoaded] = useState<Match[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -143,6 +148,18 @@ export function ReplayStage({ summaries, uvUnits, mono, hidden, hover, under, ma
   const phase = usePulse(!!hover);
   const hiddenSet = useMemo(() => new Set(hidden), [hidden]);
   const events = useMemo(() => (current ?? []).flatMap((m) => m.events), [current]);
+  // The player clicked on the map: highlighted, with a details card. Dropped when the selection changes.
+  const [focus, setFocus] = useState<Focus | null>(null);
+  useEffect(() => setFocus(null), [key]);
+  const focusMatch = focus ? shown.find((m) => m.id === focus.match) : undefined;
+  const story = useMemo(
+    () => (focusMatch && focus ? playerStory(focusMatch, focus.player, uvUnits, mapConfig.scale) : null),
+    [focusMatch, focus, uvUnits, mapConfig.scale],
+  );
+  const onPick = useCallback(
+    ({ u, v, tolerance }: MapPick) => setFocus(pickPlayer(shown, current ? play.t : Infinity, u, v, tolerance)),
+    [shown, current, play.t],
+  );
   const terrainData = useTerrain(view3d && terrain ? mapConfig.id : null);
   const heightRange = useMemo(
     () => (colorBy === 'height' ? { min: mapConfig.hMin * 10, max: mapConfig.hMax * 10 } : null),
@@ -154,8 +171,9 @@ export function ReplayStage({ summaries, uvUnits, mono, hidden, hover, under, ma
       under?.(ctx, size);
       if (shown.length)
         drawMatches(ctx, shown, uvUnits, size, current ? play.t : Infinity, play.playing, { mono, hidden: hiddenSet, hover, phase, heightRange });
+      if (focusMatch && focus) drawFocus(ctx, focusMatch, focus.player, uvUnits, size, current ? play.t : Infinity);
     },
-    [shown, current, uvUnits, play.t, play.playing, mono, hiddenSet, hover, phase, under, heightRange],
+    [shown, current, uvUnits, play.t, play.playing, mono, hiddenSet, hover, phase, under, heightRange, focusMatch, focus],
   );
 
   if (!summaries.length) return <div className="empty">No match for these filters.</div>;
@@ -193,6 +211,7 @@ export function ReplayStage({ summaries, uvUnits, mono, hidden, hover, under, ma
           </label>
         )}
       </div>
+      <div className="stage-main">
       {view3d ? (
         <Suspense fallback={<div className="empty">Loading 3D…</div>}>
           <Map3D
@@ -206,11 +225,26 @@ export function ReplayStage({ summaries, uvUnits, mono, hidden, hover, under, ma
             exaggeration={exaggeration}
             terrain={terrain ? terrainData : null}
             overlay={under}
+            focus={focus}
+            onFocus={setFocus}
           />
         </Suspense>
       ) : (
-        <MapCanvas map={summaries[0].map} draw={draw} dim={under ? 0.4 : 0} />
+        <MapCanvas map={summaries[0].map} draw={draw} dim={under ? 0.4 : 0} uvUnits={uvUnits} onPick={onPick} />
       )}
+      {story && focus && (
+        <PlayerCard
+          story={story}
+          title={`${MAP_LABEL[mapConfig.id]} · ${formatDay(focusMatch!.day)}`}
+          onSeek={(t) => {
+            play.pause();
+            play.seek(t);
+          }}
+          onClose={() => setFocus(null)}
+          onOnlyThisMatch={summaries.length > 1 ? () => onOnlyMatch(focus.match) : undefined}
+        />
+      )}
+      </div>
       {error && <div className="empty">Could not load: {error}</div>}
       <PlaybackBar
         t={play.t}
