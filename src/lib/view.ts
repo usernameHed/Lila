@@ -29,6 +29,8 @@ export interface View {
   hidden: string[];
   /** Draw the chosen heatmap kinds on the map (under the replay). */
   heatUnder: boolean;
+  /** Draw the replay itself (paths, events, lines of fire); off = the heatmap alone. */
+  replayOn: boolean;
   /** Replay: 3D view (height from the data's y) instead of the flat map. */
   view3d: boolean;
   /** 3D: vertical exaggeration (1-8). */
@@ -39,7 +41,7 @@ export interface View {
 
 export const ALL = 'all';
 
-export const DEFAULT_VIEW: View = { mode: 'overview', map: 'AmbroseValley', day: 'all', matches: [], layers: ['traffic'], kills: 'both', deaths: 'both', mono: false, heatMono: false, players: 'all', others: 'any', ended: 'any', length: 'any', sort: 'day', hidden: [], heatUnder: false, view3d: false, exaggeration: 4, terrain: true };
+export const DEFAULT_VIEW: View = { mode: 'overview', map: 'AmbroseValley', day: 'all', matches: [], layers: ['traffic'], kills: 'both', deaths: 'both', mono: false, heatMono: false, players: 'all', others: 'any', ended: 'any', length: 'any', sort: 'day', hidden: [], heatUnder: false, replayOn: true, view3d: false, exaggeration: 4, terrain: true };
 
 const MAPS: MapId[] = ['AmbroseValley', 'GrandRift', 'Lockdown'];
 const LAYERS: HeatLayer[] = ['traffic', 'loot', 'power', 'raised', 'fire', 'kills', 'deaths', 'storm']; // drawing order
@@ -71,6 +73,7 @@ export function parseView(hash: string): View {
     sort: pick<SortBy>('sort', ['day', 'longest', 'shortest', 'kills', 'loot'], 'day'),
     hidden: legacyHeat ? ['humanPath', 'botPath'] : (q.get('hide') ?? '').split(',').filter((k) => /^[a-zA-Z]{2,20}$/.test(k)),
     heatUnder: legacyHeat || q.get('under') === '1',
+    replayOn: q.get('replay') !== '0',
     view3d: q.get('view') === '3d',
     terrain: q.get('ground') !== 'flat',
     exaggeration: Math.min(8, Math.max(1, Math.round(Number(q.get('ex')) || DEFAULT_VIEW.exaggeration))),
@@ -110,6 +113,7 @@ export function viewHash(v: View): string {
   if (v.length !== 'any') q.set('len', v.length);
   if (v.sort !== 'day') q.set('sort', v.sort);
   if (v.hidden.length) q.set('hide', v.hidden.join(','));
+  if (!v.replayOn) q.set('replay', '0');
   if (v.view3d) q.set('view', '3d');
   if (v.view3d && v.exaggeration !== DEFAULT_VIEW.exaggeration) q.set('ex', String(v.exaggeration));
   if (v.view3d && !v.terrain) q.set('ground', 'flat');

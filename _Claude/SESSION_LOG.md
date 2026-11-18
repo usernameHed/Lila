@@ -15,6 +15,13 @@ about 300 lines, move the oldest entries word for word to `SESSION_HISTORY.md` (
 
 ---
 
+## 2026-11-18 (desktop session): right panel, fit 16:9
+
+- Ugo: legend to the right with the heatmap, same On / Off, more visible, panels in blue, no scrolling on 16:9.
+  Done: RightPanel (Legend card with On / Off = `replayOn`, URL `replay=0`; Heatmap card), blue cards, big On / Off
+  (`Choice big`). Desktop never scrolls (only the match list); compact mode under 860 px high. Checked at
+  1920x1080 and 1366x768: no overflow.
+
 ## 2026-11-18 (desktop session): match filters
 
 - Ugo: reword "3 of 566"; filter the interesting ones: connected, survived / killed, game length. Done

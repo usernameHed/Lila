@@ -16,15 +16,16 @@ The site opens on an **Overview**: what the tool is for, the four findings with 
 data details we had to get right, how it is built, and what the game should log next, each with links into the
 live views. It doubles as the walkthrough of the features below.
 
-**Match replay** (left: which matches and the legend; middle: the map; right: the heatmap):
+**Match replay** (left: which matches; middle: the map; right: the legend and the heatmap, each with On / Off).
+On a 16:9 screen (1366x768 to 1920x1080) everything fits without scrolling:
 - **Replay** one match or many on one clock, at 10x / 30x / 60x; Space plays and pauses; grabbing the timeline
   pauses. The timeline has a tick per fight and death, and a band where the storm kills (from minute 10.9).
 - **Match filters**: how it ended (survived, bot, storm, player), length (under 5, 5-10, over 10 min), others
   recorded (bots or a second player logged too: fights from both sides, marked ⇄), players who played only once;
   order by day, longest, shortest, most kills, most loot. By day, matches are grouped: fold a day, tick it to select
   all its matches; one line per match (duration, how it ended, kills ✕, loot ◆).
-- **Legend**: click a row to show or hide it (paths included), All / None; hover a row and those markers pulse
-  on the map, future ones shown see-through.
+- **Legend**: On / Off for the whole replay (Off = the heatmap alone); click a row to show or hide it (paths
+  included), All / None; hover a row and those markers pulse on the map, future ones shown see-through.
 - **Everything is linked**: hover an event on the map, its tick on the timeline or its row in a player's card,
   and it pulses in all of them and in the legend. Click a player or an event for its card (how it ended,
   distance, height range, fights, every event; click one to jump there). Everyone that player fought is

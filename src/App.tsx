@@ -3,7 +3,7 @@ import { useHeat, useHeatDraw } from './components/Heat';
 import { LEGEND_KEYS } from './components/Legend';
 import { Overview } from './components/Overview';
 import { ReplayStage } from './components/Replay';
-import { HeatPanel, OverviewSide, ReplaySide, type LayerHandlers } from './components/SidePanels';
+import { OverviewSide, ReplaySide, RightPanel, type LayerHandlers } from './components/SidePanels';
 import { UpdateButton } from './components/UpdateButton';
 import { loadIndex } from './lib/data';
 import type { LegendKey } from './lib/draw';
@@ -58,6 +58,8 @@ export function App() {
   const [hover, setHover] = useState<LegendKey | null>(null);
   const [pointedKind, setPointedKind] = useState<LegendKey | null>(null);
   const hidden = view.hidden as LegendKey[];
+  // Replay off: nothing of it is drawn (the heatmap alone); the legend keeps its own choices for when it is back.
+  const drawnHidden = useMemo(() => (view.replayOn ? hidden : [...LEGEND_KEYS]), [view.replayOn, hidden]);
 
   const heat = useHeat(view.map);
   const underDraw = useHeatDraw(view.heatUnder ? heat : null, days, { layers: view.layers, kills: view.kills, deaths: view.deaths, mono: view.heatMono }, index?.uvUnits ?? 10_000);
@@ -121,12 +123,6 @@ export function App() {
               onOnlyMatch={(id) => update({ matches: [id] })}
               onToggleMatch={(id) => update({ matches: toggleMatch(selectedIds, id) })}
               onSetMany={(ids, on) => update({ matches: setMany(selectedIds, ids, on) })}
-              counts={counts}
-              hidden={hidden}
-              pointedKind={pointedKind}
-              onLegendToggle={(k) => update({ hidden: legendToggle(hidden, k) })}
-              onLegendAll={(show) => update({ hidden: show ? [] : [...LEGEND_KEYS] })}
-              onHover={setHover}
             />
           </>
         )}
@@ -143,7 +139,7 @@ export function App() {
             summaries={selected}
             uvUnits={index.uvUnits}
             mono={view.mono}
-            hidden={hidden}
+            hidden={drawnHidden}
             hover={hover}
             onPointedKind={setPointedKind}
             under={view.heatUnder ? underDraw : null}
@@ -157,7 +153,21 @@ export function App() {
         )}
       </main>
 
-      {replay && <HeatPanel view={view} update={update} heat={heat} days={days} layers={layerHandlers} />}
+      {replay && (
+        <RightPanel
+          view={view}
+          update={update}
+          heat={heat}
+          days={days}
+          layers={layerHandlers}
+          counts={counts}
+          hidden={hidden}
+          pointedKind={pointedKind}
+          onLegendToggle={(k) => update({ hidden: legendToggle(hidden, k) })}
+          onLegendAll={(show) => update({ hidden: show ? [] : [...LEGEND_KEYS] })}
+          onHover={setHover}
+        />
+      )}
     </div>
   );
 }
