@@ -142,22 +142,18 @@ export function RightPanel(p: RightProps) {
           <h2>Legend</h2>
           <Choice big label="Replay on the map" options={ON_OFF} value={view.replayOn ? 'on' : 'off'} onChange={(v) => update({ replayOn: v === 'on' })} />
         </header>
-        {view.replayOn ? (
-          <>
-            <p className="panel-hint">Hover a row to spot it on the map · click to show or hide</p>
-            <Legend counts={p.counts} hidden={p.hidden} active={p.pointedKind} onToggle={p.onLegendToggle} onAll={p.onLegendAll} onHover={p.onHover} />
-          </>
-        ) : (
-          <p className="panel-hint">Paths and events hidden: the heatmap alone.</p>
-        )}
+        {/* Off: the content stays, dimmed and inert, so the panel keeps its size (nothing jumps). */}
+        <div className={`panel-body ${view.replayOn ? '' : 'off'}`} aria-hidden={!view.replayOn} inert={!view.replayOn || undefined}>
+          <p className="panel-hint">{view.replayOn ? 'Hover a row to spot it on the map · click to show or hide' : 'Off: paths and events hidden, the heatmap alone'}</p>
+          <Legend counts={p.counts} hidden={p.hidden} active={p.pointedKind} onToggle={p.onLegendToggle} onAll={p.onLegendAll} onHover={p.onHover} />
+        </div>
       </section>
       <section className="panel-card">
         <header>
           <h2>Heatmap</h2>
           <Choice big label="Heatmap" options={ON_OFF} value={view.heatUnder ? 'on' : 'off'} onChange={(v) => update({ heatUnder: v === 'on' })} />
         </header>
-        {view.heatUnder && (
-          <>
+        <div className={`panel-body ${view.heatUnder ? '' : 'off'}`} aria-hidden={!view.heatUnder} inert={!view.heatUnder || undefined}>
             <div className="all-none">
               <button onClick={() => update({ layers: [...ALL_LAYERS] })} disabled={view.layers.length === ALL_LAYERS.length}>
                 All
@@ -168,8 +164,7 @@ export function RightPanel(p: RightProps) {
               <Choice label="Heatmap colors" options={[['each', 'Per kind'], ['mono', 'One color']]} value={view.heatMono ? 'mono' : 'each'} onChange={(c) => update({ heatMono: c === 'mono' })} />
             </div>
             <LayerList heat={p.heat} days={p.days} layers={view.layers} kills={view.kills} deaths={view.deaths} mono={view.heatMono} {...p.layers} />
-          </>
-        )}
+        </div>
       </section>
     </aside>
   );

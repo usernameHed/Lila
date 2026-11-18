@@ -357,3 +357,5 @@ select {
   .right-panel .layers .layer-name { padding: 2px 8px; }
   .panel-hint { display: none; }
 }
+.panel-body { display: flex; flex-direction: column; gap: 6px; transition: opacity 0.15s; }
+.panel-body.off { opacity: 0.28; filter: grayscale(0.6); pointer-events: none; user-select: none; }
