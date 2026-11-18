@@ -71,6 +71,8 @@ px = u * imageWidth              py = (1 - v) * imageHeight     (image origin to
   Ceiling: 2,119 of 2,240 kills and 381 of 403 deaths are in matches with no bot recorded at all.
 - **PvP**: 3 matches (2 Ambrose Valley, 1 Grand Rift). In each, the only human recorded has `Kill` and `Killed`
   at the same second and spot, at the end of the match: a trade or a self-kill; the other human's file is missing.
+  Searched (Ugo asked for the PvP line of fire): no other file has a Kill or Killed at those seconds; the only
+  players near those spots within 60 s are in other matches (separate games), 28-60 s apart: coincidence.
 - **Raised kills**: player kills more than 3 m above the estimated ground: Ambrose 162, Grand Rift 37, Lockdown 33.
 - **Power positions**: computed in the browser, blurred kills / blurred time spent vs the map average (cells with
   little time left out). Nearly all kills are against bots: it shows where fights are won, i.e. bot placement today.

@@ -28,6 +28,8 @@ export interface Map3DProps {
   overlay: ((ctx: CanvasRenderingContext2D, size: number) => void) | null;
   /** The player in focus (highlighted), and a click on a path to choose one. */
   focus: Focus | null;
+  /** The focused player's opponents (their paths stay highlighted with it). */
+  focusOpponents: number[];
   onFocus: (f: Focus | null) => void;
   /** Legend row hovered: that kind pulses (its future events shown see-through). */
   hoverKind: LegendKey | null;
@@ -123,7 +125,7 @@ function place(map: MapConfig, uvUnits: number, u: number, v: number, hDm: numbe
 }
 
 export default function Map3D(props: Map3DProps) {
-  const { map, matches, uvUnits, t, hidden, mono, exaggeration, terrain, overlay, focus, onFocus, hoverKind, activeEvent, onPointEvent, onPickEvent } = props;
+  const { map, matches, uvUnits, t, hidden, mono, exaggeration, terrain, overlay, focus, focusOpponents, onFocus, hoverKind, activeEvent, onPointEvent, onPickEvent } = props;
   const hoverRef = useRef(hoverKind);
   hoverRef.current = hoverKind;
   const activeRef = useRef(activeEvent);
@@ -476,12 +478,13 @@ export default function Map3D(props: Map3DProps) {
   useEffect(() => {
     for (const p of built.current.paths) {
       const is = !!focus && p.match === focus.match && p.player === focus.player;
+      const foe = !!focus && p.match === focus.match && focusOpponents.includes(p.player);
       const m = p.line.material as LineMaterial;
-      m.opacity = focus ? (is ? 1 : 0.12) : p.baseOpacity;
-      m.linewidth = is ? 6 : p.baseWidth;
-      p.head.visible = p.head.visible && (!focus || is);
+      m.opacity = focus ? (is || foe ? 1 : 0.12) : p.baseOpacity;
+      m.linewidth = is ? 6 : foe ? 4 : p.baseWidth;
+      p.head.visible = p.head.visible && (!focus || is || foe);
     }
-  }, [focus, matches, mono]);
+  }, [focus, focusOpponents, matches, mono]);
 
   // Every frame of the playback: how much of each path, which events, where the heads are.
   useEffect(() => {

@@ -255,13 +255,47 @@ export function drawMarker(ctx: CanvasRenderingContext2D, shape: MarkerShape, co
  * One player in focus: the rest of the map dims, the path so far is bold, the path still to come is a dashed
  * ghost (where they will go), every one of their events shows (future ones faded), and their fights are drawn.
  */
-export function drawFocus(ctx: CanvasRenderingContext2D, match: Match, index: number, uvUnits: number, size: number, t: number, active: MatchEvent | null = null, phase = 0) {
+export function drawFocus(
+  ctx: CanvasRenderingContext2D, match: Match, index: number, uvUnits: number, size: number, t: number,
+  active: MatchEvent | null = null, phase = 0, opponents: number[] = [],
+) {
   const p = match.players[index];
   if (!p) return;
   const px = (u: number, v: number) => uvToPixel(u, v, uvUnits, size);
   ctx.save();
   ctx.fillStyle = 'rgba(8, 9, 12, 0.55)';
   ctx.fillRect(0, 0, size, size);
+  // Everyone this player fought: their path so far, bold, in their own color, so both sides of a fight show.
+  for (const o of opponents) {
+    const q = match.players[o];
+    if (!q) continue;
+    const n = samplesUntil(q.path, t);
+    if (n < 1) continue;
+    ctx.beginPath();
+    for (let i = 0; i < n; i++) {
+      const { x, y } = px(q.path[i * 3 + 1], q.path[i * 3 + 2]);
+      if (i === 0) ctx.moveTo(x, y);
+      else ctx.lineTo(x, y);
+    }
+    const head = positionAt(q.path, t);
+    if (head) {
+      const { x, y } = px(head.u, head.v);
+      ctx.lineTo(x, y);
+    }
+    const color = q.bot ? PATH_COLOR.bot : PATH_COLOR.human;
+    ctx.lineJoin = 'round';
+    ctx.lineCap = 'round';
+    ctx.lineWidth = 5.5;
+    ctx.strokeStyle = 'rgba(0,0,0,0.75)';
+    ctx.stroke();
+    ctx.lineWidth = 2.5;
+    ctx.strokeStyle = color;
+    ctx.stroke();
+    if (head && t < q.path[q.path.length - 3]) {
+      const { x, y } = px(head.u, head.v);
+      drawHead(ctx, x, y, color, q.bot);
+    }
+  }
   const n = samplesUntil(p.path, t);
   const line = (from: number, to: number) => {
     ctx.beginPath();

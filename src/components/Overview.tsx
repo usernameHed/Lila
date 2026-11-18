@@ -104,7 +104,7 @@ export function Overview({ index }: { index: Index | null }) {
           </a>
           <a className="card" href="#mode=replay&map=AmbroseValley&players=pvp&match=all">
             <strong>The only player vs player fights</strong>
-            <span>3 matches. Each time: a kill and a death at the same second and spot, the other player's file missing.</span>
+            <span>3 matches. Each time: a kill and a death at the same second and spot, and the other player is not in the data at all (searched).</span>
           </a>
           <a className="card" href="#mode=replay&map=Lockdown&match=ead4c72d-0e3b-49b4-a91b-a9a21bed8012">
             <strong>Click a player</strong>

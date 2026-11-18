@@ -306,3 +306,8 @@ select {
 @media (max-width: 760px) {
   .app.with-right { grid-template-columns: 1fr; }
 }
+.story li { display: flex; gap: 4px; align-items: center; }
+.story li > button:first-child { flex: 1; }
+.story .other { flex: none; width: auto; white-space: nowrap; padding: 2px 6px; font-size: 11px; background: transparent; border: 1px solid var(--line); border-radius: 5px; color: var(--muted); cursor: pointer; }
+.story .other:hover { color: var(--text); border-color: var(--accent); }
+.pvp-note { margin: 10px 0 0; padding: 8px 10px; border-left: 3px solid #ff0a54; background: rgba(255,10,84,0.08); border-radius: 4px; font-size: 12.5px; line-height: 1.45; }

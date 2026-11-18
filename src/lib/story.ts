@@ -29,6 +29,10 @@ export interface Story {
   heightMin: number; // meters
   heightMax: number;
   end: string; // how it ended
+  /** The other side of each fight with this player (indexes in match.players), for their paths to show too. */
+  opponents: number[];
+  /** A player-vs-player kill or death whose other player is not in the data (their file is missing). */
+  pvpMissing: boolean;
 }
 
 const DEATHS: EventType[] = ['diedToBot', 'diedToPlayer', 'storm', 'botDeath'];
@@ -50,6 +54,8 @@ export function playerStory(match: Match, index: number, uvUnits: number, mapSca
       return { t: f[0], role, other, otherBot: match.players[other]?.bot ?? false, meters: toM(Math.hypot(f[1] - f[3], f[2] - f[4])), inferred: !!f[9] } as StoryFight;
     });
   const death = events.find((e) => DEATHS.includes(e.type));
+  const pvp = events.filter((e) => e.type === 'killPlayer' || e.type === 'diedToPlayer');
+  const pvpMissing = pvp.some((e) => !fights.some((f) => f.t === e.t && !f.otherBot));
   const hs = p.h?.length ? p.h : [0];
   return {
     id: p.id,
@@ -62,5 +68,7 @@ export function playerStory(match: Match, index: number, uvUnits: number, mapSca
     heightMin: Math.min(...hs) / 10,
     heightMax: Math.max(...hs) / 10,
     end: death ? death.label.replace(/^(Player|Bot) /, '') : p.bot ? 'Still alive when its log ends' : 'Survived (no death logged)',
+    opponents: [...new Set(fights.map((f) => f.other))],
+    pvpMissing,
   };
 }

@@ -15,6 +15,13 @@ about 300 lines, move the oldest entries word for word to `SESSION_HISTORY.md` (
 
 ---
 
+## 2026-11-18 (desktop session): fights from both sides
+
+- Ugo: PvP line of fire, other player's path. Searched the raw data: the 3 PvP pairs are one player's Kill + Killed at
+  the same second; no other file matches; nearby players are in other matches. Card says so (pvp-note).
+- Built for the 42 recorded / inferred fights: a focused player's opponents are highlighted (2D, 3D), fight rows
+  link to the other side. Also: 3D events use the 2D icons; loot icon bigger.
+
 ## 2026-11-18 (desktop session): big UI pass (Ugo's list)
 
 - Heatmaps tab gone: heatmap is a right panel in Match replay (own one-color switch); old `mode=heat` links map to

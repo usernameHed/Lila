@@ -11,10 +11,12 @@ interface Props {
   onSeek: (e: StoryEvent) => void;
   onClose: () => void;
   onOnlyThisMatch?: () => void;
+  /** Open the other side of a fight. */
+  onFocusOther: (player: number) => void;
 }
 
 /** Everything about one player in one match: identity, numbers, every event (click to jump there), fights. */
-export function PlayerCard({ story: s, title, active, onPoint, onSeek, onClose, onOnlyThisMatch }: Props) {
+export function PlayerCard({ story: s, title, active, onPoint, onSeek, onClose, onOnlyThisMatch, onFocusOther }: Props) {
   return (
     <aside className="player-card" aria-label="Player details">
       <header>
@@ -31,9 +33,15 @@ export function PlayerCard({ story: s, title, active, onPoint, onSeek, onClose, 
         <div><dt>Walked</dt><dd>{Math.round(s.meters).toLocaleString('en')} m</dd></div>
         <div><dt>Height</dt><dd>{Math.round(s.heightMin)}-{Math.round(s.heightMax)} m</dd></div>
       </dl>
+      {s.pvpMissing && (
+        <p className="pvp-note">
+          <b>Player vs player:</b> the other player is not in the data. Their file is missing: only this side was logged, with
+          the kill and the death at the same second and spot (a trade, or a self-kill). No line of fire can be drawn.
+        </p>
+      )}
       {s.fights.length > 0 && (
         <>
-          <h4>Line of fire</h4>
+          <h4>Line of fire · highlighted on the map</h4>
           <ul className="story">
             {s.fights.map((f, i) => (
               <li key={i}>
@@ -44,6 +52,9 @@ export function PlayerCard({ story: s, title, active, onPoint, onSeek, onClose, 
                   <span className="time">{formatDuration(f.t)}</span>
                   {f.role === 'killer' ? 'Killed' : 'Killed by'} {f.otherBot ? 'a bot' : 'a player'} {Math.round(f.meters)} m away
                   {f.inferred && <span className="muted"> (inferred)</span>}
+                </button>
+                <button className="other" onClick={() => onFocusOther(f.other)} title="Open the other side of this fight">
+                  {f.otherBot ? 'Bot' : 'Player'} →
                 </button>
               </li>
             ))}

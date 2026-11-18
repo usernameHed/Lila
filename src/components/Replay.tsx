@@ -252,9 +252,9 @@ export function ReplayStage(props: StageProps) {
     (ctx: CanvasRenderingContext2D, size: number) => {
       under?.(ctx, size);
       if (shown.length) drawMatches(ctx, shown, uvUnits, size, t, play.playing, { mono, hidden: hiddenSet, hover, phase, activeEvent: active?.event ?? null });
-      if (focusMatch && focus) drawFocus(ctx, focusMatch, focus.player, uvUnits, size, t, active?.event ?? null, phase);
+      if (focusMatch && focus) drawFocus(ctx, focusMatch, focus.player, uvUnits, size, t, active?.event ?? null, phase, story?.opponents ?? []);
     },
-    [shown, t, uvUnits, play.playing, mono, hiddenSet, hover, phase, under, focusMatch, focus, active],
+    [shown, t, uvUnits, play.playing, mono, hiddenSet, hover, phase, under, focusMatch, focus, active, story],
   );
 
   if (!summaries.length) return <div className="empty">No match for these filters.</div>;
@@ -299,6 +299,7 @@ export function ReplayStage(props: StageProps) {
               terrain={terrain ? terrainData : null}
               overlay={under}
               focus={focus}
+              focusOpponents={story?.opponents ?? []}
               onFocus={(f) => pickAt(null, f)}
               hoverKind={hover}
               activeEvent={active?.event ?? null}
@@ -327,6 +328,10 @@ export function ReplayStage(props: StageProps) {
               setPinned(null);
             }}
             onOnlyThisMatch={summaries.length > 1 ? () => onOnlyMatch(focus.match) : undefined}
+            onFocusOther={(player) => {
+              setPinned(null);
+              setFocus({ match: focus.match, player });
+            }}
           />
         )}
       </div>

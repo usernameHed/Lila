@@ -25,7 +25,8 @@ live views. It doubles as the walkthrough of the features below.
   on the map, future ones shown see-through.
 - **Everything is linked**: hover an event on the map, its tick on the timeline or its row in a player's card,
   and it pulses in all of them and in the legend. Click a player or an event for its card (how it ended,
-  distance, height range, fights, every event; click one to jump there).
+  distance, height range, fights, every event; click one to jump there). Everyone that player fought is
+  highlighted with them, and each fight links to the other side.
 - **Heatmap panel**: traffic, loot, power positions (kills per minute spent), raised kills (from 3 m above the
   ground), line of fire, kills and deaths (bots / players / both), storm deaths; one color per kind or one color;
   toon bands with vector outlines, sharp at any zoom.

@@ -26,6 +26,13 @@ describe('playerStory', () => {
     expect(s.meters).toBeCloseTo(50); // 500 UV units on a 1000 m map
     expect([s.heightMin, s.heightMax]).toEqual([40, 42]);
     expect(s.end).toBe('Survived (no death logged)');
+    expect(s.opponents).toEqual([1]);
+    expect(s.pvpMissing).toBe(false);
+  });
+
+  it('flags a player-vs-player event whose other player is not in the data', () => {
+    const pvp: Match = { ...match, events: [...match.events, [9000, 'killPlayer', 300, 400, 0, 410]] };
+    expect(playerStory(pvp, 0, 10_000, 1000).pvpMissing).toBe(true);
   });
 
   it('a bot that died: its end is its death, and it is the victim of the fight', () => {
