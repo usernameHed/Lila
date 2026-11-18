@@ -15,6 +15,13 @@ about 300 lines, move the oldest entries word for word to `SESSION_HISTORY.md` (
 
 ---
 
+## 2026-11-18 (desktop session): PRODUCT.md, telemetry asks, "played once" filter
+
+- Ugo: the missing victim data is worth telling LILA; and why the tool, for which decisions, propose concrete things.
+- Found: 43% of players played once; 62% of them died to a bot in it (49% in repeat players' matches); next-day
+  return 6-18%. PRODUCT.md: users and decisions, 4 ranked proposals (first-match bots first), telemetry asks table.
+- Tool: Match replay filter "Played only once" (`onlyMatch` in the index, URL `players=once`).
+
 ## 2026-11-18 (desktop session): one color, bots / players, fight lines, toon heatmaps
 
 - Ugo: one-color option (both modes), "Kill" -> "Position when killing", bots / players / both, kill-death pairs with

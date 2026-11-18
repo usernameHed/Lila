@@ -45,6 +45,7 @@ export interface MatchSummary {
   bots: number;
   rows: number;
   fights: number; // kills whose victim's death is also recorded (see Fight)
+  onlyMatch: boolean; // a human in it never played another match in the 5 days
   events: Partial<Record<EventType, number>>;
 }
 

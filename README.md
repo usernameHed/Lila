@@ -6,8 +6,9 @@ maps, built from 5 days of production telemetry (Feb 10-14, 2026).
 **Live: https://lila.belfiore.me**
 
 Built for LILA Games' Product Engineer assignment. Read next: **[ARCHITECTURE.md](ARCHITECTURE.md)** (how it
-works, the coordinate mapping, assumptions, trade-offs) and **[INSIGHTS.md](INSIGHTS.md)** (three things the
-tool shows about the game).
+works, the coordinate mapping, assumptions, trade-offs), **[INSIGHTS.md](INSIGHTS.md)** (three things the
+tool shows about the game) and **[PRODUCT.md](PRODUCT.md)** (who it is for, what to do next, what the game
+should log so the tool can answer more).
 
 ## What it does
 
@@ -21,6 +22,8 @@ tool shows about the game).
   storm (violet), loot (yellow), and the line of fire between killer and victim (orange), per map, for one day or
   all five. Click a kind to show it alone, tick its box to stack several. Kills and deaths split into bots,
   players or both. Two looks: smooth, or toon (flat bands with outlines); one color per kind, or one for all.
+- **Players who played once**: a replay filter for the 107 matches that were a player's only one, to see what
+  happened to the players who did not come back.
 - **Fight lines**: in replay, a dashed arrow from killer to victim for the 39 kills whose victim is also recorded.
 - **Shareable views**: the URL holds the mode, map, day, match and layer, so a link opens exactly that view.
 - **Update button**: when a newer version is deployed, an open page shows a green Update button (checked on

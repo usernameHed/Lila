@@ -1,4 +1,4 @@
-"""Numbers behind INSIGHTS.md, computed from the processed files in public/data (no raw data needed).
+"""Numbers behind INSIGHTS.md and PRODUCT.md, computed from the processed files in public/data (no raw data needed).
 
 Run: python3 pipeline/insights.py
 """
@@ -150,6 +150,32 @@ def days(index):
         print(f"  {d}: {c[d]} {dict(maps)}")
 
 
+def players(index, matches):
+    """Who plays, how often, and who comes back (PRODUCT.md). Days only: the data has no wall clock to order
+    matches within a day."""
+    print("\n## Players and return")
+    by_id = {s["id"]: s for s in index["matches"]}
+    plays = defaultdict(list)
+    for m in matches.values():
+        for i, p in enumerate(m["players"]):
+            if p["bot"]:
+                continue
+            cats = Counter(e[1] for e in m["events"] if e[4] == i)
+            end = "storm" if cats["storm"] else "bot" if cats["diedToBot"] else "player" if cats["diedToPlayer"] else "survived"
+            plays[p["id"]].append((by_id[m["id"]]["day"], end))
+    counts = [len(v) for v in plays.values()]
+    once = [v[0] for v in plays.values() if len(v) == 1]
+    repeat = [x for v in plays.values() if len(v) > 1 for x in v]
+    print(f"humans {len(plays)}, matches per player median {st.median(counts)}, played once: {len(once)} ({pct(len(once), len(plays))})")
+    print(f"died to a bot: in one-match players' only match {pct(sum(1 for x in once if x[1] == 'bot'), len(once))}, "
+          f"in repeat players' matches {pct(sum(1 for x in repeat if x[1] == 'bot'), len(repeat))}")
+    days = sorted({d for v in plays.values() for d, _ in v})
+    for d0, d1 in zip(days, days[1:]):
+        new = [u for u, v in plays.items() if min(d for d, _ in v) == d0]
+        back = [u for u in new if any(d == d1 for d, _ in plays[u])]
+        print(f"  {d0}: {len(new)} new players, back the next day {len(back)} ({pct(len(back), len(new))})")
+
+
 if __name__ == "__main__":
     idx, ms = load()
     per_map(idx, ms)
@@ -159,3 +185,4 @@ if __name__ == "__main__":
     timing(idx, ms)
     days(idx)
     storm(idx, ms)
+    players(idx, ms)

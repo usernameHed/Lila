@@ -19,11 +19,13 @@ export interface View {
   mono: boolean;
   /** Heatmap look: smooth gradient or toon bands. */
   look: Look;
+  /** Replay: every match, or only matches of players who never played again. */
+  players: 'all' | 'once';
 }
 
 export const ALL = 'all';
 
-export const DEFAULT_VIEW: View = { mode: 'replay', map: 'AmbroseValley', day: 'all', matches: [], layers: ['traffic'], kills: 'both', deaths: 'both', mono: false, look: 'smooth' };
+export const DEFAULT_VIEW: View = { mode: 'replay', map: 'AmbroseValley', day: 'all', matches: [], layers: ['traffic'], kills: 'both', deaths: 'both', mono: false, look: 'smooth', players: 'all' };
 
 const MAPS: MapId[] = ['AmbroseValley', 'GrandRift', 'Lockdown'];
 const LAYERS: HeatLayer[] = ['traffic', 'loot', 'fire', 'kills', 'deaths', 'storm']; // drawing order
@@ -45,6 +47,7 @@ export function parseView(hash: string): View {
     deaths: pick('deaths', WHO, 'both'),
     mono: q.get('mono') === '1',
     look: pick<Look>('look', ['smooth', 'bands'], 'smooth'),
+    players: pick<View['players']>('players', ['all', 'once'], 'all'),
   };
 }
 
@@ -79,6 +82,7 @@ export function viewHash(v: View): string {
     if (v.look !== 'smooth') q.set('look', v.look);
   }
   if (v.mono) q.set('mono', '1');
+  if (v.mode === 'replay' && v.players === 'once') q.set('players', 'once');
   return `#${q}`;
 }
 

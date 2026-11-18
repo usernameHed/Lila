@@ -31,8 +31,14 @@ export function App() {
   }, []);
 
   const matches = useMemo(
-    () => (index?.matches ?? []).filter((m) => m.map === view.map && (view.day === 'all' || m.day === view.day)),
-    [index, view.map, view.day],
+    () =>
+      (index?.matches ?? []).filter(
+        (m) =>
+          m.map === view.map &&
+          (view.day === 'all' || m.day === view.day) &&
+          (view.mode !== 'replay' || view.players === 'all' || m.onlyMatch),
+      ),
+    [index, view.map, view.day, view.mode, view.players],
   );
   const days = useMemo(() => (view.day === 'all' ? (index?.days ?? []) : [view.day]), [index, view.day]);
 
@@ -95,6 +101,15 @@ export function App() {
 
         {view.mode === 'replay' ? (
           <>
+            <section>
+              <h2>Players</h2>
+              <Choice
+                label="Which players"
+                options={[['all', 'All'], ['once', 'Played only once']]}
+                value={view.players}
+                onChange={(players) => update({ players })}
+              />
+            </section>
             <section className="grow">
               <h2 className="with-actions">
                 Match <span className="count">{selected.length > 1 ? `${selected.length} of ${matches.length}` : matches.length}</span>

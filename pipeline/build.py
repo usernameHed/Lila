@@ -161,6 +161,16 @@ def build() -> None:
     for (map_id, day), items in bundles.items():
         write_json(OUT / "bundles" / f"{map_id}_{day}.json", items)
 
+    # Players who played a single match in the 5 days: their only match is the one to study for churn (PRODUCT.md).
+    human_matches: dict[str, int] = defaultdict(int)
+    for data in (d for items in bundles.values() for d in items):
+        for p in data["players"]:
+            if not p["bot"]:
+                human_matches[p["id"]] += 1
+    for summary, data in zip(summaries, (d for _, d in sorted((d["id"], d) for items in bundles.values() for d in items))):
+        assert summary["id"] == data["id"]
+        summary["onlyMatch"] = any(not p["bot"] and human_matches[p["id"]] == 1 for p in data["players"])
+
     days = sorted({s["day"] for s in summaries})
     index = {
         "maps": [{"id": k, **v} for k, v in MAPS.items()],
