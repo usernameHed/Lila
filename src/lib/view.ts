@@ -1,4 +1,5 @@
 // The view (what is on screen) lives in the URL hash, so a Level Designer can share exactly what they see.
+import type { Ended, Length, MatchFilter, SortBy } from './matchFilter';
 import type { HeatLayer, MapId, Who } from './types';
 
 export type Mode = 'overview' | 'replay';
@@ -18,8 +19,12 @@ export interface View {
   mono: boolean;
   /** Heatmap: one color for all kinds instead of one per kind. */
   heatMono: boolean;
-  /** Replay: every match, only matches of players who never played again, or only fights between players. */
-  players: 'all' | 'once' | 'pvp';
+  /** Match list filters and order (see matchFilter.ts). */
+  players: MatchFilter['players'];
+  others: MatchFilter['others'];
+  ended: Ended;
+  length: Length;
+  sort: SortBy;
   /** Legend rows turned off: event types, 'fights' (killer-to-victim lines), 'humanPath', 'botPath'. */
   hidden: string[];
   /** Draw the chosen heatmap kinds on the map (under the replay). */
@@ -34,7 +39,7 @@ export interface View {
 
 export const ALL = 'all';
 
-export const DEFAULT_VIEW: View = { mode: 'overview', map: 'AmbroseValley', day: 'all', matches: [], layers: ['traffic'], kills: 'both', deaths: 'both', mono: false, heatMono: false, players: 'all', hidden: [], heatUnder: false, view3d: false, exaggeration: 4, terrain: true };
+export const DEFAULT_VIEW: View = { mode: 'overview', map: 'AmbroseValley', day: 'all', matches: [], layers: ['traffic'], kills: 'both', deaths: 'both', mono: false, heatMono: false, players: 'all', others: 'any', ended: 'any', length: 'any', sort: 'day', hidden: [], heatUnder: false, view3d: false, exaggeration: 4, terrain: true };
 
 const MAPS: MapId[] = ['AmbroseValley', 'GrandRift', 'Lockdown'];
 const LAYERS: HeatLayer[] = ['traffic', 'loot', 'power', 'raised', 'fire', 'kills', 'deaths', 'storm']; // drawing order
@@ -58,7 +63,12 @@ export function parseView(hash: string): View {
     deaths: pick('deaths', WHO, 'both'),
     mono: q.get('mono') === '1',
     heatMono: q.get('hmono') === '1' || (legacyHeat && q.get('mono') === '1'),
-    players: pick<View['players']>('players', ['all', 'once', 'pvp'], 'all'),
+    players: pick<View['players']>('players', ['all', 'once'], 'all'),
+    others: pick<View['others']>('others', ['any', 'recorded'], 'any'),
+    // Old links: "players=pvp" was the player-vs-player filter, now "ended: killed by a player".
+    ended: q.get('players') === 'pvp' ? 'player' : pick<Ended>('end', ['any', 'survived', 'bot', 'storm', 'player'], 'any'),
+    length: pick<Length>('len', ['any', 'short', 'mid', 'long'], 'any'),
+    sort: pick<SortBy>('sort', ['day', 'longest', 'shortest', 'kills', 'loot'], 'day'),
     hidden: legacyHeat ? ['humanPath', 'botPath'] : (q.get('hide') ?? '').split(',').filter((k) => /^[a-zA-Z]{2,20}$/.test(k)),
     heatUnder: legacyHeat || q.get('under') === '1',
     view3d: q.get('view') === '3d',
@@ -95,6 +105,10 @@ export function viewHash(v: View): string {
   if (v.matches.length) q.set('match', v.matches === ALL ? ALL : v.matches.join(','));
   if (v.mono) q.set('mono', '1');
   if (v.players !== 'all') q.set('players', v.players);
+  if (v.others !== 'any') q.set('others', v.others);
+  if (v.ended !== 'any') q.set('end', v.ended);
+  if (v.length !== 'any') q.set('len', v.length);
+  if (v.sort !== 'day') q.set('sort', v.sort);
   if (v.hidden.length) q.set('hide', v.hidden.join(','));
   if (v.view3d) q.set('view', '3d');
   if (v.view3d && v.exaggeration !== DEFAULT_VIEW.exaggeration) q.set('ex', String(v.exaggeration));

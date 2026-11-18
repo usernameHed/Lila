@@ -19,8 +19,10 @@ live views. It doubles as the walkthrough of the features below.
 **Match replay** (left: which matches and the legend; middle: the map; right: the heatmap):
 - **Replay** one match or many on one clock, at 10x / 30x / 60x; Space plays and pauses; grabbing the timeline
   pauses. The timeline has a tick per fight and death, and a band where the storm kills (from minute 10.9).
-- **Matches grouped by day**: fold a day, tick it to select all its matches; one line per match (duration, how
-  it ended, kills, loot). Filters: all, players who played only once, matches with a player-vs-player fight.
+- **Match filters**: how it ended (survived, bot, storm, player), length (under 5, 5-10, over 10 min), others
+  recorded (bots or a second player logged too: fights from both sides, marked ⇄), players who played only once;
+  order by day, longest, shortest, most kills, most loot. By day, matches are grouped: fold a day, tick it to select
+  all its matches; one line per match (duration, how it ended, kills ✕, loot ◆).
 - **Legend**: click a row to show or hide it (paths included), All / None; hover a row and those markers pulse
   on the map, future ones shown see-through.
 - **Everything is linked**: hover an event on the map, its tick on the timeline or its row in a player's card,

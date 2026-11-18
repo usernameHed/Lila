@@ -102,7 +102,7 @@ export function Overview({ index }: { index: Index | null }) {
             <strong>Power positions</strong>
             <span>Spots that win 3-5x more fights per minute, and kills made from rooftops and ledges.</span>
           </a>
-          <a className="card" href="#mode=replay&map=AmbroseValley&players=pvp&match=all">
+          <a className="card" href="#mode=replay&map=AmbroseValley&end=player&match=all">
             <strong>The only player vs player fights</strong>
             <span>3 matches. Each time: a kill and a death at the same second and spot, and the other player is not in the data at all (searched).</span>
           </a>

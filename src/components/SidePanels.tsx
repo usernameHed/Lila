@@ -38,16 +38,57 @@ export function ReplaySide(p: ReplayProps) {
     <>
       <section>
         <h2>Matches</h2>
-        <Choice
-          label="Which matches"
-          options={[['all', 'All'], ['once', 'Played only once'], ['pvp', 'Fought a player']]}
-          value={view.players}
-          onChange={(players) => update({ players })}
-        />
+        <div className="filters">
+          <label>
+            Ended
+            <select value={view.ended} onChange={(e) => update({ ended: e.target.value as View['ended'] })}>
+              <option value="any">Any way</option>
+              <option value="survived">Survived</option>
+              <option value="bot">Killed by a bot</option>
+              <option value="storm">Died to the storm</option>
+              <option value="player">Killed by a player</option>
+            </select>
+          </label>
+          <label>
+            Length
+            <select value={view.length} onChange={(e) => update({ length: e.target.value as View['length'] })}>
+              <option value="any">Any</option>
+              <option value="short">Under 5 min</option>
+              <option value="mid">5 to 10 min</option>
+              <option value="long">Over 10 min</option>
+            </select>
+          </label>
+          <label title="Matches where bots (or a second player) were recorded too: fights can be seen from both sides">
+            Others recorded
+            <select value={view.others} onChange={(e) => update({ others: e.target.value as View['others'] })}>
+              <option value="any">Any</option>
+              <option value="recorded">Recorded</option>
+            </select>
+          </label>
+          <label>
+            Players
+            <select value={view.players} onChange={(e) => update({ players: e.target.value as View['players'] })}>
+              <option value="all">All</option>
+              <option value="once">Played only once</option>
+            </select>
+          </label>
+          <label className="wide">
+            Order
+            <select value={view.sort} onChange={(e) => update({ sort: e.target.value as View['sort'] })}>
+              <option value="day">By day</option>
+              <option value="longest">Longest first</option>
+              <option value="shortest">Shortest first</option>
+              <option value="kills">Most kills first</option>
+              <option value="loot">Most loot first</option>
+            </select>
+          </label>
+        </div>
       </section>
       <section className="grow">
         <h2 className="with-actions">
-          <span className="count">{selected.length > 1 ? `${selected.length} of ${matches.length} selected` : `${matches.length} matches`}</span>
+          <span className="count">
+            {matches.length} match{matches.length === 1 ? '' : 'es'} · {selected.length} shown
+          </span>
           <span className="actions">
             <button onClick={() => update({ matches: ALL })} disabled={selected.length === matches.length}>
               Select all
@@ -57,7 +98,19 @@ export function ReplaySide(p: ReplayProps) {
             </button>
           </span>
         </h2>
-        <MatchList matches={matches} selected={selected} mono={view.mono} onOnly={p.onOnlyMatch} onToggle={p.onToggleMatch} onSetMany={p.onSetMany} />
+        {matches.length ? (
+          <MatchList
+            matches={matches}
+            selected={selected}
+            mono={view.mono}
+            grouped={view.sort === 'day'}
+            onOnly={p.onOnlyMatch}
+            onToggle={p.onToggleMatch}
+            onSetMany={p.onSetMany}
+          />
+        ) : (
+          <p className="muted small">No match for these filters.</p>
+        )}
       </section>
       {selected.length > 1 && (
         <section>

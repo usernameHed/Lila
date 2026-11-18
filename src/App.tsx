@@ -8,12 +8,9 @@ import { UpdateButton } from './components/UpdateButton';
 import { loadIndex } from './lib/data';
 import type { LegendKey } from './lib/draw';
 import { MAP_LABEL, formatDay } from './lib/style';
-import type { EventType, HeatLayer, Index, MapId, MatchSummary, Who } from './lib/types';
+import { applyFilter } from './lib/matchFilter';
+import type { EventType, HeatLayer, Index, MapId, Who } from './lib/types';
 import { legendToggle, parseView, resolveSelection, setMany, toggleLayer, toggleMatch, viewHash, type Mode, type View } from './lib/view';
-
-/** The replay's "which matches" filter. */
-const keepFor = (players: View['players'], m: MatchSummary) =>
-  players === 'all' || (players === 'once' ? m.onlyMatch : !!(m.events.killPlayer || m.events.diedToPlayer));
 
 const TAB_LABEL: Record<Mode, string> = { overview: 'Overview', replay: 'Match replay' };
 
@@ -39,8 +36,12 @@ export function App() {
   }, []);
 
   const matches = useMemo(
-    () => (index?.matches ?? []).filter((m) => m.map === view.map && (view.day === 'all' || m.day === view.day) && keepFor(view.players, m)),
-    [index, view.map, view.day, view.players],
+    () =>
+      applyFilter(
+        (index?.matches ?? []).filter((m) => m.map === view.map && (view.day === 'all' || m.day === view.day)),
+        { players: view.players, others: view.others, ended: view.ended, length: view.length, sort: view.sort },
+      ),
+    [index, view.map, view.day, view.players, view.others, view.ended, view.length, view.sort],
   );
   const days = useMemo(() => (view.day === 'all' ? (index?.days ?? []) : [view.day]), [index, view.day]);
 

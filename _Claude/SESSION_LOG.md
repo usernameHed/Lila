@@ -15,6 +15,13 @@ about 300 lines, move the oldest entries word for word to `SESSION_HISTORY.md` (
 
 ---
 
+## 2026-11-18 (desktop session): match filters
+
+- Ugo: reword "3 of 566"; filter the interesting ones: connected, survived / killed, game length. Done
+  (`lib/matchFilter.ts`, tested): Ended, Length, Others recorded (bots or 2nd human: 52 matches, ⇄), Players,
+  Order (day / longest / shortest / kills / loot; flat list when not by day). Header "N matches · K shown".
+  Old `players=pvp` links -> `end=player`.
+
 ## 2026-11-18 (desktop session): fights from both sides
 
 - Ugo: PvP line of fire, other player's path. Searched the raw data: the 3 PvP pairs are one player's Kill + Killed at

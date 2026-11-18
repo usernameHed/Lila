@@ -4,6 +4,7 @@ import { drawFocus, drawMatches, type LegendKey } from '../lib/draw';
 import { pickEvent, pickPlayer, type Focus, type PointedEvent } from '../lib/pick';
 import { playerStory } from '../lib/story';
 import { MANY_MATCHES, MAP_LABEL, MATCH_COLORS, formatDay, formatDuration } from '../lib/style';
+import { endedOf } from '../lib/matchFilter';
 import { matchEnd } from '../lib/timeline';
 import type { MapConfig, Match, MatchEvent, MatchSummary, Terrain } from '../lib/types';
 import { Choice } from './Choice';
@@ -11,15 +12,6 @@ import { MapCanvas, type MapPick } from './MapCanvas';
 import { PlayerCard } from './PlayerCard';
 import { PlaybackBar } from './PlaybackBar';
 import { usePlayback } from './usePlayback';
-
-/** How the human's match ended, in a designer's words. No death event = they made it out (or the log ends). */
-export function outcome(m: MatchSummary): string {
-  const e = m.events;
-  if (e.storm) return 'Died to the storm';
-  if (e.diedToPlayer) return 'Killed by a player';
-  if (e.diedToBot) return 'Killed by a bot';
-  return 'Survived';
-}
 
 interface ListProps {
   matches: MatchSummary[];
@@ -29,27 +21,31 @@ interface ListProps {
   onToggle: (id: string) => void;
   /** Tick or untick several at once (a whole day). */
   onSetMany: (ids: string[], on: boolean) => void;
+  /** Grouped by day (the default order); otherwise one flat list in the chosen order. */
+  grouped: boolean;
 }
 
-const OUTCOME_SHORT: Record<string, string> = {
-  'Died to the storm': 'Storm',
-  'Killed by a player': 'Player',
-  'Killed by a bot': 'Bot',
-  Survived: 'Survived',
+const ENDED_SHORT: Record<ReturnType<typeof endedOf>, string> = { storm: 'Storm', player: 'Player', bot: 'Bot', survived: 'Survived' };
+const ENDED_LONG: Record<ReturnType<typeof endedOf>, string> = {
+  storm: 'Died to the storm',
+  player: 'Killed by a player',
+  bot: 'Killed by a bot',
+  survived: 'Survived (no death logged)',
 };
 
 /**
  * Matches grouped by day. A day folds and unfolds, and its box ticks or unticks all of its matches. One line per
  * match: duration, how it ended, kills and loot. Click a line to replay that match alone; tick boxes for several.
  */
-export function MatchList({ matches, selected, mono, onOnly, onToggle, onSetMany }: ListProps) {
+export function MatchList({ matches, selected, mono, onOnly, onToggle, onSetMany, grouped }: ListProps) {
   const order = new Map(selected.map((s, i) => [s.id, i]));
   const multi = !mono && selected.length > 1 && selected.length <= MANY_MATCHES;
   const days = useMemo(() => {
+    if (!grouped) return [['', matches] as [string, MatchSummary[]]];
     const by = new Map<string, MatchSummary[]>();
     for (const m of matches) by.set(m.day, [...(by.get(m.day) ?? []), m]);
     return [...by.entries()];
-  }, [matches]);
+  }, [matches, grouped]);
   // Open: days holding a selected match (or the only day).
   const [open, setOpen] = useState<Set<string>>(new Set());
   useEffect(() => {
@@ -59,10 +55,10 @@ export function MatchList({ matches, selected, mono, onOnly, onToggle, onSetMany
     <div className="day-groups">
       {days.map(([day, list]) => {
         const picked = list.filter((m) => order.has(m.id)).length;
-        const isOpen = open.has(day);
+        const isOpen = !grouped || open.has(day);
         return (
-          <section key={day} className="day-group">
-            <header>
+          <section key={day || 'all'} className="day-group">
+            {grouped && <header>
               <input
                 type="checkbox"
                 checked={picked === list.length}
@@ -78,12 +74,12 @@ export function MatchList({ matches, selected, mono, onOnly, onToggle, onSetMany
                 {day === '2026-02-14' && <span className="muted"> (partial)</span>}
                 <span className="count">{picked ? `${picked} / ${list.length}` : list.length}</span>
               </button>
-            </header>
+            </header>}
             {isOpen && (
               <ul className="matches">
                 {list.map((m, n) => {
                   const kills = (m.events.killBot ?? 0) + (m.events.killPlayer ?? 0);
-                  const end = outcome(m);
+                  const end = endedOf(m);
                   const i = order.get(m.id);
                   const on = i !== undefined;
                   return (
@@ -92,14 +88,17 @@ export function MatchList({ matches, selected, mono, onOnly, onToggle, onSetMany
                         <input type="checkbox" checked={on} onChange={() => onToggle(m.id)} aria-label={`Add match ${n + 1} of ${formatDay(m.day)}`} />
                         {multi && on && <span className="dot" style={{ background: MATCH_COLORS[i] }} />}
                       </label>
-                      <button onClick={() => onOnly(m.id)} title={`${end} · ${kills} kills · ${m.events.loot ?? 0} loot${m.fights ? ` · ${m.fights} fight lines` : ''}`}>
-                        <span className="num">#{n + 1}</span>
+                      <button onClick={() => onOnly(m.id)} title={`${formatDay(m.day)} · ${ENDED_LONG[end]} · ${kills} kills · ${m.events.loot ?? 0} loot${m.bots ? ` · ${m.bots} bots recorded` : ''}${m.fights ? ` · ${m.fights} fight lines` : ''}`}>
+                        <span className="num">{grouped ? `#${n + 1}` : formatDay(m.day).replace(' Feb', '')}</span>
                         <span className="dur">{formatDuration(m.durationMs)}</span>
-                        <span className={`end ${end === 'Survived' ? 'ok' : 'dead'}`}>{OUTCOME_SHORT[end]}</span>
+                        <span className={`end ${end === 'survived' ? 'ok' : 'dead'}`}>
+                          {ENDED_SHORT[end]}
+                        </span>
                         <span className="m-stats">
+                          {m.bots > 0 && <span className="linked" title="Bots recorded too: fights from both sides">⇄ </span>}
                           {kills}
-                          <small> kills</small> {m.events.loot ?? 0}
-                          <small> loot</small>
+                          <small className="k" title="kills"> ✕</small> {m.events.loot ?? 0}
+                          <small className="l" title="loot"> ◆</small>
                         </span>
                       </button>
                     </li>

@@ -144,9 +144,10 @@ select {
 
 /* Multi-match selection */
 .with-actions { display: flex; align-items: center; }
-.with-actions .count { margin-left: 6px; padding-left: 0; }
+.with-actions .count { margin-left: 0; padding-left: 0; white-space: nowrap; }
 .with-actions .actions { margin-left: auto; display: flex; gap: 4px; }
 .with-actions .actions button {
+  white-space: nowrap;
   padding: 2px 8px; font-size: 11px; letter-spacing: 0; text-transform: none; font-weight: 500;
   background: transparent; border: 1px solid var(--line); border-radius: 5px; cursor: pointer; color: var(--text);
 }
@@ -311,3 +312,12 @@ select {
 .story .other { flex: none; width: auto; white-space: nowrap; padding: 2px 6px; font-size: 11px; background: transparent; border: 1px solid var(--line); border-radius: 5px; color: var(--muted); cursor: pointer; }
 .story .other:hover { color: var(--text); border-color: var(--accent); }
 .pvp-note { margin: 10px 0 0; padding: 8px 10px; border-left: 3px solid #ff0a54; background: rgba(255,10,84,0.08); border-radius: 4px; font-size: 12.5px; line-height: 1.45; }
+
+/* Match filters: compact dropdowns, two per row */
+.filters { display: grid; grid-template-columns: 1fr 1fr; gap: 6px 8px; }
+.filters label { display: grid; gap: 2px; font-size: 11px; color: var(--muted); }
+.filters label.wide { grid-column: 1 / -1; }
+.filters select { padding: 5px 6px; font-size: 12.5px; }
+.matches .linked { color: #9ef0ff; font-weight: 700; }
+.matches .m-stats .k { color: #ff4d6d; opacity: 1; }
+.matches .m-stats .l { color: #ffd166; opacity: 1; }
