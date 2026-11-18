@@ -1,7 +1,7 @@
 // The view (what is on screen) lives in the URL hash, so a Level Designer can share exactly what they see.
 import type { HeatLayer, MapId, Who } from './types';
 
-export type Mode = 'replay' | 'heat';
+export type Mode = 'overview' | 'replay' | 'heat';
 
 export interface View {
   mode: Mode;
@@ -34,7 +34,7 @@ export interface View {
 
 export const ALL = 'all';
 
-export const DEFAULT_VIEW: View = { mode: 'replay', map: 'AmbroseValley', day: 'all', matches: [], layers: ['traffic'], kills: 'both', deaths: 'both', mono: false, players: 'all', hidden: [], heatUnder: false, view3d: false, colorBy: 'player', exaggeration: 4, terrain: true };
+export const DEFAULT_VIEW: View = { mode: 'overview', map: 'AmbroseValley', day: 'all', matches: [], layers: ['traffic'], kills: 'both', deaths: 'both', mono: false, players: 'all', hidden: [], heatUnder: false, view3d: false, colorBy: 'player', exaggeration: 4, terrain: true };
 
 const MAPS: MapId[] = ['AmbroseValley', 'GrandRift', 'Lockdown'];
 const LAYERS: HeatLayer[] = ['traffic', 'loot', 'fire', 'kills', 'deaths', 'storm']; // drawing order
@@ -47,7 +47,7 @@ export function parseView(hash: string): View {
     allowed.includes(q.get(key) as T) ? (q.get(key) as T) : fallback;
   const day = q.get('day');
   return {
-    mode: pick<Mode>('mode', ['replay', 'heat'], DEFAULT_VIEW.mode),
+    mode: pick<Mode>('mode', ['overview', 'replay', 'heat'], DEFAULT_VIEW.mode),
     map: pick('map', MAPS, DEFAULT_VIEW.map),
     day: day && /^\d{4}-\d{2}-\d{2}$/.test(day) ? day : 'all',
     matches: parseMatches(q.get('match')),
@@ -124,3 +124,12 @@ export function toggleMatch(current: string[], id: string): string[] {
   if (!current.includes(id)) return [...current, id];
   return current.length > 1 ? current.filter((x) => x !== id) : current;
 }
+
+/** Legend row clicked: only that kind is shown; clicked again while alone: everything comes back. */
+export function legendOnly(hidden: string[], k: string, all: readonly string[]): string[] {
+  const alone = all.every((x) => (x === k) !== hidden.includes(x));
+  return alone ? [] : all.filter((x) => x !== k);
+}
+
+/** Legend box clicked: show or hide that kind. */
+export const legendToggle = (hidden: string[], k: string): string[] => (hidden.includes(k) ? hidden.filter((x) => x !== k) : [...hidden, k]);

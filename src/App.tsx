@@ -1,14 +1,17 @@
 import { useEffect, useMemo, useState } from 'react';
-import { HeatStage, LayerList, useHeat, useHeatDraw } from './components/Heat';
-import { LEGEND_KEYS, Legend } from './components/Legend';
+import { HeatStage, useHeat, useHeatDraw } from './components/Heat';
+import { LEGEND_KEYS } from './components/Legend';
+import { Overview } from './components/Overview';
+import { ReplayStage } from './components/Replay';
+import { HeatSide, OverviewSide, ReplaySide, type LayerHandlers } from './components/SidePanels';
 import type { LegendKey } from './lib/draw';
-import { Choice } from './components/Choice';
-import { MatchList, ReplayStage } from './components/Replay';
 import { UpdateButton } from './components/UpdateButton';
 import { loadIndex } from './lib/data';
 import { MAP_LABEL, formatDay } from './lib/style';
 import type { EventType, HeatLayer, Index, MapId, Who } from './lib/types';
-import { ALL, parseView, resolveSelection, toggleLayer, toggleMatch, viewHash, type Mode, type View } from './lib/view';
+import { legendOnly, legendToggle, parseView, resolveSelection, toggleLayer, toggleMatch, viewHash, type Mode, type View } from './lib/view';
+
+const TAB_LABEL: Record<Mode, string> = { overview: 'Overview', replay: 'Match replay', heat: 'Heatmaps' };
 
 export function App() {
   const [index, setIndex] = useState<Index | null>(null);
@@ -55,19 +58,12 @@ export function App() {
   }, [selected]);
   const [hover, setHover] = useState<LegendKey | null>(null);
   const hidden = view.hidden as LegendKey[];
-  // Click a legend row: only that kind; click it again (already alone): everything back.
-  const onlyLegend = (k: LegendKey) => {
-    const alone = LEGEND_KEYS.every((x) => (x === k) !== hidden.includes(x));
-    update({ hidden: alone ? [] : LEGEND_KEYS.filter((x) => x !== k) });
-    setHover(null);
-  };
-  const toggleLegend = (k: LegendKey) => update({ hidden: hidden.includes(k) ? hidden.filter((x) => x !== k) : [...hidden, k] });
 
   const heat = useHeat(view.map);
   const heatOptions = { layers: view.layers, kills: view.kills, deaths: view.deaths };
   // Under a replay the heatmap keeps one color per kind: the replay's one-color switch is about matches.
   const underDraw = useHeatDraw(view.heatUnder ? heat : null, days, { ...heatOptions, mono: false }, index?.uvUnits ?? 10_000);
-  const layerHandlers = {
+  const layerHandlers: LayerHandlers = {
     onToggle: (l: HeatLayer) => update({ layers: toggleLayer(view.layers, l) }),
     onOnly: (l: HeatLayer) => update({ layers: [l] }),
     onWho: (kind: 'kills' | 'deaths', who: Who) => update({ [kind]: who }),
@@ -87,13 +83,15 @@ export function App() {
         </header>
 
         <div className="tabs" role="tablist">
-          {(['replay', 'heat'] as Mode[]).map((m) => (
+          {(['overview', 'replay', 'heat'] as Mode[]).map((m) => (
             <button key={m} role="tab" aria-selected={view.mode === m} className={view.mode === m ? 'on' : ''} onClick={() => update({ mode: m })}>
-              {m === 'replay' ? 'Match replay' : 'Heatmaps'}
+              {TAB_LABEL[m]}
             </button>
           ))}
         </div>
 
+        {view.mode !== 'overview' && (
+          <>
         <section>
           <h2>Map</h2>
           <div className="segmented">
@@ -118,74 +116,38 @@ export function App() {
             ))}
           </select>
         </section>
-
-        {view.mode === 'replay' ? (
-          <>
-            <section>
-              <h2>Players</h2>
-              <Choice
-                label="Which players"
-                options={[['all', 'All'], ['once', 'Played only once']]}
-                value={view.players}
-                onChange={(players) => update({ players })}
-              />
-            </section>
-            <section className="grow">
-              <h2 className="with-actions">
-                Match <span className="count">{selected.length > 1 ? `${selected.length} of ${matches.length}` : matches.length}</span>
-                <span className="actions">
-                  <button onClick={() => update({ matches: ALL })} disabled={selected.length === matches.length}>
-                    Select all
-                  </button>
-                  <button onClick={() => update({ matches: selectedIds.slice(0, 1) })} disabled={selected.length < 2}>
-                    Clear
-                  </button>
-                </span>
-              </h2>
-              <MatchList
-                matches={matches}
-                selected={selected}
-                mono={view.mono}
-                onOnly={(id) => update({ matches: [id] })}
-                onToggle={(id) => update({ matches: toggleMatch(selectedIds, id) })}
-              />
-            </section>
-            {selected.length > 1 && (
-              <section>
-                <h2>Colors</h2>
-                <Choice label="Match colors" options={[['each', 'One per match'], ['mono', 'One color']]} value={view.mono ? 'mono' : 'each'} onChange={(c) => update({ mono: c === 'mono' })} />
-              </section>
-            )}
-            <section>
-              <h2>
-                Legend <span className="muted hint">hover to spot, click for only one</span>
-              </h2>
-              <Legend counts={counts} hidden={hidden} onToggle={toggleLegend} onOnly={onlyLegend} onHover={setHover} />
-            </section>
-            <section>
-              <h2>Heatmap under the replay</h2>
-              <Choice label="Heatmap under the replay" options={[['off', 'Off'], ['on', 'On']]} value={view.heatUnder ? 'on' : 'off'} onChange={(v) => update({ heatUnder: v === 'on' })} />
-              {view.heatUnder && (
-                <div className="under-layers">
-                  <LayerList heat={heat} days={days} {...heatOptions} mono={false} {...layerHandlers} />
-                </div>
-              )}
-            </section>
           </>
-        ) : (
-          <section className="grow">
-            <h2>Show <span className="muted hint">tick boxes to stack kinds</span></h2>
-            <LayerList heat={heat} days={days} {...heatOptions} mono={view.mono} {...layerHandlers} />
-            <div className="heat-options">
-              <h2>Colors</h2>
-              <Choice label="Heatmap colors" options={[['each', 'One per kind'], ['mono', 'One color']]} value={view.mono ? 'mono' : 'each'} onChange={(c) => update({ mono: c === 'mono' })} />
-            </div>
-          </section>
         )}
+
+        {view.mode === 'overview' && <OverviewSide />}
+        {view.mode === 'replay' && (
+          <ReplaySide
+            view={view}
+            update={update}
+            matches={matches}
+            selected={selected}
+            onOnlyMatch={(id) => update({ matches: [id] })}
+            onToggleMatch={(id) => update({ matches: toggleMatch(selectedIds, id) })}
+            counts={counts}
+            hidden={hidden}
+            onLegendToggle={(k) => update({ hidden: legendToggle(hidden, k) })}
+            onLegendOnly={(k) => {
+              update({ hidden: legendOnly(hidden, k, LEGEND_KEYS) });
+              setHover(null);
+            }}
+            onHover={setHover}
+            heat={heat}
+            days={days}
+            layers={layerHandlers}
+          />
+        )}
+        {view.mode === 'heat' && <HeatSide view={view} update={update} heat={heat} days={days} layers={layerHandlers} />}
       </aside>
 
-      <main className="stage">
-        {!index ? (
+      <main className={`stage ${view.mode === 'overview' ? 'stage-page' : ''}`}>
+        {view.mode === 'overview' ? (
+          <Overview index={index} />
+        ) : !index ? (
           <div className="empty">Loading…</div>
         ) : view.mode === 'replay' ? (
           <ReplayStage

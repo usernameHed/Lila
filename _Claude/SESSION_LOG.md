@@ -15,6 +15,13 @@ about 300 lines, move the oldest entries word for word to `SESSION_HISTORY.md` (
 
 ---
 
+## 2026-11-18 (desktop session): Overview page, terrain, rubric pass
+
+- Ugo: rubric pasted; "no one reads docs": a summary in the page. Done: Overview tab (default landing): stats, 6 "try it"
+  cards, 4 findings with charts, proposals, data details, build + trade-offs, logging asks. Charts in public/figures.
+- Ugo: terrain from paths: 96 grid, 10th percentile per cell, Laplace fill, lit mesh in 3D (Terrain / Flat); heatmap
+  draped in 3D; smooth look removed (toon only). App split: SidePanels.tsx, legend click rules tested in view.ts.
+
 ## 2026-11-18 (desktop session): height, 2D and 3D
 
 - Ugo: use y (height) for 2D and 3D. Done: pipeline keeps height (dm) on samples, events, fights, `hMin/hMax` per map;

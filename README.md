@@ -12,6 +12,10 @@ should log so the tool can answer more).
 
 ## What it does
 
+The site opens on an **Overview**: what the tool is for, the four findings with their charts, the proposals, the
+data details we had to get right, how it is built, and what the game should log next, each with links into the
+live views. It doubles as the walkthrough of the features below.
+
 - **Match replay**: pick a map, a day and a match; every player's path is drawn on the minimap (players solid
   blue, bots dashed orange) with a marker for each kill, death, storm death and loot. Play it at 10x, 30x or
   60x (Space plays and pauses), or scrub the timeline, which carries a tick for every fight and death.
