@@ -24,3 +24,7 @@ __pycache__/
 .vscode/*
 !.vscode/extensions.json
 .idea/
+
+### Local verification scripts (need the raw data)
+.verify/
+public/_test/

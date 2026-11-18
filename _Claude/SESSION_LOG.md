@@ -15,6 +15,14 @@ about 300 lines, move the oldest entries word for word to `SESSION_HISTORY.md` (
 
 ---
 
+## 2026-11-18 (desktop session): Data tab (drop any dataset)
+
+- Ugo: a Data section to drop data, optimistic loading, then the visual; always see which data is shown, change it
+  easily. Done: `src/lib/build.ts` (pipeline in TS, equal to build.py on all rows after Python-style rounding; one
+  inferred fight 1 unit off), `src/workers/loadData.ts` (fflate + hyparquet), `src/lib/sources.ts` (built-in / uploads
+  in IndexedDB, active id in localStorage), Data tab (drop zone with drag animation, live progress card, dataset
+  cards), "Data: ... Change" line in the replay. Tested with player_data.zip: ~0.5 s, survives reload.
+
 ## 2026-11-18 (desktop session): undo / redo, "Merge"
 
 - Ugo: undo / redo for every setting -> `lib/history.ts` (tested; same setting within 800 ms = one step), buttons in

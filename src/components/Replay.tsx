@@ -12,6 +12,7 @@ import { MapCanvas, type MapPick } from './MapCanvas';
 import { PlayerCard } from './PlayerCard';
 import { PlaybackBar } from './PlaybackBar';
 import { usePlayback } from './usePlayback';
+import { useSourceId } from './useSourceId';
 
 interface ListProps {
   matches: MatchSummary[];
@@ -140,14 +141,15 @@ const Map3D = lazy(() => import('./Map3D'));
 /** The map's estimated terrain, loaded only when the 3D view needs it. */
 function useTerrain(map: MapConfig['id'] | null): Terrain | null {
   const [terrain, setTerrain] = useState<Terrain | null>(null);
+  const source = useSourceId();
   useEffect(() => {
     if (!map) return setTerrain(null);
     let live = true;
-    loadTerrain(map).then((t) => live && setTerrain(t));
+    loadTerrain(map).then((t) => live && setTerrain(t), () => live && setTerrain(null));
     return () => {
       live = false;
     };
-  }, [map]);
+  }, [map, source]);
   return terrain;
 }
 

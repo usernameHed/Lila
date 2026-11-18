@@ -106,6 +106,10 @@ export function Overview({ index }: { index: Index | null }) {
             <strong>The only player vs player fights</strong>
             <span>3 matches. Each time: a kill and a death at the same second and spot, and the other player is not in the data at all (searched).</span>
           </a>
+          <a className="card" href="#mode=data">
+            <strong>Your own data</strong>
+            <span>Drop another LILA BLACK export (a zip, a folder): it is processed in your browser and the whole tool runs on it.</span>
+          </a>
           <a className="card" href="#mode=replay&map=Lockdown&match=ead4c72d-0e3b-49b4-a91b-a9a21bed8012">
             <strong>Click a player</strong>
             <span>In any replay, click a path: its whole story, fights and events, past and future path.</span>
@@ -182,6 +186,7 @@ export function Overview({ index }: { index: Index | null }) {
           <span>Small static JSON + 2048 px minimaps</span>
           <span>React + canvas (2D), three.js on demand (3D)</span>
           <span>Cloudflare, deployed on every push</span>
+          <span>New data: the same pipeline in the browser</span>
         </div>
         <table className="ov-table">
           <thead>

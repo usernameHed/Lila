@@ -20,6 +20,8 @@ once at build time and the browser loads only what the current view needs. Live:
   ├─ terrain/<map>.json             96² ground height estimated from where players and bots walked
   └─ minimaps/<map>.jpg    ~300 KB  2048² (sources: 4320, 2160 and 9000 px)
 browser: index once → replay (1-5 match files, or bundles) → canvas / three.js; heat files → toon bands
+Data tab: dropped zip / folder / parquet → Web Worker (fflate, hyparquet, src/lib/build.ts = build.py in TS)
+          → the same structures in memory, kept in IndexedDB → the same views
 ```
 
 Files are cached after the first load; the whole view (mode, map, day, matches, layers, 3D...) lives in the URL.
@@ -57,3 +59,4 @@ paths follow roads on all three maps. In 3D: x east, z south, y = height above t
 | Raw points for heatmaps | Per-day grids, toon bands with vector outlines (marching squares), one hue per kind | Small files that still filter by day; outlines stay sharp at any zoom; kinds stack |
 | Line of fire as a heat grid | Arrows | 42 lines blur into noise as heat |
 | Guess missing victims or the storm | Show only what the data supports | A wrong line looks as true as a right one |
+| Upload to a server to process new data | The pipeline ported to TypeScript, in a Web Worker | Nothing leaves the browser, no backend to run; checked equal to the Python output on all 89,016 rows |

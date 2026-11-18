@@ -21,7 +21,7 @@ only loads what one view needs. Trade-offs are listed in `ARCHITECTURE.md`.
 
 | Area | Files |
 |---|---|
-| Pipeline | `pipeline/build.py` (raw parquet to JSON), `pipeline/requirements.txt` |
+| Pipeline | `pipeline/build.py` (raw parquet to JSON), `pipeline/requirements.txt`; its TypeScript twin `src/lib/build.ts` (Data tab). Change both together; `.verify/compare.ts` (local, needs raw data) checks they agree |
 | Coordinate mapping | `src/lib/coords.ts` (map config comes from `index.json`) |
 | Playback clock, heatmap math, URL view | `src/lib/timeline.ts`, `src/lib/heat.ts`, `src/lib/view.ts` (all tested) |
 | Canvas drawing, labels and colors | `src/lib/draw.ts`, `src/lib/style.ts` |

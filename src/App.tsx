@@ -1,11 +1,14 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useHeat, useHeatDraw } from './components/Heat';
 import { LEGEND_KEYS } from './components/Legend';
+import { DataPage } from './components/DataPage';
 import { Overview } from './components/Overview';
+import { useSourceId } from './components/useSourceId';
 import { ReplayStage } from './components/Replay';
 import { OverviewSide, ReplaySide, RightPanel, type LayerHandlers } from './components/SidePanels';
 import { UpdateButton } from './components/UpdateButton';
 import { loadIndex } from './lib/data';
+import { BUILTIN_ID, listUploads, restoreSource } from './lib/sources';
 import { record, redo, start, undo, type History } from './lib/history';
 import type { LegendKey } from './lib/draw';
 import { MAP_LABEL, formatDay } from './lib/style';
@@ -13,7 +16,7 @@ import { applyFilter } from './lib/matchFilter';
 import type { EventType, HeatLayer, Index, MapId, Who } from './lib/types';
 import { legendToggle, parseView, resolveSelection, setMany, toggleLayer, toggleMatch, viewHash, type Mode, type View } from './lib/view';
 
-const TAB_LABEL: Record<Mode, string> = { overview: 'Overview', replay: 'Match replay' };
+const TAB_LABEL: Record<Mode, string> = { overview: 'Overview', replay: 'Match replay', data: 'Data' };
 
 export function App() {
   const [index, setIndex] = useState<Index | null>(null);
@@ -40,9 +43,25 @@ export function App() {
     return () => window.removeEventListener('keydown', onKey);
   }, []);
 
+  // The data shown: built in, or a dataset dropped in the Data tab (restored from this browser on start).
+  const source = useSourceId();
+  const [restored, setRestored] = useState(false);
   useEffect(() => {
-    loadIndex().then(setIndex, (e: Error) => setError(e.message));
+    restoreSource().finally(() => setRestored(true));
   }, []);
+  const firstSource = useRef(source);
+  useEffect(() => {
+    if (!restored) return;
+    let live = true;
+    setIndex(null);
+    loadIndex().then((i) => live && setIndex(i), (e: Error) => live && setError(e.message));
+    // Another dataset: the matches picked in the previous one mean nothing here.
+    if (source !== firstSource.current) update({ matches: [], day: 'all' });
+    firstSource.current = source;
+    return () => {
+      live = false;
+    };
+  }, [source, restored, update]);
 
   // Keep the URL in step with the view (shareable), and follow the back button / pasted links.
   useEffect(() => {
@@ -81,6 +100,10 @@ export function App() {
   const [hover, setHover] = useState<LegendKey | null>(null);
   const [pointedKind, setPointedKind] = useState<LegendKey | null>(null);
   const hidden = view.hidden as LegendKey[];
+  const [uploadName, setUploadName] = useState<string | null>(null);
+  useEffect(() => {
+    if (source !== BUILTIN_ID) listUploads().then((all) => setUploadName(all.find((u) => u.id === source)?.name ?? null));
+  }, [source]);
   // Replay off: nothing of it is drawn (the heatmap alone); the legend keeps its own choices for when it is back.
   const drawnHidden = useMemo(() => (view.replayOn ? hidden : [...LEGEND_KEYS]), [view.replayOn, hidden]);
 
@@ -94,6 +117,7 @@ export function App() {
   if (error) return <div className="fatal">Could not load the data: {error}</div>;
 
   const replay = view.mode === 'replay';
+  const sourceName = source === BUILTIN_ID ? "LILA's sample, Feb 10-14" : uploadName ?? 'Your dataset';
   return (
     <div className={`app ${replay ? 'with-right' : ''}`}>
       <aside className="side">
@@ -114,7 +138,7 @@ export function App() {
         </header>
 
         <div className="tabs" role="tablist">
-          {(['overview', 'replay'] as Mode[]).map((m) => (
+          {(['overview', 'replay', 'data'] as Mode[]).map((m) => (
             <button key={m} role="tab" aria-selected={view.mode === m} className={view.mode === m ? 'on' : ''} onClick={() => update({ mode: m })}>
               {TAB_LABEL[m]}
             </button>
@@ -123,6 +147,9 @@ export function App() {
 
         {replay && (
           <>
+            <button className="data-line" onClick={() => update({ mode: 'data' })} title="Change the data">
+              <span className="muted">Data</span> <b>{sourceName}</b> <span className="change">Change</span>
+            </button>
             <section>
               <h2>Map</h2>
               <div className="segmented">
@@ -158,11 +185,20 @@ export function App() {
           </>
         )}
         {view.mode === 'overview' && <OverviewSide />}
+        {view.mode === 'data' && (
+          <section>
+            <h2>Showing now</h2>
+            <p className="small">{sourceName}</p>
+            <p className="muted small">Drop a dataset on the page, or pick one of the datasets kept in this browser.</p>
+          </section>
+        )}
       </aside>
 
       <main className={`stage ${replay ? '' : 'stage-page'}`}>
-        {!replay ? (
+        {view.mode === 'overview' ? (
           <Overview index={index} />
+        ) : view.mode === 'data' ? (
+          <DataPage onShow={() => update({ mode: 'replay' })} />
         ) : !index ? (
           <div className="empty">Loading…</div>
         ) : (

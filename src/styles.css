@@ -84,7 +84,7 @@ select {
 }
 
 /* Mode tabs */
-.tabs { display: grid; grid-template-columns: 1fr 1fr; gap: 4px; padding: 4px; background: #101216; border: 1px solid var(--line); border-radius: 10px; }
+.tabs { display: grid; grid-template-columns: 1fr 1.25fr 0.8fr; gap: 4px; padding: 4px; background: #101216; border: 1px solid var(--line); border-radius: 10px; }
 .tabs button { padding: 9px 0; background: transparent; border: 0; border-radius: 7px; cursor: pointer; color: var(--muted); font-weight: 600; }
 .tabs button:hover:not(.on) { color: var(--text); background: #1d2026; }
 .tabs button.on { background: var(--accent); color: #fff; box-shadow: 0 2px 10px rgba(229,72,77,0.35); }
@@ -376,3 +376,44 @@ select {
 .history-btns button:disabled { opacity: 0.3; cursor: default; }
 .history-btns button:hover:not(:disabled) { border-color: var(--blue); color: var(--blue); }
 .side header.brand { align-items: center; }
+
+/* Data tab */
+.data-line { display: flex; align-items: baseline; gap: 6px; width: 100%; padding: 7px 10px; background: rgba(76,201,240,0.06); border: 1px solid rgba(76,201,240,0.35); border-radius: 8px; color: var(--text); cursor: pointer; text-align: left; font-size: 12.5px; }
+.data-line b { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.data-line .change { color: var(--blue); font-weight: 600; }
+.data-page { max-width: 980px; margin: 0 auto; padding: 32px 32px 64px; min-height: 100%; }
+.data-page section { margin-top: 32px; }
+.data-page h2 { font-size: 18px; margin: 0 0 12px; }
+.dropzone {
+  margin-top: 24px; display: grid; justify-items: center; gap: 8px; padding: 36px 20px; text-align: center; cursor: pointer;
+  border: 2px dashed rgba(76,201,240,0.45); border-radius: 16px; background: rgba(76,201,240,0.04);
+  transition: transform 0.18s ease, border-color 0.18s, background 0.18s, box-shadow 0.18s;
+}
+.dropzone:hover { border-color: rgba(76,201,240,0.8); background: rgba(76,201,240,0.07); }
+.dropzone.drag { transform: scale(1.015); border-color: var(--blue); border-style: solid; background: rgba(76,201,240,0.13); box-shadow: 0 0 0 6px rgba(76,201,240,0.12), 0 12px 40px rgba(76,201,240,0.18); }
+.dropzone.busy { opacity: 0.6; pointer-events: none; }
+.dz-icon { font-size: 36px; color: var(--blue); line-height: 1; transition: transform 0.2s; }
+.dropzone.drag .dz-icon { animation: dz-bounce 0.7s ease-in-out infinite; }
+@keyframes dz-bounce { 50% { transform: translateY(-8px) scale(1.1); } }
+.dropzone strong { font-size: 17px; }
+.dropzone > span { color: var(--muted); font-size: 13px; max-width: 560px; }
+.dz-buttons { display: flex; gap: 8px; margin-top: 6px; }
+.dz-buttons button, .ds-use { padding: 7px 14px; border-radius: 8px; border: 1px solid var(--blue); background: transparent; color: var(--blue); font-weight: 600; cursor: pointer; }
+.dz-buttons button:hover, .ds-use:hover { background: rgba(76,201,240,0.12); }
+.ds-list { display: grid; gap: 10px; }
+.ds-card { padding: 14px 16px; background: var(--panel); border: 1px solid var(--line); border-radius: 12px; display: grid; gap: 10px; }
+.ds-card.current { border-color: var(--blue); box-shadow: inset 4px 0 0 var(--blue); }
+.ds-card header { display: flex; justify-content: space-between; align-items: center; gap: 12px; }
+.ds-card header > div { display: grid; gap: 2px; }
+.ds-kind { color: var(--muted); font-size: 12.5px; }
+.ds-current { padding: 5px 12px; border-radius: 999px; background: var(--blue); color: #08121a; font-weight: 700; font-size: 12px; white-space: nowrap; }
+.ds-stats { display: flex; flex-wrap: wrap; gap: 6px 16px; font-size: 13px; color: var(--muted); }
+.ds-stats b { color: var(--text); }
+.ds-remove { justify-self: start; padding: 3px 10px; font-size: 12px; background: transparent; border: 1px solid var(--line); border-radius: 6px; color: var(--muted); cursor: pointer; }
+.ds-remove:hover { color: #ff8fa3; border-color: #ff8fa3; }
+.ds-card.loading { border-color: var(--blue); animation: ds-glow 1.4s ease-in-out infinite; }
+@keyframes ds-glow { 50% { box-shadow: 0 0 0 4px rgba(76,201,240,0.12); } }
+.ds-card.failed { border-color: #ff4d6d; animation: none; }
+.ds-progress { height: 8px; border-radius: 4px; background: #1d2026; overflow: hidden; }
+.ds-progress div { height: 100%; background: linear-gradient(90deg, var(--blue), #9ef0ff); transition: width 0.25s; }
+.ds-error { margin: 0; color: #ff8fa3; font-size: 13px; }

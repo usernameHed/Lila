@@ -42,6 +42,10 @@ On a 16:9 screen (1366x768 to 1920x1080) everything fits without scrolling:
 - **3D**: an estimated terrain (from where players walked), paths, events and the heatmap at their real height;
   drag to orbit, middle or right drag to move, scroll to zoom, height x1 to x8; hover and click work as in 2D.
 - **Line of fire**: killer-to-victim arrows for the 36 recorded pairs, plus 6 inferred (lighter).
+- **Data tab**: drop another export (`player_data.zip`, its folder, or `.nakama-0` parquet files) and the whole tool
+  runs on it. It is read and processed in the browser (a Web Worker running the same pipeline as `pipeline/build.py`,
+  ported to `src/lib/build.ts` and checked value for value against it), kept in this browser, and shown when ready;
+  the left panel always says which data is on screen, one click to change it.
 - **Undo / redo** for every setting (↶ ↷ in the header, Cmd/Ctrl+Z, Shift+Cmd/Ctrl+Z); dragging a slider is one step.
 - **Shareable views**: the URL holds the whole view. **Update button** when a new version is deployed.
 
@@ -49,7 +53,7 @@ On a 16:9 screen (1366x768 to 1920x1080) everything fits without scrolling:
 
 | Part | Choice |
 |---|---|
-| Data pipeline | Python 3 + pyarrow + Pillow, run once offline (`pipeline/build.py`) |
+| Data pipeline | Python 3 + pyarrow + Pillow, run once offline (`pipeline/build.py`); the same steps in TypeScript for data dropped in the browser |
 | App | Vite, React 19, TypeScript, HTML canvas (2D), three.js (3D, loaded on demand) |
 | Hosting | Cloudflare Workers static assets (no server code, no database) |
 | Tests | Vitest |
@@ -97,6 +101,7 @@ No environment variables are needed: the app is fully static.
 | `pipeline/figures.py`, `public/figures/` | The charts and maps in INSIGHTS.md and PRODUCT.md (matplotlib, from the processed files) |
 | `public/data/` | `index.json` (maps, days, matches), `matches/<id>.json` (paths and events), `bundles/<map>_<day>.json` (all matches of a map and day), `heat/<map>.json` (per-day grids) |
 | `public/minimaps/` | The three minimaps, 2048 x 2048 JPEG |
-| `src/lib/` | Pure logic: coordinate mapping, playback clock, heatmap binning and colors, URL view, drawing (with tests) |
+| `src/lib/` | Pure logic: coordinate mapping, playback clock, heatmap binning and colors, URL view, drawing, the in-browser pipeline (with tests) |
+| `src/workers/loadData.ts` | Web Worker for dropped data: unzip (fflate), parquet (hyparquet), pipeline |
 | `src/components/` | Map canvas, match replay, playback bar, heatmaps, legend |
 | `_Claude/`, `CLAUDE.md`, `.claude/agents/` | How this was built with Claude: brief, data notes, decisions, session log |

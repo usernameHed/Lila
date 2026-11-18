@@ -2,7 +2,7 @@
 import type { Ended, Length, MatchFilter, SortBy } from './matchFilter';
 import type { HeatLayer, MapId, Who } from './types';
 
-export type Mode = 'overview' | 'replay';
+export type Mode = 'overview' | 'replay' | 'data';
 
 export interface View {
   mode: Mode;
@@ -60,7 +60,7 @@ export function parseView(hash: string): View {
   // Old links: the Heatmaps tab is now the heatmap panel of Match replay, with paths hidden.
   const legacyHeat = q.get('mode') === 'heat';
   return {
-    mode: legacyHeat ? 'replay' : pick<Mode>('mode', ['overview', 'replay'], DEFAULT_VIEW.mode),
+    mode: legacyHeat ? 'replay' : pick<Mode>('mode', ['overview', 'replay', 'data'], DEFAULT_VIEW.mode),
     map: pick('map', MAPS, DEFAULT_VIEW.map),
     day: day && /^\d{4}-\d{2}-\d{2}$/.test(day) ? day : 'all',
     matches: parseMatches(q.get('match')),

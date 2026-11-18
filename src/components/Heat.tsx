@@ -7,6 +7,7 @@ import { bandEdges, blur, edgeColor, normalize, powerGrid, render, strongest, su
 import { HEAT_LAYERS, MONO_RGB, WHO_LABEL, rgbCss } from '../lib/style';
 import type { HeatData, HeatLayer, MapId, Who } from '../lib/types';
 import { Choice } from './Choice';
+import { useSourceId } from './useSourceId';
 
 const KINDS = Object.keys(HEAT_LAYERS) as HeatLayer[]; // drawing order
 const WHOS: Who[] = ['bots', 'players', 'both'];
@@ -47,6 +48,7 @@ function count(heat: HeatData | null, kind: HeatLayer, who: Who, days: string[])
 
 export function useHeat(map: MapId) {
   const [heat, setHeat] = useState<HeatData | null>(null);
+  const source = useSourceId();
   useEffect(() => {
     let live = true;
     setHeat(null);
@@ -54,7 +56,7 @@ export function useHeat(map: MapId) {
     return () => {
       live = false;
     };
-  }, [map]);
+  }, [map, source]);
   return heat;
 }
 
