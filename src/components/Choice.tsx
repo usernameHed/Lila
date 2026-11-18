@@ -1,4 +1,4 @@
-/** A small row of mutually exclusive buttons (bots / players / both, smooth / toon, ...). */
+/** A small row of mutually exclusive buttons (bots / players / both, 2D / 3D, ...). */
 export function Choice<T extends string>({ label, options, value, onChange }: { label: string; options: [T, string][]; value: T; onChange: (v: T) => void }) {
   return (
     <div className="choice" role="group" aria-label={label}>

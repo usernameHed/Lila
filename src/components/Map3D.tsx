@@ -10,7 +10,7 @@ import type { LegendKey } from '../lib/draw';
 import { minimapUrl } from '../lib/data';
 import { EVENT_STYLE, FIRE_COLOR, MANY_MATCHES, MATCH_COLORS, PATH_COLOR, heightColor } from '../lib/style';
 import { heightAt, positionAt, samplesUntil } from '../lib/timeline';
-import type { EventType, MapConfig, Match } from '../lib/types';
+import type { EventType, MapConfig, Match, Terrain } from '../lib/types';
 
 export interface Map3DProps {
   map: MapConfig;
@@ -22,7 +22,17 @@ export interface Map3DProps {
   mono: boolean;
   /** Vertical exaggeration: 40 m of relief on a 900 m map is hard to see at 1x. */
   exaggeration: number;
+  /** Ground shaped by the terrain estimated from paths (null: flat). */
+  terrain: Terrain | null;
+  /** Heatmap painted on the ground with the minimap (null: minimap only). */
+  overlay: ((ctx: CanvasRenderingContext2D, size: number) => void) | null;
 }
+
+/** Size of the ground texture: minimap + heatmap painted together. */
+const TEXTURE_PX = 2048;
+
+/** The estimated terrain is smoothed: sink it 2 m so it never covers the paths it was built from. */
+const TERRAIN_SINK = 2;
 
 interface PathLine {
   line: Line2;
@@ -52,12 +62,34 @@ const DOT = (() => {
   return new THREE.CanvasTexture(c);
 })();
 
+/**
+ * A plane with one vertex per terrain cell center, lifted to the cell's height, its texture coordinates set from
+ * the vertex position so the minimap stays exactly where the paths are. Built in the plane's own axes (rotated
+ * flat afterwards like the flat ground): local x = east, local y = north, local z = up.
+ */
+function terrainGeometry(map: MapConfig, t: Terrain): THREE.PlaneGeometry {
+  const S = map.scale;
+  const g = t.grid;
+  const size = (S * (g - 1)) / g; // first and last vertices sit on the outer cells' centers
+  const geo = new THREE.PlaneGeometry(size, size, g - 1, g - 1);
+  const pos = geo.attributes.position;
+  const uv = geo.attributes.uv;
+  for (let i = 0; i < pos.count; i++) {
+    const row = Math.floor(i / g); // PlaneGeometry rows go from top (north) to bottom
+    const col = i % g;
+    pos.setZ(i, t.h[row * g + col] / 10 - map.hMin - TERRAIN_SINK);
+    uv.setXY(i, (pos.getX(i) + S / 2) / S, (pos.getY(i) + S / 2) / S);
+  }
+  geo.computeVertexNormals();
+  return geo;
+}
+
 /** World meters: x east, z south (image down), y up = height above the map's lowest point. */
 function place(map: MapConfig, uvUnits: number, u: number, v: number, hDm: number) {
   return new THREE.Vector3((u / uvUnits) * map.scale, hDm / 10 - map.hMin, (1 - v / uvUnits) * map.scale);
 }
 
-export default function Map3D({ map, matches, uvUnits, t, hidden, byHeight, mono, exaggeration }: Map3DProps) {
+export default function Map3D({ map, matches, uvUnits, t, hidden, byHeight, mono, exaggeration, terrain, overlay }: Map3DProps) {
   const box = useRef<HTMLDivElement>(null);
   const three = useRef<{
     renderer: THREE.WebGLRenderer;
@@ -66,6 +98,7 @@ export default function Map3D({ map, matches, uvUnits, t, hidden, byHeight, mono
     controls: OrbitControls;
     world: THREE.Group; // everything that has a height: scaled in y by the exaggeration
     content: THREE.Group; // this selection's paths, events, fights
+    ground: THREE.Mesh;
   } | null>(null);
   const lineMaterials = useRef<LineMaterial[]>([]);
   // Line2 widths are in pixels: the materials need the canvas size.
@@ -93,19 +126,21 @@ export default function Map3D({ map, matches, uvUnits, t, hidden, byHeight, mono
     controls.maxPolarAngle = Math.PI * 0.49; // never under the ground
     controls.update();
 
-    const texture = new THREE.TextureLoader().load(minimapUrl(map.id));
-    texture.colorSpace = THREE.SRGBColorSpace;
-    texture.anisotropy = renderer.capabilities.getMaxAnisotropy();
-    const ground = new THREE.Mesh(new THREE.PlaneGeometry(S, S), new THREE.MeshBasicMaterial({ map: texture, color: 0xb0b0b0 }));
+    // Lit material, so slopes of the estimated terrain shade; the texture is painted by the overlay effect below.
+    const ground = new THREE.Mesh(new THREE.PlaneGeometry(S, S), new THREE.MeshLambertMaterial({ color: 0xffffff }));
+    scene.add(new THREE.HemisphereLight(0xffffff, 0x404040, 1.6));
+    const sun = new THREE.DirectionalLight(0xffffff, 1.4);
+    sun.position.set(-S * 0.6, S * 0.9, -S * 0.3); // low-ish from the north-west: relief reads like a shaded map
+    scene.add(sun);
     ground.rotation.x = -Math.PI / 2;
     ground.position.set(S / 2, 0, S / 2);
-    scene.add(ground);
 
     const world = new THREE.Group();
+    world.add(ground); // inside the world: the terrain follows the height exaggeration like the paths
     const content = new THREE.Group();
     world.add(content);
     scene.add(world);
-    three.current = { renderer, scene, camera, controls, world, content };
+    three.current = { renderer, scene, camera, controls, world, content, ground };
 
     const resize = () => {
       const w = el.clientWidth;
@@ -130,7 +165,6 @@ export default function Map3D({ map, matches, uvUnits, t, hidden, byHeight, mono
       ro.disconnect();
       controls.dispose();
       renderer.dispose();
-      texture.dispose();
       el.removeChild(renderer.domElement);
       three.current = null;
     };
@@ -139,6 +173,46 @@ export default function Map3D({ map, matches, uvUnits, t, hidden, byHeight, mono
   useEffect(() => {
     if (three.current) three.current.world.scale.y = exaggeration;
   }, [exaggeration]);
+
+  // The ground's texture: the minimap, darkened and with the heatmap on top when one is shown (as in 2D).
+  useEffect(() => {
+    const ctx = three.current;
+    if (!ctx) return;
+    let live = true;
+    const img = new Image();
+    img.onload = () => {
+      if (!live || !three.current) return;
+      const canvas = document.createElement('canvas');
+      canvas.width = canvas.height = TEXTURE_PX;
+      const g = canvas.getContext('2d')!;
+      g.drawImage(img, 0, 0, TEXTURE_PX, TEXTURE_PX);
+      if (overlay) {
+        g.fillStyle = 'rgba(8, 9, 12, 0.4)';
+        g.fillRect(0, 0, TEXTURE_PX, TEXTURE_PX);
+        overlay(g, TEXTURE_PX);
+      }
+      const texture = new THREE.CanvasTexture(canvas);
+      texture.colorSpace = THREE.SRGBColorSpace;
+      texture.anisotropy = three.current.renderer.capabilities.getMaxAnisotropy();
+      const material = three.current.ground.material as THREE.MeshLambertMaterial;
+      material.map?.dispose();
+      material.map = texture;
+      material.needsUpdate = true;
+    };
+    img.src = minimapUrl(map.id);
+    return () => {
+      live = false;
+      img.onload = null;
+    };
+  }, [map, overlay]);
+
+  // The ground: flat, or a mesh lifted to the estimated terrain (one vertex per terrain cell center).
+  useEffect(() => {
+    const ctx = three.current;
+    if (!ctx) return;
+    ctx.ground.geometry.dispose();
+    ctx.ground.geometry = terrain ? terrainGeometry(map, terrain) : new THREE.PlaneGeometry(map.scale, map.scale);
+  }, [terrain, map]);
 
   // Geometry for this selection: paths (with a dark shadow on the ground), events by type, fight lines.
   useEffect(() => {
@@ -243,6 +317,7 @@ export default function Map3D({ map, matches, uvUnits, t, hidden, byHeight, mono
       const n = samplesUntil(p.path, t);
       p.line.geometry.instanceCount = Math.max(0, n - 1); // Line2 draws one instance per segment
       p.shadow.geometry.setDrawRange(0, n);
+      p.shadow.visible = !terrain; // a flat shadow would be buried under the terrain
       const at = positionAt(p.path, t);
       const h = heightAt(p.path, p.h, t);
       p.head.visible = !!at && t < p.path[p.path.length - 3];
@@ -269,7 +344,7 @@ export default function Map3D({ map, matches, uvUnits, t, hidden, byHeight, mono
       fights.points.visible = !hidden.has('fights');
       fights.points.geometry.setDrawRange(0, count(fights.times) * 2);
     }
-  }, [t, hidden, map, uvUnits, byHeight, matches]);
+  }, [t, hidden, map, uvUnits, byHeight, matches, terrain]);
 
   return (
     <div className="map3d" ref={box}>

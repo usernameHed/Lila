@@ -27,7 +27,7 @@ days rather than weeks.
 
 ### 1. New players stop after one match, and most of them died to a bot
 
-![Players by matches played, and how often their matches end in a death to a bot](docs/figures/players.png)
+![Players by matches played, and how often their matches end in a death to a bot](public/figures/players.png)
 
 | Matches played in 5 days | 1 | 2 | 3-5 | 6-10 | 11+ |
 |---|---|---|---|---|---|
@@ -37,7 +37,7 @@ days rather than weeks.
 - Their only match ended in a death to a bot **61.7%** of the time; for players who came back, 48.5% of
   their matches did.
 
-![New players per day and next-day return](docs/figures/return.png)
+![New players per day and next-day return](public/figures/return.png)
 
 | First day | Feb 10 | Feb 11 | Feb 12 | Feb 13 |
 |---|---|---|---|---|
@@ -49,7 +49,7 @@ days rather than weeks.
 
 ### 2. Bots make every fight
 
-![Who players kill, and what kills them](docs/figures/combat.png)
+![Who players kill, and what kills them](public/figures/combat.png)
 
 | | Bots | The storm | Other players |
 |---|---|---|---|
@@ -61,14 +61,14 @@ days rather than weeks.
 
 ### 3. The storm is a clock, and it takes the fullest bags
 
-![Player deaths by minute: bots early, the storm only after minute 10.9](docs/figures/storm_timing.png)
+![Player deaths by minute: bots early, the storm only after minute 10.9](public/figures/storm_timing.png)
 
 | Minute | 0-9 | 10 | 11 | 12 | 13 | 14 |
 |---|---|---|---|---|---|---|
 | Killed by a bot | 385 | 11 | 6 | 1 | 0 | 0 |
 | Died to the storm | 0 | 1 | 11 | 17 | 7 | 3 |
 
-![Storm deaths on each map](docs/figures/storm_map.png)
+![Storm deaths on each map](public/figures/storm_map.png)
 
 28% of the matches that last 11 minutes or more end in a storm death. Storm victims had looted a median 18
 items (players killed by bots: 8), and died in the middle of the map, not at an edge.
@@ -76,9 +76,9 @@ items (players killed by bots: 8), and died in the middle of the map, not at an 
 
 ### 4. Ambrose Valley's center is a death trap that pays no better than the south
 
-![Ambrose Valley: kills in the center, loot spread out](docs/figures/ambrose_heat.png)
+![Ambrose Valley: kills in the center, loot spread out](public/figures/ambrose_heat.png)
 
-![Share of time, loot and deaths by region](docs/figures/ambrose_regions.png)
+![Share of time, loot and deaths by region](public/figures/ambrose_regions.png)
 
 | Region | Time spent | Loot | Deaths | Deaths per unit of time |
 |---|---|---|---|---|

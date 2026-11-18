@@ -1,6 +1,6 @@
 """Charts and maps behind INSIGHTS.md and PRODUCT.md, from the processed files in public/data (no raw data needed).
 
-Run: .venv/bin/python pipeline/figures.py   -> docs/figures/*.png
+Run: .venv/bin/python pipeline/figures.py   -> public/figures/*.png
 Colors: the first three categorical slots of a colorblind-validated palette (blue, orange, aqua), light surface.
 Every chart sits next to a table of its numbers in the docs.
 """
@@ -21,7 +21,7 @@ from PIL import Image  # noqa: E402
 ROOT = Path(__file__).resolve().parent.parent
 DATA = ROOT / "public" / "data"
 MINIMAPS = ROOT / "public" / "minimaps"
-OUT = ROOT / "docs" / "figures"
+OUT = ROOT / "public" / "figures"  # served by the site (the in-app Overview) and linked from the docs
 
 SURFACE, INK, INK_2, GRID = "#fcfcfb", "#0b0b0b", "#52514e", "#e4e3df"
 BLUE, ORANGE, AQUA = "#2a78d6", "#eb6834", "#1baf7a"

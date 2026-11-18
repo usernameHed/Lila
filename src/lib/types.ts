@@ -53,12 +53,6 @@ export interface MatchSummary {
   events: Partial<Record<EventType, number>>;
 }
 
-export interface Index {
-  maps: MapConfig[];
-  days: string[];
-  uvUnits: number; // u and v below are in [0, uvUnits]
-  matches: MatchSummary[];
-}
 
 export interface Player {
   id: string;
@@ -77,4 +71,19 @@ export interface Match {
   players: Player[];
   events: MatchEvent[];
   fights: Fight[];
+}
+
+/** Estimated ground height, from where players and bots walked (pipeline write_terrain). */
+export interface Terrain {
+  grid: number; // cells per side, row 0 at the top of the image
+  h: number[]; // decimeters
+  known: number; // share of cells with real samples (the rest is filled from neighbors)
+}
+
+export interface Index {
+  maps: MapConfig[];
+  days: string[];
+  uvUnits: number;
+  matches: MatchSummary[];
+  totals: { rows: number; humans: number; bots: number };
 }

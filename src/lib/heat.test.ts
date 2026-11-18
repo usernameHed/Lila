@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { BAND_SCALE, bandOf, blur, colorAt, normalize, render, scaleTop, strongest, sumDays, toPixels, upscale } from './heat';
+import { BAND_SCALE, bandOf, blur, colorAt, normalize, render, scaleTop, strongest, sumDays, upscale } from './heat';
 
 describe('heatmap', () => {
   it('sums only the chosen days', () => {
@@ -24,10 +24,9 @@ describe('heatmap', () => {
     expect(scaleTop(new Float32Array(4))).toBe(0);
   });
 
-  it('leaves empty cells transparent and colors the hottest ones', () => {
-    const px = toPixels(normalize(new Float32Array([0, 10, 0, 0])), 2, [255, 0, 0]);
-    expect(px[3]).toBe(0);
-    expect(px[7]).toBeGreaterThan(200);
+  it('leaves empty cells transparent', () => {
+    const { pixels } = render(new Float32Array(16), 4, [255, 0, 0]);
+    expect(pixels.every((v) => v === 0)).toBe(true);
     expect(colorAt(0, [255, 0, 0])[3]).toBe(0);
   });
 
@@ -67,7 +66,7 @@ describe('one color and toon bands', () => {
     const k = new Float32Array(grid * grid);
     k[3 * grid + 3] = 1;
     k[3 * grid + 4] = 1;
-    const { pixels, size } = render(k, grid, [255, 0, 0], 'bands');
+    const { pixels, size } = render(k, grid, [255, 0, 0]);
     expect(size).toBe(grid * BAND_SCALE);
     const alphas = new Set<number>();
     const reds = new Set<number>();

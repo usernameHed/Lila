@@ -64,7 +64,7 @@ export function App() {
   const toggleLegend = (k: LegendKey) => update({ hidden: hidden.includes(k) ? hidden.filter((x) => x !== k) : [...hidden, k] });
 
   const heat = useHeat(view.map);
-  const heatOptions = { layers: view.layers, kills: view.kills, deaths: view.deaths, look: view.look };
+  const heatOptions = { layers: view.layers, kills: view.kills, deaths: view.deaths };
   // Under a replay the heatmap keeps one color per kind: the replay's one-color switch is about matches.
   const underDraw = useHeatDraw(view.heatUnder ? heat : null, days, { ...heatOptions, mono: false }, index?.uvUnits ?? 10_000);
   const layerHandlers = {
@@ -177,8 +177,6 @@ export function App() {
             <h2>Show <span className="muted hint">tick boxes to stack kinds</span></h2>
             <LayerList heat={heat} days={days} {...heatOptions} mono={view.mono} {...layerHandlers} />
             <div className="heat-options">
-              <h2>Look</h2>
-              <Choice label="Heatmap look" options={[['bands', 'Toon'], ['smooth', 'Smooth']]} value={view.look} onChange={(look) => update({ look })} />
               <h2>Colors</h2>
               <Choice label="Heatmap colors" options={[['each', 'One per kind'], ['mono', 'One color']]} value={view.mono ? 'mono' : 'each'} onChange={(c) => update({ mono: c === 'mono' })} />
             </div>
@@ -201,6 +199,7 @@ export function App() {
             view3d={view.view3d}
             colorBy={view.colorBy}
             exaggeration={view.exaggeration}
+            terrain={view.terrain}
             onView={update}
           />
         ) : (

@@ -164,7 +164,7 @@ select {
 .update-btn:hover { background: rgba(79, 209, 139, 0.24); }
 @keyframes pop { from { transform: scale(0.6); opacity: 0; } }
 
-/* Small exclusive choices (bots / players / both, smooth / toon, colors) */
+/* Small exclusive choices (bots / players / both, 2D / 3D, colors) */
 .choice { display: inline-flex; gap: 2px; padding: 2px; background: #1d2026; border-radius: 6px; }
 .choice button { padding: 3px 10px; border: 0; border-radius: 4px; background: transparent; color: var(--muted); cursor: pointer; font-size: 12px; }
 .choice button.on { background: #2a2f38; color: var(--text); }

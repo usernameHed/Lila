@@ -2,7 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { loadHeat } from '../lib/data';
 import { uvToPixel } from '../lib/coords';
 import { drawFightLine, drawHeat, heatCanvas } from '../lib/draw';
-import { blur, normalize, render, strongest, sumDays, type Look } from '../lib/heat';
+import { blur, normalize, render, strongest, sumDays } from '../lib/heat';
 import { HEAT_LAYERS, MONO_RGB, WHO_LABEL, rgbCss } from '../lib/style';
 import type { HeatData, HeatLayer, MapId, Who } from '../lib/types';
 import { Choice } from './Choice';
@@ -60,7 +60,6 @@ export interface HeatOptions {
   kills: Who;
   deaths: Who;
   mono: boolean;
-  look: Look;
 }
 
 /**
@@ -78,9 +77,9 @@ export function useHeatDraw(heat: HeatData | null, days: string[], o: HeatOption
       // Sparse kinds (storm deaths: 39 in all) get a wider blur, so single events stay visible.
       return normalize(blur(values, heat.grid, total < 200 ? 3 : 2));
     });
-    const out = o.mono ? (grids.length ? [render(strongest(grids), heat.grid, MONO_RGB, o.look)] : []) : grids.map((k, i) => render(k, heat.grid, HEAT_LAYERS[kinds[i]].rgb, o.look));
+    const out = o.mono ? (grids.length ? [render(strongest(grids), heat.grid, MONO_RGB)] : []) : grids.map((k, i) => render(k, heat.grid, HEAT_LAYERS[kinds[i]].rgb));
     return out.map((p) => heatCanvas(p.pixels, p.size));
-  }, [heat, days, o.layers, o.kills, o.deaths, o.mono, o.look]);
+  }, [heat, days, o.layers, o.kills, o.deaths, o.mono]);
 
   const fights = useMemo(() => (heat && o.layers.includes('fire') ? fightsOf(heat, days) : []), [heat, days, o.layers]);
 

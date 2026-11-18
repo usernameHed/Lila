@@ -25,7 +25,7 @@ about 300 lines, move the oldest entries word for word to `SESSION_HISTORY.md` (
 ## 2026-11-18 (desktop session): charts for the decisions
 
 - Ugo: a doc section with the "why the team needs it" content, and charts to back each view, assumption and proposal.
-  Done: `pipeline/figures.py` -> 7 PNGs in `docs/figures/` (validated palette, each next to a table of its numbers);
+  Done: `pipeline/figures.py` -> 7 PNGs in `public/figures/` (validated palette, each next to a table of its numbers);
   PRODUCT.md rewritten (LILA's problem quote, who/decision/where, 4 findings with chart + table + live link, proposals
   table, assumptions and limits, logging asks); charts added to INSIGHTS.md.
 

@@ -78,7 +78,7 @@ No environment variables are needed: the app is fully static.
 |---|---|
 | `pipeline/build.py` | Parquet to JSON: decodes events, groups by match, maps world coordinates to map UV |
 | `pipeline/insights.py` | The numbers behind INSIGHTS.md and PRODUCT.md, from the processed files |
-| `pipeline/figures.py`, `docs/figures/` | The charts and maps in INSIGHTS.md and PRODUCT.md (matplotlib, from the processed files) |
+| `pipeline/figures.py`, `public/figures/` | The charts and maps in INSIGHTS.md and PRODUCT.md (matplotlib, from the processed files) |
 | `public/data/` | `index.json` (maps, days, matches), `matches/<id>.json` (paths and events), `bundles/<map>_<day>.json` (all matches of a map and day), `heat/<map>.json` (per-day grids) |
 | `public/minimaps/` | The three minimaps, 2048 x 2048 JPEG |
 | `src/lib/` | Pure logic: coordinate mapping, playback clock, heatmap binning and colors, URL view, drawing (with tests) |

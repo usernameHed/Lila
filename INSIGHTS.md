@@ -14,9 +14,9 @@ over the playable area, not piled up at one edge, as you would expect from a sto
 
 **The evidence.**
 
-![Player deaths by minute](docs/figures/storm_timing.png)
+![Player deaths by minute](public/figures/storm_timing.png)
 
-![Storm deaths on each map](docs/figures/storm_map.png)
+![Storm deaths on each map](public/figures/storm_map.png)
 
 - 0 storm deaths before minute 10.9; all 39 happen between minutes 10.9 and 14.8, each one the last event of its match.
 - Of the 134 matches that last 11 minutes or more, 38 end in a storm death (28%).
@@ -42,7 +42,7 @@ rarely the player's fault if they did not know where to go; it is a map that did
 
 **The evidence.**
 
-![Who players kill, and what kills them](docs/figures/combat.png)
+![Who players kill, and what kills them](public/figures/combat.png)
 
 - 794 of 796 matches carry exactly one human journey; 2 carry two.
 - Humans killed **2,240 bots and 3 humans**: 99.9% of kills are bots.
@@ -73,9 +73,9 @@ over many POIs, with strong spots in the south.
 
 **The evidence** (map cut in 3 x 3 regions):
 
-![Ambrose Valley: kills and loot](docs/figures/ambrose_heat.png)
+![Ambrose Valley: kills and loot](public/figures/ambrose_heat.png)
 
-![Share of time, loot and deaths by region](docs/figures/ambrose_regions.png)
+![Share of time, loot and deaths by region](public/figures/ambrose_regions.png)
 
 | Region | Share of time spent | Share of loot | Share of deaths | Deaths per unit of time |
 |---|---|---|---|---|

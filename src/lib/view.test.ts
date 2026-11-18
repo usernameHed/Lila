@@ -3,9 +3,9 @@ import { ALL, DEFAULT_VIEW, parseView, resolveSelection, toggleLayer, toggleMatc
 
 describe('view in the URL', () => {
   it('round-trips a view', () => {
-    const v = { mode: 'heat', map: 'Lockdown', day: '2026-02-12', matches: [], layers: ['kills', 'storm'], kills: 'bots', deaths: 'both', mono: true, look: 'smooth', players: 'all', hidden: [], heatUnder: false, view3d: false, colorBy: 'player', exaggeration: 4 } as View;
+    const v = { mode: 'heat', map: 'Lockdown', day: '2026-02-12', matches: [], layers: ['kills', 'storm'], kills: 'bots', deaths: 'both', mono: true, players: 'all', hidden: [], heatUnder: false, view3d: false, colorBy: 'player', exaggeration: 4, terrain: true } as View;
     expect(parseView(viewHash(v))).toEqual(v);
-    const r: View = { ...DEFAULT_VIEW, matches: ['abc-123', 'def-456'], players: 'once', hidden: ['loot', 'fights'], heatUnder: true, layers: ['traffic', 'kills'], view3d: true, colorBy: 'height', exaggeration: 6 };
+    const r: View = { ...DEFAULT_VIEW, matches: ['abc-123', 'def-456'], players: 'once', hidden: ['loot', 'fights'], heatUnder: true, layers: ['traffic', 'kills'], view3d: true, colorBy: 'height', exaggeration: 6, terrain: false };
     expect(parseView(viewHash(r))).toEqual(r);
     const all: View = { ...DEFAULT_VIEW, matches: ALL };
     expect(viewHash(all)).toContain('match=all');

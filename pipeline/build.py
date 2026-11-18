@@ -173,6 +173,7 @@ def build() -> None:
             for _, ku, kv, vu, vv, killer, _, kh, vh in d["fights"]:
                 fights_by_map[d["map"]].append([d["day"], ku, kv, vu, vv, d["players"][killer]["bot"], kh, vh])
     write_heat(heat, fights_by_map)
+    write_terrain(matches)
     # One file per map and day with all its matches: replaying many matches at once costs a few requests,
     # not one per match. Single-match replay keeps using the small per-match files.
     for (map_id, day), items in bundles.items():
@@ -194,6 +195,11 @@ def build() -> None:
         "days": days,
         "uvUnits": UV_UNITS,
         "matches": sorted(summaries, key=lambda s: (s["day"], s["map"], s["id"])),
+        "totals": {
+            "rows": sum(s["rows"] for s in summaries),
+            "humans": len(human_matches),
+            "bots": len({p["id"] for items in bundles.values() for d in items for p in d["players"] if p["bot"]}),
+        },
     }
     write_json(OUT / "index.json", index)
     build_minimaps()
@@ -205,6 +211,60 @@ def heat_cell(u: int, v: int) -> int:
     col = min(HEAT_GRID - 1, u * HEAT_GRID // UV_UNITS)
     row = min(HEAT_GRID - 1, (UV_UNITS - v) * HEAT_GRID // UV_UNITS)
     return row * HEAT_GRID + col
+
+
+TERRAIN_GRID = 96  # ~9 m cells on Ambrose Valley: enough for hills and plateaus, coarse enough to be filled by data
+TERRAIN_LOW = 0.1  # per cell, the 10th percentile of heights: the ground under players, not the upper floors
+
+
+def write_terrain(matches: dict) -> None:
+    """public/data/terrain/<map>.json: an estimated ground height per cell, from every position (players and bots).
+
+    The data has no terrain, but every path is walked ground (or a floor). Per cell: a low percentile of the heights
+    seen there; cells nobody walked are filled from their neighbors (repeated averaging), then lightly smoothed.
+    {grid, h: [decimeters, row 0 at the top of the image], known: share of cells with data}.
+    """
+    (OUT / "terrain").mkdir(parents=True, exist_ok=True)
+    g = TERRAIN_GRID
+    for map_id in MAPS:
+        cells: dict[int, list[float]] = defaultdict(list)
+        for m in matches.values():
+            if m["map"] != map_id:
+                continue
+            for r in m["rows"]:
+                u, v = to_uv(map_id, r["x"], r["z"])
+                col = min(g - 1, max(0, u * g // UV_UNITS))
+                row = min(g - 1, max(0, (UV_UNITS - v) * g // UV_UNITS))
+                cells[row * g + col].append(r["y"])
+        h = [0.0] * (g * g)
+        known = [False] * (g * g)
+        for i, ys in cells.items():
+            ys.sort()
+            h[i] = ys[int(TERRAIN_LOW * (len(ys) - 1))]
+            known[i] = True
+        floor = min(h[i] for i in range(g * g) if known[i])
+        for i in range(g * g):
+            if not known[i]:
+                h[i] = floor
+        # Fill unknown cells: each takes the mean of its 4 neighbors, many times (a discrete Laplace fill).
+        for _ in range(300):
+            nxt = h[:]
+            for i in range(g * g):
+                if known[i]:
+                    continue
+                r, c = divmod(i, g)
+                ns = [h[j] for j in (i - g if r else -1, i + g if r < g - 1 else -1, i - 1 if c else -1, i + 1 if c < g - 1 else -1) if j >= 0]
+                nxt[i] = sum(ns) / len(ns)
+            h = nxt
+        # Light smoothing: per-cell noise (a few samples) would make spikes.
+        for _ in range(2):
+            nxt = h[:]
+            for i in range(g * g):
+                r, c = divmod(i, g)
+                ns = [h[(rr) * g + cc] for rr in (r - 1, r, r + 1) for cc in (c - 1, c, c + 1) if 0 <= rr < g and 0 <= cc < g]
+                nxt[i] = sum(ns) / len(ns)
+            h = nxt
+        write_json(OUT / "terrain" / f"{map_id}.json", {"grid": g, "h": [round(x * 10) for x in h], "known": round(sum(known) / len(known), 3)})
 
 
 def write_heat(heat, fights_by_map) -> None:

@@ -1,9 +1,9 @@
 import { Suspense, lazy, useCallback, useEffect, useMemo, useState } from 'react';
-import { loadMatches } from '../lib/data';
+import { loadMatches, loadTerrain } from '../lib/data';
 import { drawMatches, type LegendKey } from '../lib/draw';
 import { HEIGHT_RAMP, MANY_MATCHES, MATCH_COLORS, formatDay, formatDuration } from '../lib/style';
 import { matchEnd } from '../lib/timeline';
-import type { MapConfig, Match, MatchSummary } from '../lib/types';
+import type { MapConfig, Match, MatchSummary, Terrain } from '../lib/types';
 import { Choice } from './Choice';
 import { MapCanvas } from './MapCanvas';
 import { PlaybackBar } from './PlaybackBar';
@@ -76,10 +76,25 @@ interface StageProps {
   view3d: boolean;
   colorBy: 'player' | 'height';
   exaggeration: number;
-  onView: (patch: { view3d?: boolean; colorBy?: 'player' | 'height'; exaggeration?: number }) => void;
+  terrain: boolean;
+  onView: (patch: { view3d?: boolean; colorBy?: 'player' | 'height'; exaggeration?: number; terrain?: boolean }) => void;
 }
 
 const Map3D = lazy(() => import('./Map3D'));
+
+/** The map's estimated terrain, loaded only when the 3D view needs it. */
+function useTerrain(map: MapConfig['id'] | null): Terrain | null {
+  const [terrain, setTerrain] = useState<Terrain | null>(null);
+  useEffect(() => {
+    if (!map) return setTerrain(null);
+    let live = true;
+    loadTerrain(map).then((t) => live && setTerrain(t));
+    return () => {
+      live = false;
+    };
+  }, [map]);
+  return terrain;
+}
 
 /** A clock for the legend hover pulse: ticks every frame only while something is hovered. */
 function usePulse(active: boolean): number {
@@ -97,7 +112,7 @@ function usePulse(active: boolean): number {
   return phase;
 }
 
-export function ReplayStage({ summaries, uvUnits, mono, hidden, hover, under, mapConfig, view3d, colorBy, exaggeration, onView }: StageProps) {
+export function ReplayStage({ summaries, uvUnits, mono, hidden, hover, under, mapConfig, view3d, colorBy, exaggeration, terrain, onView }: StageProps) {
   const [loaded, setLoaded] = useState<Match[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -128,6 +143,7 @@ export function ReplayStage({ summaries, uvUnits, mono, hidden, hover, under, ma
   const phase = usePulse(!!hover);
   const hiddenSet = useMemo(() => new Set(hidden), [hidden]);
   const events = useMemo(() => (current ?? []).flatMap((m) => m.events), [current]);
+  const terrainData = useTerrain(view3d && terrain ? mapConfig.id : null);
   const heightRange = useMemo(
     () => (colorBy === 'height' ? { min: mapConfig.hMin * 10, max: mapConfig.hMax * 10 } : null),
     [colorBy, mapConfig],
@@ -163,6 +179,14 @@ export function ReplayStage({ summaries, uvUnits, mono, hidden, hover, under, ma
           </span>
         )}
         {view3d && (
+          <Choice
+            label="Ground"
+            options={[['terrain', 'Terrain'], ['flat', 'Flat']]}
+            value={terrain ? 'terrain' : 'flat'}
+            onChange={(g) => onView({ terrain: g === 'terrain' })}
+          />
+        )}
+        {view3d && (
           <label className="exaggeration" title="Stretch heights so the relief shows">
             Height x{exaggeration}
             <input type="range" min={1} max={8} step={1} value={exaggeration} onChange={(e) => onView({ exaggeration: Number(e.target.value) })} />
@@ -180,6 +204,8 @@ export function ReplayStage({ summaries, uvUnits, mono, hidden, hover, under, ma
             byHeight={colorBy === 'height'}
             mono={mono}
             exaggeration={exaggeration}
+            terrain={terrain ? terrainData : null}
+            overlay={under}
           />
         </Suspense>
       ) : (

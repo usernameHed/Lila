@@ -1,5 +1,4 @@
 // The view (what is on screen) lives in the URL hash, so a Level Designer can share exactly what they see.
-import type { Look } from './heat';
 import type { HeatLayer, MapId, Who } from './types';
 
 export type Mode = 'replay' | 'heat';
@@ -17,8 +16,6 @@ export interface View {
   deaths: Who;
   /** One color for everything (heatmap kinds, or replayed matches) instead of one color each. */
   mono: boolean;
-  /** Heatmap look: smooth gradient or toon bands. */
-  look: Look;
   /** Replay: every match, or only matches of players who never played again. */
   players: 'all' | 'once';
   /** Replay: legend rows turned off (event types, or 'fights' for the killer-to-victim lines). */
@@ -31,11 +28,13 @@ export interface View {
   colorBy: 'player' | 'height';
   /** 3D: vertical exaggeration (1-8). */
   exaggeration: number;
+  /** 3D: ground shaped by the terrain estimated from paths, or flat. */
+  terrain: boolean;
 }
 
 export const ALL = 'all';
 
-export const DEFAULT_VIEW: View = { mode: 'replay', map: 'AmbroseValley', day: 'all', matches: [], layers: ['traffic'], kills: 'both', deaths: 'both', mono: false, look: 'bands', players: 'all', hidden: [], heatUnder: false, view3d: false, colorBy: 'player', exaggeration: 4 };
+export const DEFAULT_VIEW: View = { mode: 'replay', map: 'AmbroseValley', day: 'all', matches: [], layers: ['traffic'], kills: 'both', deaths: 'both', mono: false, players: 'all', hidden: [], heatUnder: false, view3d: false, colorBy: 'player', exaggeration: 4, terrain: true };
 
 const MAPS: MapId[] = ['AmbroseValley', 'GrandRift', 'Lockdown'];
 const LAYERS: HeatLayer[] = ['traffic', 'loot', 'fire', 'kills', 'deaths', 'storm']; // drawing order
@@ -56,12 +55,12 @@ export function parseView(hash: string): View {
     kills: pick('kills', WHO, 'both'),
     deaths: pick('deaths', WHO, 'both'),
     mono: q.get('mono') === '1',
-    look: pick<Look>('look', ['smooth', 'bands'], DEFAULT_VIEW.look),
     players: pick<View['players']>('players', ['all', 'once'], 'all'),
     hidden: (q.get('hide') ?? '').split(',').filter((k) => /^[a-zA-Z]{2,20}$/.test(k)),
     heatUnder: q.get('under') === '1',
     view3d: q.get('view') === '3d',
     colorBy: pick<View['colorBy']>('color', ['player', 'height'], 'player'),
+    terrain: q.get('ground') !== 'flat',
     exaggeration: Math.min(8, Math.max(1, Math.round(Number(q.get('ex')) || DEFAULT_VIEW.exaggeration))),
   };
 }
@@ -95,13 +94,13 @@ export function viewHash(v: View): string {
     if (v.kills !== 'both' && v.layers.includes('kills')) q.set('kills', v.kills);
     if (v.deaths !== 'both' && v.layers.includes('deaths')) q.set('deaths', v.deaths);
   }
-  if (v.look !== DEFAULT_VIEW.look) q.set('look', v.look);
   if (v.mono) q.set('mono', '1');
   if (v.mode === 'replay' && v.players === 'once') q.set('players', 'once');
   if (v.mode === 'replay' && v.hidden.length) q.set('hide', v.hidden.join(','));
   if (v.mode === 'replay' && v.view3d) q.set('view', '3d');
   if (v.mode === 'replay' && v.view3d && v.exaggeration !== DEFAULT_VIEW.exaggeration) q.set('ex', String(v.exaggeration));
   if (v.mode === 'replay' && v.colorBy === 'height') q.set('color', 'height');
+  if (v.mode === 'replay' && v.view3d && !v.terrain) q.set('ground', 'flat');
   if (v.mode === 'replay' && v.heatUnder) {
     q.set('under', '1');
     q.set('layer', v.layers.join(','));

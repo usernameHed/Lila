@@ -1,4 +1,4 @@
-// Heatmaps: per-day grids from the pipeline, summed over the chosen days, smoothed, then colored.
+// Heatmaps: per-day grids from the pipeline, summed over the chosen days, blurred, then drawn as toon bands.
 
 /** Sum the sparse per-day grids ([cell, count, ...]) of the given days into one dense grid. */
 export function sumDays(byDay: Record<string, number[]>, days: string[], grid: number): Float32Array {
@@ -67,8 +67,6 @@ export function colorAt(k: number, rgb: Rgb): [number, number, number, number] {
   return [r, g, b, x ? Math.round(20 + 215 * x * x) : 0];
 }
 
-export type Look = 'smooth' | 'bands';
-
 /** Intensity 0-1 per cell: square-root scale up to the 98th percentile, so quieter areas stay visible. */
 export function normalize(values: Float32Array): Float32Array {
   const top = scaleTop(values);
@@ -88,14 +86,7 @@ export function strongest(layers: Float32Array[]): Float32Array {
   return out;
 }
 
-/** Smooth: RGBA (grid x grid), opacity follows intensity. */
-export function toPixels(k: Float32Array, grid: number, rgb: Rgb): Uint8ClampedArray<ArrayBuffer> {
-  const px = new Uint8ClampedArray(new ArrayBuffer(grid * grid * 4));
-  for (let i = 0; i < k.length; i++) if (k[i] > 0) px.set(colorAt(k[i], rgb), i * 4);
-  return px;
-}
-
-export const BANDS = 4;
+const BANDS = 4;
 export const BAND_SCALE = 8; // bands are computed at 8x the grid (1024 px), so their edges stay smooth on screen
 
 /** Catmull-Rom weight: a smooth curve through the grid values (bilinear shows diamond-shaped edges). */
@@ -132,7 +123,7 @@ export const bandOf = (k: number) => (k < 0.18 ? 0 : Math.min(BANDS, Math.ceil(k
  * Toon look (cel shading): a few flat bands of the kind's color instead of a gradient, each band edge drawn
  * as a dark outline. RGBA at (grid x BAND_SCALE) per side.
  */
-export function toBands(k: Float32Array, grid: number, rgb: Rgb): Uint8ClampedArray<ArrayBuffer> {
+function toBands(k: Float32Array, grid: number, rgb: Rgb): Uint8ClampedArray<ArrayBuffer> {
   const n = grid * BAND_SCALE;
   const up = upscale(k, grid, BAND_SCALE);
   const band = new Uint8Array(n * n);
@@ -152,7 +143,7 @@ export function toBands(k: Float32Array, grid: number, rgb: Rgb): Uint8ClampedAr
   return px;
 }
 
-/** The picture for one intensity grid, in the chosen look: pixels and their size per side. */
-export function render(k: Float32Array, grid: number, rgb: Rgb, look: Look) {
-  return look === 'bands' ? { pixels: toBands(k, grid, rgb), size: grid * BAND_SCALE } : { pixels: toPixels(k, grid, rgb), size: grid };
+/** The picture for one intensity grid: toon band pixels and their size per side. */
+export function render(k: Float32Array, grid: number, rgb: Rgb) {
+  return { pixels: toBands(k, grid, rgb), size: grid * BAND_SCALE };
 }
