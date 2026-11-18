@@ -132,6 +132,7 @@ interface StageProps {
   /** Replay only this match (from the details card). */
   onOnlyMatch: (id: string) => void;
   iconScale: number;
+  groupPx: number;
 }
 
 const Map3D = lazy(() => import('./Map3D'));
@@ -168,7 +169,7 @@ function usePulse(active: boolean): number {
 
 /** Every selected match on its map, all starting together at 0:00, with one playback. */
 export function ReplayStage(props: StageProps) {
-  const { summaries, uvUnits, mono, hidden, hover, onPointedKind, under, mapConfig, view3d, exaggeration, terrain, onView, onOnlyMatch, iconScale } = props;
+  const { summaries, uvUnits, mono, hidden, hover, onPointedKind, under, mapConfig, view3d, exaggeration, terrain, onView, onOnlyMatch, iconScale, groupPx } = props;
   const [loaded, setLoaded] = useState<Match[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -251,10 +252,10 @@ export function ReplayStage(props: StageProps) {
   const draw = useCallback(
     (ctx: CanvasRenderingContext2D, size: number) => {
       under?.(ctx, size);
-      if (shown.length) drawMatches(ctx, shown, uvUnits, size, t, play.playing, { mono, hidden: hiddenSet, hover, phase, activeEvent: active?.event ?? null, iconScale });
+      if (shown.length) drawMatches(ctx, shown, uvUnits, size, t, play.playing, { mono, hidden: hiddenSet, hover, phase, activeEvent: active?.event ?? null, iconScale, groupPx });
       if (focusMatch && focus) drawFocus(ctx, focusMatch, focus.player, uvUnits, size, t, active?.event ?? null, phase, story?.opponents ?? []);
     },
-    [shown, t, uvUnits, play.playing, mono, hiddenSet, hover, phase, under, focusMatch, focus, active, story, iconScale],
+    [shown, t, uvUnits, play.playing, mono, hiddenSet, hover, phase, under, focusMatch, focus, active, story, iconScale, groupPx],
   );
 
   if (!summaries.length) return <div className="empty">No match for these filters.</div>;

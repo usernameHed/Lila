@@ -33,6 +33,8 @@ export interface View {
   replayOn: boolean;
   /** Size of the event icons on the map (1 = default). */
   iconScale: number;
+  /** Group icons of the same kind closer than this many screen pixels (0 = never). */
+  groupPx: number;
   /** Replay: 3D view (height from the data's y) instead of the flat map. */
   view3d: boolean;
   /** 3D: vertical exaggeration (1-8). */
@@ -43,7 +45,7 @@ export interface View {
 
 export const ALL = 'all';
 
-export const DEFAULT_VIEW: View = { mode: 'overview', map: 'AmbroseValley', day: 'all', matches: [], layers: ['traffic'], kills: 'both', deaths: 'both', mono: false, heatMono: false, players: 'all', others: 'any', ended: 'any', length: 'any', sort: 'day', hidden: [], heatUnder: false, replayOn: true, iconScale: 1, view3d: false, exaggeration: 4, terrain: true };
+export const DEFAULT_VIEW: View = { mode: 'overview', map: 'AmbroseValley', day: 'all', matches: [], layers: ['traffic'], kills: 'both', deaths: 'both', mono: false, heatMono: false, players: 'all', others: 'any', ended: 'any', length: 'any', sort: 'day', hidden: [], heatUnder: false, replayOn: true, iconScale: 1, groupPx: 18, view3d: false, exaggeration: 4, terrain: true };
 
 const MAPS: MapId[] = ['AmbroseValley', 'GrandRift', 'Lockdown'];
 const LAYERS: HeatLayer[] = ['traffic', 'loot', 'power', 'raised', 'fire', 'kills', 'deaths', 'storm']; // drawing order
@@ -77,6 +79,7 @@ export function parseView(hash: string): View {
     heatUnder: legacyHeat || q.get('under') === '1',
     replayOn: q.get('replay') !== '0',
     iconScale: Math.min(2, Math.max(0.6, Math.round((Number(q.get('icons')) || 1) * 10) / 10)),
+    groupPx: q.has('group') ? Math.min(60, Math.max(0, Math.round(Number(q.get('group')) || 0))) : DEFAULT_VIEW.groupPx,
     view3d: q.get('view') === '3d',
     terrain: q.get('ground') !== 'flat',
     exaggeration: Math.min(8, Math.max(1, Math.round(Number(q.get('ex')) || DEFAULT_VIEW.exaggeration))),
@@ -118,6 +121,7 @@ export function viewHash(v: View): string {
   if (v.hidden.length) q.set('hide', v.hidden.join(','));
   if (!v.replayOn) q.set('replay', '0');
   if (v.iconScale !== 1) q.set('icons', String(v.iconScale));
+  if (v.groupPx !== DEFAULT_VIEW.groupPx) q.set('group', String(v.groupPx));
   if (v.view3d) q.set('view', '3d');
   if (v.view3d && v.exaggeration !== DEFAULT_VIEW.exaggeration) q.set('ex', String(v.exaggeration));
   if (v.view3d && !v.terrain) q.set('ground', 'flat');

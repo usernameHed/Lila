@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import { EVENT_STYLE, formatDuration } from '../lib/style';
 import type { MatchEvent } from '../lib/types';
 import { SPEEDS } from './usePlayback';
@@ -52,7 +52,10 @@ export function PlaybackBar({ t, duration, playing, speed, events, active, hover
   const shown = events.filter((e) => !hidden?.has(e[1]));
   const fights = shown.filter((e) => e[1] !== 'loot');
   const lit = hoverKind ? shown.filter((e) => e[1] === hoverKind) : [];
-  const ticks = [...(fights.length <= 300 ? fights.filter((e) => e[1] !== hoverKind) : []), ...lit];
+  // Up to 300: one element per tick (hover, click). Beyond: all of them drawn on a canvas strip, and only the
+  // hovered kind (if not too many) as live ticks on top.
+  const many = fights.length > 300;
+  const ticks = [...(many ? [] : fights.filter((e) => e[1] !== hoverKind)), ...(lit.length <= 400 ? lit : [])];
 
   return (
     <div className="playback">
@@ -76,6 +79,7 @@ export function PlaybackBar({ t, duration, playing, speed, events, active, hover
             storm
           </div>
         )}
+        {many && duration > 0 && <TickStrip events={fights} duration={duration} hoverKind={hoverKind} />}
         <div className="ticks">
           {duration > 0 &&
             ticks.map((e, i) => (
@@ -113,4 +117,35 @@ export function PlaybackBar({ t, duration, playing, speed, events, active, hover
       </div>
     </div>
   );
+}
+
+/** Thousands of ticks at once: thin see-through lines on a canvas (denser = more fights at that moment). */
+function TickStrip({ events, duration, hoverKind }: { events: MatchEvent[]; duration: number; hoverKind: string | null }) {
+  const ref = useRef<HTMLCanvasElement>(null);
+  useEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    const draw = () => {
+      const w = el.clientWidth;
+      const h = el.clientHeight;
+      const dpr = window.devicePixelRatio || 1;
+      el.width = w * dpr;
+      el.height = h * dpr;
+      const ctx = el.getContext('2d');
+      if (!ctx) return;
+      ctx.scale(dpr, dpr);
+      ctx.clearRect(0, 0, w, h);
+      for (const e of events) {
+        const lit = e[1] === hoverKind;
+        ctx.globalAlpha = hoverKind ? (lit ? 0.9 : 0.08) : 0.25;
+        ctx.fillStyle = EVENT_STYLE[e[1]].color;
+        ctx.fillRect(Math.round((e[0] / duration) * w), lit ? 0 : h * 0.35, 1, lit ? h : h * 0.65);
+      }
+    };
+    draw();
+    const ro = new ResizeObserver(draw);
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, [events, duration, hoverKind]);
+  return <canvas ref={ref} className="tick-strip" aria-hidden />;
 }

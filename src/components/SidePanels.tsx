@@ -186,6 +186,11 @@ export function RightPanel(p: RightProps) {
             <input type="range" min={0.6} max={2} step={0.1} value={view.iconScale} onChange={(e) => update({ iconScale: Number(e.target.value) })} />
             <span>{Math.round(view.iconScale * 100)}%</span>
           </label>
+          <label className="icon-size" title="Icons of the same kind closer than this are drawn as one bigger icon with its count. Zoom in to split them. 0 = never group.">
+            Grouping
+            <input type="range" min={0} max={60} step={2} value={view.groupPx} onChange={(e) => update({ groupPx: Number(e.target.value) })} />
+            <span>{view.groupPx ? `${view.groupPx} px` : 'off'}</span>
+          </label>
         </div>
       </section>
       <section className="panel-card">

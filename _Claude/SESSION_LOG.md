@@ -15,6 +15,13 @@ about 300 lines, move the oldest entries word for word to `SESSION_HISTORY.md` (
 
 ---
 
+## 2026-11-18 (desktop session): grouping, faster icons, even path brightness, dense timeline
+
+- Ugo: 9,936 loot icons slow; group by zoom with a slider; paths brighter on Ambrose than Grand Rift; no timeline
+  ticks on Ambrose (>300). Done: icons stamped from cached sprites; `lib/cluster.ts` (tested) groups by screen
+  cell, slider 0-60 px (URL `group`, default 18); `pathDensity` (tested): same peak brightness for any match count;
+  canvas tick strip above 300 ticks. Grouping is 2D only (3D points are GPU-drawn).
+
 ## 2026-11-18 (desktop session): tooltips, linked rows, icon size, clearer map
 
 - Ugo: power positions / line of fire not understood -> tooltip on every row (`EXPLAIN` in style.ts). Linked rows

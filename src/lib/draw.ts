@@ -1,6 +1,7 @@
 // Canvas drawing for the map: a match at a given time, and heatmap pixels.
 import { uvToPixel } from './coords';
 import { EVENT_LAYER, EVENT_STYLE, FIRE_COLOR, MANY_MATCHES, MATCH_COLORS, PATH_COLOR, type MarkerShape } from './style';
+import { cluster, groupScale } from './cluster';
 import { positionAt, samplesUntil } from './timeline';
 import type { EventType, Match, MatchEvent } from './types';
 
@@ -10,6 +11,7 @@ const FRESH_MS = 8000;
 interface Look {
   human: string; // player path color
   faint: boolean; // many matches at once: thinner, lighter lines, no loot
+  density?: number; // per-line opacity when many matches overlap (see pathDensity)
   hideHumans?: boolean;
   hideBots?: boolean;
   fade?: number; // something else is hovered: paths step back
@@ -24,6 +26,7 @@ export interface ReplayOptions {
   hover?: LegendKey | null; // legend row under the mouse: its markers pulse, the rest fade
   activeEvent?: MatchEvent | null; // one event pointed at (map, timeline, card): it pulses
   iconScale?: number; // size of the event icons (1 = default)
+  groupPx?: number; // group icons of the same kind closer than this many screen pixels (0 = never)
   phase?: number; // animation clock (ms) for the pulse
 }
 
@@ -31,10 +34,12 @@ export interface ReplayOptions {
 export function drawMatches(ctx: CanvasRenderingContext2D, matches: Match[], uvUnits: number, size: number, t: number, playing: boolean, o: ReplayOptions = {}) {
   const many = matches.length > MANY_MATCHES;
   const hidden = o.hidden ?? new Set<LegendKey>();
+  const density = pathDensity(matches.length);
   matches.forEach((m, i) =>
     drawPaths(ctx, m, uvUnits, size, t, playing, {
       human: many || o.mono ? PATH_COLOR.human : MATCH_COLORS[i],
       faint: many,
+      density,
       hideHumans: hidden.has('humanPath'),
       hideBots: hidden.has('botPath'),
       fade: o.hover && o.hover !== 'humanPath' && o.hover !== 'botPath' ? 0.35 : 1,
@@ -56,6 +61,18 @@ export function drawMatches(ctx: CanvasRenderingContext2D, matches: Match[], uvU
   }
 }
 
+/**
+ * Per-line opacity for many overlapping paths, so the busiest corridor reaches the same brightness whatever the
+ * number of matches (566 on Ambrose Valley or 59 on Grand Rift): if about 5% of the matches go through it,
+ * n = 0.05 N lines overlap there, and 1 - (1 - a)^n = 0.9 gives a = 1 - 0.1^(1/n).
+ */
+export const DENSITY_SHARE = 0.05;
+
+export function pathDensity(matchCount: number): number {
+  const n = Math.max(1, DENSITY_SHARE * matchCount);
+  return Math.min(0.6, 1 - Math.pow(0.1, 1 / n));
+}
+
 /** 0 -> 1 -> 0 every 900 ms: the hover pulse. */
 const pulse = (phase = 0) => 0.5 - 0.5 * Math.cos((phase / 900) * Math.PI * 2);
 
@@ -74,7 +91,7 @@ function drawPaths(ctx: CanvasRenderingContext2D, match: Match, uvUnits: number,
     ctx.lineWidth = (p.bot ? 2 : 2.25) * (look.faint ? 0.5 : 1);
     ctx.strokeStyle = color;
     ctx.setLineDash(p.bot ? [6, 4] : []);
-    ctx.globalAlpha = (p.bot ? 0.9 : 0.95) * (look.faint ? 0.22 : 1) * (look.fade ?? 1);
+    ctx.globalAlpha = (p.bot ? 0.9 : 0.95) * (look.faint ? (look.density ?? 0.22) : 1) * (look.fade ?? 1);
     for (let i = 0; i < n * 3; i += 3) {
       const { x, y } = px(p.path[i + 1], p.path[i + 2]);
       if (i === 0) ctx.moveTo(x, y);
@@ -101,39 +118,91 @@ function drawEvents(ctx: CanvasRenderingContext2D, all: MatchEvent[], uvUnits: n
   const px = (u: number, v: number) => uvToPixel(u, v, uvUnits, size);
   const one = (e: MatchEvent) => e === o.activeEvent;
   const lit = (e: MatchEvent) => o.hover === e[1] || one(e);
-  // The hovered kind and the pointed-at event are drawn last, on top of everything.
-  const events = [...all].sort((a, b) => Number(lit(a)) - Number(lit(b)) || Number(one(a)) - Number(one(b)) || EVENT_LAYER[a[1]] - EVENT_LAYER[b[1]]);
   const k = pulse(o.phase);
   const dimming = !!o.hover || !!o.activeEvent;
-  for (const e of events) {
+
+  // Everything not hovered: grouped by screen distance (a crowd of loot = one bigger icon with its count),
+  // drawn from cached icon images. The hovered kind and the pointed-at event come after, one by one, on top.
+  const plain = all.filter((e) => !lit(e)).sort((a, b) => EVENT_LAYER[a[1]] - EVENT_LAYER[b[1]]);
+  const groups = cluster(
+    plain.map((e) => ({ ...px(e[2], e[3]), kind: e[1], item: e })),
+    o.groupPx ?? 0,
+  );
+  ctx.globalAlpha = dimming ? 0.2 : 1;
+  for (const g of groups) {
+    const type = g.kind as EventType;
+    const style = EVENT_STYLE[type];
+    const n = g.items.length;
+    const r = style.size * scale * groupScale(n);
+    if (n === 1 && playing && !dimming && type !== 'loot' && t - g.items[0][0] < FRESH_MS) {
+      const age = (t - g.items[0][0]) / FRESH_MS;
+      ctx.beginPath();
+      ctx.strokeStyle = style.color;
+      ctx.lineWidth = 2;
+      ctx.globalAlpha = 1 - age;
+      ctx.arc(g.x, g.y, r + 4 + age * 10, 0, Math.PI * 2);
+      ctx.stroke();
+      ctx.globalAlpha = 1;
+    }
+    stampMarker(ctx, style.shape, style.color, g.x, g.y, r);
+    if (n >= 3 && !dimming) drawCount(ctx, g.x + r * 0.9, g.y - r * 0.9, n);
+  }
+
+  for (const e of all.filter(lit).sort((a, b) => Number(one(a)) - Number(one(b)))) {
     const [time, type, u, v] = e;
     const { x, y } = px(u, v);
     const style = EVENT_STYLE[type];
     const r = style.size * scale * (one(e) ? 1.4 : 1);
     const future = time > t;
-    const base = dimming ? (lit(e) ? 1 : 0.2) : 1;
-    ctx.globalAlpha = base * (future ? 0.35 : 1); // future events (shown on hover only) are see-through
-    if (lit(e)) {
-      ctx.beginPath();
-      ctx.strokeStyle = style.color;
-      ctx.lineWidth = 2;
-      ctx.globalAlpha = (1 - k) * (future ? 0.5 : 1);
-      ctx.lineWidth = one(e) ? 3 : 2;
-      ctx.arc(x, y, r + 3 + k * (one(e) ? 18 : 12), 0, Math.PI * 2);
-      ctx.stroke();
-      ctx.globalAlpha = base * (future ? 0.35 : 1);
-    } else if (playing && t - time < FRESH_MS && type !== 'loot' && !dimming) {
-      ctx.beginPath();
-      ctx.strokeStyle = style.color;
-      ctx.lineWidth = 2;
-      ctx.globalAlpha = 1 - (t - time) / FRESH_MS;
-      ctx.arc(x, y, r + 4 + ((t - time) / FRESH_MS) * 10, 0, Math.PI * 2);
-      ctx.stroke();
-      ctx.globalAlpha = 1;
-    }
-    drawMarker(ctx, style.shape, style.color, x, y, lit(e) ? r * (1.25 + 0.25 * k) : r);
+    ctx.beginPath();
+    ctx.strokeStyle = style.color;
+    ctx.lineWidth = one(e) ? 3 : 2;
+    ctx.globalAlpha = (1 - k) * (future ? 0.5 : 1);
+    ctx.arc(x, y, r + 3 + k * (one(e) ? 18 : 12), 0, Math.PI * 2);
+    ctx.stroke();
+    ctx.globalAlpha = future ? 0.35 : 1; // future events (shown on hover only) are see-through
+    stampMarker(ctx, style.shape, style.color, x, y, r * (1.25 + 0.25 * k));
   }
   ctx.globalAlpha = 1;
+}
+
+/** A group's count, in a small dark pill at its top-right. */
+function drawCount(ctx: CanvasRenderingContext2D, x: number, y: number, n: number) {
+  const text = n > 999 ? `${Math.round(n / 1000)}k` : String(n);
+  ctx.save();
+  ctx.font = '600 10px Inter, system-ui, sans-serif';
+  const w = ctx.measureText(text).width + 8;
+  ctx.fillStyle = 'rgba(8,9,12,0.85)';
+  ctx.beginPath();
+  ctx.roundRect(x - w / 2, y - 7, w, 14, 7);
+  ctx.fill();
+  ctx.fillStyle = '#fff';
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillText(text, x, y + 0.5);
+  ctx.restore();
+}
+
+/**
+ * Icons are drawn once per (shape, color, size) into a small image, then stamped: thousands of loot icons cost
+ * one image copy each instead of a vector path (several times faster).
+ */
+const sprites = new Map<string, HTMLCanvasElement>();
+function stampMarker(ctx: CanvasRenderingContext2D, shape: MarkerShape, color: string, x: number, y: number, r: number) {
+  const dpr = typeof window === 'undefined' ? 1 : window.devicePixelRatio || 1;
+  const q = Math.max(1, Math.round(r * 2)) / 2; // half-pixel steps: few cached sizes
+  const key = `${shape}|${color}|${q}|${dpr}`;
+  let img = sprites.get(key);
+  const half = q * 1.6 + 4; // room for the outline
+  if (!img) {
+    img = document.createElement('canvas');
+    img.width = img.height = Math.ceil(half * 2 * dpr);
+    const c = img.getContext('2d')!;
+    c.scale(dpr, dpr);
+    drawMarker(c, shape, color, half, half, q);
+    sprites.set(key, img);
+  }
+  ctx.drawImage(img, x - half, y - half, half * 2, half * 2);
 }
 
 /**
