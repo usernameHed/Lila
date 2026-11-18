@@ -9,6 +9,9 @@ import { OverviewSide, ReplaySide, RightPanel, type LayerHandlers } from './comp
 import { UpdateButton } from './components/UpdateButton';
 import { loadIndex } from './lib/data';
 import { BUILTIN_ID, listUploads, restoreSource } from './lib/sources';
+import { Icon } from './components/Icon';
+import { Loader } from './components/Loader';
+import { minimap } from './components/MapCanvas';
 import { record, redo, start, undo, type History } from './lib/history';
 import type { LegendKey } from './lib/draw';
 import { MAP_LABEL, formatDay } from './lib/style';
@@ -54,7 +57,15 @@ export function App() {
     if (!restored) return;
     let live = true;
     setIndex(null);
-    loadIndex().then((i) => live && setIndex(i), (e: Error) => live && setError(e.message));
+    loadIndex().then(
+      (i) => {
+        if (!live) return;
+        setIndex(i);
+        // The other maps' pictures, quietly, once this one is up: switching map is then instant.
+        setTimeout(() => i.maps.forEach((m) => void minimap(m.id).catch(() => undefined)), 1500);
+      },
+      (e: Error) => live && setError(e.message),
+    );
     // Another dataset: the matches picked in the previous one mean nothing here.
     if (source !== firstSource.current) update({ matches: [], day: 'all' });
     firstSource.current = source;
@@ -128,10 +139,10 @@ export function App() {
           </div>
           <div className="history-btns">
             <button onClick={() => setHist(undo)} disabled={!hist.past.length} title="Undo (Cmd/Ctrl+Z)" aria-label="Undo">
-              ↶
+              <Icon name="undo" size={17} />
             </button>
             <button onClick={() => setHist(redo)} disabled={!hist.future.length} title="Redo (Shift+Cmd/Ctrl+Z)" aria-label="Redo">
-              ↷
+              <Icon name="redo" size={17} />
             </button>
           </div>
           <UpdateButton />
@@ -200,7 +211,7 @@ export function App() {
         ) : view.mode === 'data' ? (
           <DataPage onShow={() => update({ mode: 'replay' })} />
         ) : !index ? (
-          <div className="empty">Loading…</div>
+          <Loader label="Loading the matches" />
         ) : (
           <ReplayStage
             summaries={selected}
@@ -218,6 +229,8 @@ export function App() {
             onOnlyMatch={(id) => update({ matches: [id] })}
             iconScale={view.iconScale}
             groupPx={view.groupPx}
+            pathWidth={view.pathWidth}
+            pathAlpha={view.pathAlpha}
           />
         )}
       </main>

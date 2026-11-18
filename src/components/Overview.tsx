@@ -69,6 +69,26 @@ export function Overview({ index }: { index: Index | null }) {
           <Stat value="3" label="maps" />
           <Stat value="5" label="days (Feb 10-14)" />
         </div>
+        <ul className="basics" aria-label="Built as a tool">
+          <li>
+            <strong>Works offline</strong>
+            <span>After the first visit, every map and match is kept in the browser: it opens with no connection.</span>
+          </li>
+          <li>
+            <a href="#mode=data">
+              <strong>Your own data</strong>
+              <span>Drop another LILA BLACK export in the Data tab: processed in the browser, nothing uploaded.</span>
+            </a>
+          </li>
+          <li>
+            <strong>Undo and redo</strong>
+            <span>Every setting, with the arrows at the top left or Cmd/Ctrl+Z and Shift+Cmd/Ctrl+Z.</span>
+          </li>
+          <li>
+            <strong>Phone to wide screen</strong>
+            <span>Fits a 16:9 screen with no scrolling, and works on a phone or tablet.</span>
+          </li>
+        </ul>
       </header>
 
       <section id="try">
@@ -105,10 +125,6 @@ export function Overview({ index }: { index: Index | null }) {
           <a className="card" href="#mode=replay&map=AmbroseValley&end=player&match=all">
             <strong>The only player vs player fights</strong>
             <span>3 matches. Each time: a kill and a death at the same second and spot, and the other player is not in the data at all (searched).</span>
-          </a>
-          <a className="card" href="#mode=data">
-            <strong>Your own data</strong>
-            <span>Drop another LILA BLACK export (a zip, a folder): it is processed in your browser and the whole tool runs on it.</span>
           </a>
           <a className="card" href="#mode=replay&map=Lockdown&match=ead4c72d-0e3b-49b4-a91b-a9a21bed8012">
             <strong>Click a player</strong>

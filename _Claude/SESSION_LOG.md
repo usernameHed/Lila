@@ -9,11 +9,20 @@ about 300 lines, move the oldest entries word for word to `SESSION_HISTORY.md` (
   (traffic, kills, deaths, storm, loot), map and day filters, shareable URLs.
 - Due 2026-11-23 (assumed: received 2026-11-18).
 - Still open: walkthrough, design pass (references first), hover details on
-  markers.
+  markers. Works offline after the first visit.
 - Auto-deploy: push to `main` deploys (repo secret `CLOUDFLARE_API_TOKEN` = Cloudflare token "LILA GitHub deploy",
   Ugo's account, zone belfiore.me, added by Ugo 2026-11-18).
 
 ---
+
+## 2026-11-18 (desktop session): offline, group hover, eased fade, new icons, path sliders
+
+- Ugo: site blank / maps 2-3 stuck. Cause: a tab open across a deploy asks for deleted files, nothing caught it. Fix:
+  service worker (`src/offline/`, all ~830 files cached, old build's assets kept), ErrorBoundary + Reload, loading screens.
+- Group hover picks the group as drawn (`pickGroup`, tested), members shown at their real spots with the count (counts
+  only on hover); hover fades the rest halfway, eased (`useEase`), never hides. Skull + bones / bot skull stamps
+  (`lib/icons.ts`), path width / opacity sliders (URL `pw`, `pa`), icon size to x4, dashboard undo / redo icons.
+  Overview: 4 tool basics (offline, own data, undo, phone). Tested offline with the server stopped (3D, bundles, heat).
 
 ## 2026-11-18 (desktop session): Data tab (drop any dataset)
 

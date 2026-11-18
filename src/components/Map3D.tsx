@@ -38,6 +38,8 @@ export interface Map3DProps {
   onPointEvent: (e: MatchEvent | null) => void;
   onPickEvent: (e: MatchEvent) => void;
   iconScale: number;
+  pathWidth: number;
+  pathAlpha: number;
 }
 
 /** Size of the ground texture: minimap + heatmap painted together. */
@@ -126,7 +128,7 @@ function place(map: MapConfig, uvUnits: number, u: number, v: number, hDm: numbe
 }
 
 export default function Map3D(props: Map3DProps) {
-  const { map, matches, uvUnits, t, hidden, mono, exaggeration, terrain, overlay, focus, focusOpponents, onFocus, hoverKind, activeEvent, onPointEvent, onPickEvent, iconScale } = props;
+  const { map, matches, uvUnits, t, hidden, mono, exaggeration, terrain, overlay, focus, focusOpponents, onFocus, hoverKind, activeEvent, onPointEvent, onPickEvent, iconScale, pathWidth, pathAlpha } = props;
   const iconRef = useRef(iconScale);
   iconRef.current = iconScale;
   const hoverRef = useRef(hoverKind);
@@ -478,11 +480,11 @@ export default function Map3D(props: Map3DProps) {
       const is = !!focus && p.match === focus.match && p.player === focus.player;
       const foe = !!focus && p.match === focus.match && focusOpponents.includes(p.player);
       const m = p.line.material as LineMaterial;
-      m.opacity = focus ? (is || foe ? 1 : 0.12) : p.baseOpacity;
-      m.linewidth = is ? 6 : foe ? 4 : p.baseWidth;
+      m.opacity = focus ? (is || foe ? 1 : 0.12) : Math.min(1, p.baseOpacity * pathAlpha);
+      m.linewidth = is ? 6 : foe ? 4 : p.baseWidth * pathWidth;
       p.head.visible = p.head.visible && (!focus || is || foe);
     }
-  }, [focus, focusOpponents, matches, mono]);
+  }, [focus, focusOpponents, matches, mono, pathWidth, pathAlpha]);
 
   // Every frame of the playback: how much of each path, which events, where the heads are.
   useEffect(() => {

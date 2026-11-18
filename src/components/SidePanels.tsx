@@ -183,10 +183,20 @@ export function RightPanel(p: RightProps) {
           />
           <label className="icon-size" title="Size of the icons on the map (kills, deaths, loot...)">
             Icon size
-            <input type="range" min={0.6} max={2} step={0.1} value={view.iconScale} onChange={(e) => update({ iconScale: Number(e.target.value) })} />
+            <input type="range" min={0.6} max={4} step={0.1} value={view.iconScale} onChange={(e) => update({ iconScale: Number(e.target.value) })} />
             <span>{Math.round(view.iconScale * 100)}%</span>
           </label>
-          <label className="icon-size" title="Icons of the same kind closer than this are drawn as one bigger icon with its count. Zoom in to split them. 0 = never group.">
+          <label className="icon-size" title="Thickness of the paths on the map">
+            Path width
+            <input type="range" min={0.5} max={4} step={0.1} value={view.pathWidth} onChange={(e) => update({ pathWidth: Number(e.target.value) })} />
+            <span>x{view.pathWidth.toFixed(1)}</span>
+          </label>
+          <label className="icon-size" title="How solid the paths are (lower: see-through, higher: solid)">
+            Path opacity
+            <input type="range" min={0.3} max={2.5} step={0.1} value={view.pathAlpha} onChange={(e) => update({ pathAlpha: Number(e.target.value) })} />
+            <span>x{view.pathAlpha.toFixed(1)}</span>
+          </label>
+          <label className="icon-size" title="Icons of the same kind closer than this are drawn as one bigger icon. Hover it to see where each one is and how many. Zoom in to split them. 0 = never group.">
             Grouping
             <input type="range" min={0} max={60} step={2} value={view.groupPx} onChange={(e) => update({ groupPx: Number(e.target.value) })} />
             <span>{view.groupPx ? `${view.groupPx} px` : 'off'}</span>

@@ -24,7 +24,8 @@ Data tab: dropped zip / folder / parquet → Web Worker (fflate, hyparquet, src/
           → the same structures in memory, kept in IndexedDB → the same views
 ```
 
-Files are cached after the first load; the whole view (mode, map, day, matches, layers, 3D...) lives in the URL.
+Offline: a service worker (written at build time with every file's hash) caches the whole site on the first visit
+and refreshes only changed files on a deploy, keeping the previous build's app files for pages left open; the whole view (mode, map, day, matches, layers, 3D...) lives in the URL.
 
 ## Coordinate mapping
 

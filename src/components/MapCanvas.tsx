@@ -1,12 +1,16 @@
 import { useEffect, useRef, useState } from 'react';
 import { minimapUrl } from '../lib/data';
+import { MAP_LABEL } from '../lib/style';
 import type { MapId } from '../lib/types';
+import { Loader } from './Loader';
 
 /** A point on the map, in UV (0..uvUnits), and how far (in UV) counts as "on it" at the current zoom. */
 export interface MapPick {
   u: number;
   v: number;
   tolerance: number;
+  /** The map's size on screen (CSS px) at the current zoom, to match what is drawn (icon groups). */
+  size: number;
 }
 
 interface Props {
@@ -22,6 +26,25 @@ interface Props {
   onHover?: (pick: MapPick | null) => void;
   /** Show a pointer cursor (something clickable is under the mouse). */
   pointer?: boolean;
+}
+
+/** Minimap pictures, loaded and decoded once per visit: switching back to a map is instant. */
+const pictures = new Map<string, Promise<HTMLImageElement>>();
+export function minimap(map: string): Promise<HTMLImageElement> {
+  let p = pictures.get(map);
+  if (!p) {
+    p = new Promise<HTMLImageElement>((ok, fail) => {
+      const img = new Image();
+      img.onload = () => img.decode().then(() => ok(img), () => ok(img));
+      img.onerror = () => {
+        pictures.delete(map);
+        fail(new Error(`The ${map} map could not load.`));
+      };
+      img.src = minimapUrl(map);
+    });
+    pictures.set(map, p);
+  }
+  return p;
 }
 
 /** The minimaps have a dark border: open slightly zoomed in, so the map itself fills the height. */
@@ -45,6 +68,8 @@ export function MapCanvas({ map, draw, dim = 0, uvUnits = 10_000, onPick, onHove
   const canvas = useRef<HTMLCanvasElement>(null);
   const [view, setView] = useState({ w: 0, h: 0 });
   const [image, setImage] = useState<HTMLImageElement | null>(null);
+  const [failed, setFailed] = useState(false);
+  const [retry, setRetry] = useState(0);
   const [cam, setCam] = useState<Cam | null>(null);
   const drag = useRef<{ x: number; y: number; cam: Cam; moved: boolean } | null>(null);
 
@@ -75,14 +100,17 @@ export function MapCanvas({ map, draw, dim = 0, uvUnits = 10_000, onPick, onHove
 
   useEffect(() => {
     setImage(null);
+    setFailed(false);
     if (view.w) setCam(fit(view.w, view.h));
-    const img = new Image();
-    img.onload = () => setImage(img);
-    img.src = minimapUrl(map);
+    let live = true;
+    minimap(map).then(
+      (img) => live && setImage(img),
+      () => live && setFailed(true),
+    );
     return () => {
-      img.onload = null;
+      live = false;
     };
-  }, [map]); // fit and view are read once, on purpose: a new map starts fitted
+  }, [map, retry]); // fit and view are read once, on purpose: a new map starts fitted
 
   // Wheel zoom around the cursor (a native listener: React's wheel events cannot prevent the page scroll).
   useEffect(() => {
@@ -133,7 +161,7 @@ export function MapCanvas({ map, draw, dim = 0, uvUnits = 10_000, onPick, onHove
     const r = (e.target as HTMLElement).getBoundingClientRect();
     const px = e.clientX - r.left - cam.x;
     const py = e.clientY - r.top - cam.y;
-    return { u: (px / cam.s) * uvUnits, v: (1 - py / cam.s) * uvUnits, tolerance: (PICK_PX / cam.s) * uvUnits };
+    return { u: (px / cam.s) * uvUnits, v: (1 - py / cam.s) * uvUnits, tolerance: (PICK_PX / cam.s) * uvUnits, size: cam.s };
   };
 
   const onPointerDown = (e: React.PointerEvent) => {
@@ -170,7 +198,15 @@ export function MapCanvas({ map, draw, dim = 0, uvUnits = 10_000, onPick, onHove
         onPointerLeave={() => onHover?.(null)}
         onDoubleClick={() => setCam(fit(view.w, view.h))}
       />
-      {!image && <div className="map-loading">Loading map…</div>}
+      {!image && !failed && <div className="map-loading"><Loader label={`Loading ${MAP_LABEL[map] ?? 'the map'}`} /></div>}
+      {failed && (
+        <div className="map-loading">
+          <div className="loader failed">
+            <p>This map could not load. Check the connection.</p>
+            <button className="ds-use" onClick={() => setRetry((n) => n + 1)}>Try again</button>
+          </div>
+        </div>
+      )}
       {zoomed && cam && (
         <button className="map-reset" onClick={() => setCam(fit(view.w, view.h))}>
           {(cam.s / base).toFixed(1)}x · Reset view

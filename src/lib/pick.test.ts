@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { pickEvent, pickPlayer, segmentDistance } from './pick';
+import { pickEvent, pickGroup, pickPlayer, segmentDistance } from './pick';
 import type { Match } from './types';
 
 const match: Match = {
@@ -34,5 +34,28 @@ describe('pickEvent', () => {
     expect(pickEvent([m], 2000, 102, 50, 5, new Set())?.event).toBe(m.events[0]);
     expect(pickEvent([m], 1000, 199, 50, 5, new Set())).toBeNull(); // not happened yet
     expect(pickEvent([m], 2000, 102, 50, 5, new Set(['loot']))).toBeNull();
+  });
+});
+
+describe('picking a group of icons', () => {
+  // Three loot pickups close together and a kill far away, on a 1000 px map (uvUnits 10,000: 10 units = 1 px).
+  const events: Match['events'] = [
+    [100, 'loot', 4700, 5100, 1, 0],
+    [200, 'loot', 4750, 5120, 1, 0],
+    [300, 'loot', 4730, 5060, 1, 0],
+    [400, 'killBot', 9000, 9000, 1, 0],
+  ];
+  const m: Match = { ...match, events };
+  const at = (u: number, v: number) => ({ u, v, size: 1000 });
+
+  it('picks the group as drawn, with all its members, not one icon inside it', () => {
+    const g = pickGroup([m], 1000, at(4730, 5100), 10_000, new Set(), 18, 1);
+    expect(g?.items).toHaveLength(3);
+  });
+
+  it('splits the group when grouping is off, and skips hidden kinds and future events', () => {
+    expect(pickGroup([m], 1000, at(4700, 5100), 10_000, new Set(), 0, 1)?.items).toEqual([events[0]]);
+    expect(pickGroup([m], 1000, at(4730, 5100), 10_000, new Set(['loot']), 18, 1)).toBeNull();
+    expect(pickGroup([m], 150, at(4730, 5100), 10_000, new Set(), 18, 1)?.items).toEqual([events[0]]);
   });
 });

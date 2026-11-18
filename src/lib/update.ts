@@ -1,8 +1,9 @@
 // New version check, like Ugo's dashboard and Rina's Recipes: when a newer build is live, a green Update button
 // shows; a click reloads onto it, keeping the current view (it is in the URL).
-// No service worker here (the tool needs no offline mode): each build writes its name into the app (__BUILD__)
-// and into /build.txt, and the open page compares the two on open, when it comes back to the front, and every
-// 5 minutes.
+// Each build writes its name into the app (__BUILD__) and into /build.txt, and the open page compares the two on
+// open, when it comes back to the front, and every 5 minutes. The service worker (offline mode, see
+// src/offline/sw.template.js) never caches /build.txt and asks the network first for the page, so a reload
+// always lands on the new version.
 import { useSyncExternalStore } from 'react';
 
 declare const __BUILD__: string;
@@ -48,3 +49,11 @@ export function useUpdateReady(): boolean {
 }
 
 export const applyUpdate = () => location.reload();
+
+/** Offline mode: after the first visit, every file of the site is kept in this browser (production only). */
+export function startOffline() {
+  if (import.meta.env.DEV || !('serviceWorker' in navigator)) return;
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('/sw.js').catch(() => undefined); // not supported or blocked: online only
+  });
+}

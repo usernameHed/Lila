@@ -27,9 +27,12 @@ On a 16:9 screen (1366x768 to 1920x1080) everything fits without scrolling:
 - **Legend**: On / Off for the whole replay (Off = the heatmap alone); click a row to show or hide it (paths
   included), All / None; hover a row and those markers pulse on the map and their ticks light up on the timeline
   (future ones shown see-through). Every legend and heatmap row explains itself in a tooltip; rows showing the
-  same events (e.g. "Player killed by a bot" and "Position when killed") pulse together. Icon size slider, and
-  a Grouping slider: nearby icons of the same kind merge into one with its count, split again as you zoom in.
+  same events (e.g. "Player killed by a bot" and "Position when killed") pulse together. Sliders for icon size,
+  path width and path opacity, and Grouping: nearby icons of the same kind merge into one bigger icon; hover it and
+  its members show where they really are, with their count (and their ticks light up on the timeline).
+  Icons are map stamps (skull and crossbones for a kill, a bot skull for a bot, a bolt for the storm).
   Paths keep the same peak brightness whatever the number of matches shown.
+- **Hover never hides**: what is pointed at stays bright and pulses, the rest fades back halfway, eased in and out.
 - **Everything is linked**: hover an event on the map, its tick on the timeline or its row in a player's card,
   and it pulses in all of them and in the legend. Click a player or an event for its card (how it ended,
   distance, height range, fights, every event; click one to jump there). Everyone that player fought is
@@ -46,7 +49,11 @@ On a 16:9 screen (1366x768 to 1920x1080) everything fits without scrolling:
   runs on it. It is read and processed in the browser (a Web Worker running the same pipeline as `pipeline/build.py`,
   ported to `src/lib/build.ts` and checked value for value against it), kept in this browser, and shown when ready;
   the left panel always says which data is on screen, one click to change it.
-- **Undo / redo** for every setting (↶ ↷ in the header, Cmd/Ctrl+Z, Shift+Cmd/Ctrl+Z); dragging a slider is one step.
+- **Undo / redo** for every setting (arrows in the header, Cmd/Ctrl+Z, Shift+Cmd/Ctrl+Z); dragging a slider is one step.
+- **Works offline** after the first visit: a service worker keeps every file (app, maps, data, about 10 MB) in the
+  browser; a new version downloads only the files that changed. A loading screen while files arrive, and a Reload
+  screen instead of a blank page if a piece fails.
+- **Phone to wide screen**: fits a 16:9 screen with no scrolling; works on a phone or tablet.
 - **Shareable views**: the URL holds the whole view. **Update button** when a new version is deployed.
 
 ## Tech stack

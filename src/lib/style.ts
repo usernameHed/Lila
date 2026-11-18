@@ -19,17 +19,18 @@ export const MATCH_COLORS = ['#4cc9f0', '#80ed99', '#ff70a6', '#c77dff', '#fffff
 /** Above this many matches, one color for all players and no loot markers: the map stays readable. */
 export const MANY_MATCHES = MATCH_COLORS.length;
 
-export type MarkerShape = 'cross' | 'skull' | 'diamond' | 'storm';
+/** Map icons, drawn as Breath of the Wild-like map stamps: a glyph on a dark round badge ringed in the kind's color. */
+export type MarkerShape = 'skullBones' | 'botSkullBones' | 'skull' | 'botSkull' | 'diamond' | 'storm';
 
 export const EVENT_STYLE: Record<EventType, { label: string; color: string; shape: MarkerShape; size: number }> = {
-  killBot: { label: 'Player killed a bot', color: '#ff4d6d', shape: 'cross', size: 6 },
-  killPlayer: { label: 'Player killed a player', color: '#ff0a54', shape: 'cross', size: 8 },
+  killBot: { label: 'Player killed a bot', color: '#ff4d6d', shape: 'botSkullBones', size: 6 },
+  killPlayer: { label: 'Player killed a player', color: '#ff0a54', shape: 'skullBones', size: 8 },
   diedToBot: { label: 'Player killed by a bot', color: '#f1f1f1', shape: 'skull', size: 7 },
   diedToPlayer: { label: 'Player killed by a player', color: '#ff0a54', shape: 'skull', size: 8 },
   storm: { label: 'Player died to the storm', color: '#b388ff', shape: 'storm', size: 8 },
   loot: { label: 'Player looted an item', color: '#ffd166', shape: 'diamond', size: 5 },
-  botKill: { label: 'Bot killed someone', color: '#f4a261', shape: 'cross', size: 4.5 },
-  botDeath: { label: 'Bot died', color: '#f4a261', shape: 'skull', size: 4.5 },
+  botKill: { label: 'Bot killed someone', color: '#f4a261', shape: 'skullBones', size: 4.5 },
+  botDeath: { label: 'Bot died', color: '#f4a261', shape: 'botSkull', size: 4.5 },
 };
 
 /** Draw order: loot under everything, then bot events, then the human combat events that matter most. */

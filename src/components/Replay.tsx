@@ -1,13 +1,15 @@
-import { Suspense, lazy, useCallback, useEffect, useMemo, useState } from 'react';
+import { Suspense, lazy, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { loadMatches, loadTerrain } from '../lib/data';
 import { drawFocus, drawMatches, type LegendKey } from '../lib/draw';
-import { pickEvent, pickPlayer, type Focus, type PointedEvent } from '../lib/pick';
+import { pickEvent, pickGroup, pickPlayer, type Focus, type PointedEvent } from '../lib/pick';
 import { playerStory } from '../lib/story';
 import { MANY_MATCHES, MAP_LABEL, MATCH_COLORS, formatDay, formatDuration } from '../lib/style';
 import { endedOf } from '../lib/matchFilter';
 import { matchEnd } from '../lib/timeline';
 import type { MapConfig, Match, MatchEvent, MatchSummary, Terrain } from '../lib/types';
 import { Choice } from './Choice';
+import { ErrorBoundary } from './ErrorBoundary';
+import { Loader } from './Loader';
 import { MapCanvas, type MapPick } from './MapCanvas';
 import { PlayerCard } from './PlayerCard';
 import { PlaybackBar } from './PlaybackBar';
@@ -134,6 +136,8 @@ interface StageProps {
   onOnlyMatch: (id: string) => void;
   iconScale: number;
   groupPx: number;
+  pathWidth: number;
+  pathAlpha: number;
 }
 
 const Map3D = lazy(() => import('./Map3D'));
@@ -169,9 +173,41 @@ function usePulse(active: boolean): number {
   return phase;
 }
 
+/** 0 -> 1 when `on`, back to 0 when not, eased in and out over `ms`: fades never jump in one frame. */
+function useEase(on: boolean, ms = 280): number {
+  const [value, setValue] = useState(0);
+  const now = useRef(0);
+  useEffect(() => {
+    const from = now.current;
+    const to = on ? 1 : 0;
+    if (from === to) return;
+    const start = performance.now();
+    const span = ms * Math.abs(to - from);
+    let frame = 0;
+    const tick = (time: number) => {
+      const k = Math.min(1, (time - start) / span);
+      const eased = k < 0.5 ? 2 * k * k : 1 - (-2 * k + 2) ** 2 / 2; // ease in-out
+      now.current = from + (to - from) * eased;
+      setValue(now.current);
+      if (k < 1) frame = requestAnimationFrame(tick);
+    };
+    frame = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(frame);
+  }, [on, ms]);
+  return value;
+}
+
+/** Keeps the last non-null value while `fading` (so what was hovered stays bright while the rest fades back). */
+function useLast<T>(value: T | null, fading: boolean): T | null {
+  const last = useRef<T | null>(value);
+  if (value !== null) last.current = value;
+  else if (!fading) last.current = null;
+  return value ?? last.current;
+}
+
 /** Every selected match on its map, all starting together at 0:00, with one playback. */
 export function ReplayStage(props: StageProps) {
-  const { summaries, uvUnits, mono, hidden, hover, onPointedKind, under, mapConfig, view3d, exaggeration, terrain, onView, onOnlyMatch, iconScale, groupPx } = props;
+  const { summaries, uvUnits, mono, hidden, hover, onPointedKind, under, mapConfig, view3d, exaggeration, terrain, onView, onOnlyMatch, iconScale, groupPx, pathWidth, pathAlpha } = props;
   const [loaded, setLoaded] = useState<Match[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -208,14 +244,23 @@ export function ReplayStage(props: StageProps) {
   const [focus, setFocus] = useState<Focus | null>(null);
   const [pinned, setPinned] = useState<PointedEvent | null>(null);
   const [pointed, setPointed] = useState<PointedEvent | null>(null);
+  // A group of icons under the mouse (several events drawn as one): its members show where they really are.
+  const [pointedGroup, setPointedGroup] = useState<MatchEvent[] | null>(null);
   useEffect(() => {
     setFocus(null);
     setPinned(null);
     setPointed(null);
+    setPointedGroup(null);
   }, [key]);
   const active = pointed ?? pinned;
-  useEffect(() => onPointedKind(active ? active.event[1] : null), [active, onPointedKind]);
-  const phase = usePulse(!!hover || !!active);
+  useEffect(() => onPointedKind(active ? active.event[1] : pointedGroup ? pointedGroup[0][1] : null), [active, pointedGroup, onPointedKind]);
+  // The rest fades back, eased, while something is pointed at; what was pointed at stays bright while it fades in.
+  const dim = useEase(!!hover || !!active || !!pointedGroup);
+  const fading = dim > 0;
+  const shownHover = useLast(hover, fading);
+  const shownActive = useLast(active, fading);
+  const shownGroup = useLast(pointedGroup, fading);
+  const phase = usePulse(!!hover || !!active || !!pointedGroup);
 
   const focusMatch = focus ? shown.find((m) => m.id === focus.match) : undefined;
   const story = useMemo(
@@ -240,9 +285,23 @@ export function ReplayStage(props: StageProps) {
     ({ u, v, tolerance }: MapPick) => pickAt(pickEvent(shown, t, u, v, tolerance, hiddenSet), pickPlayer(shown, t, u, v, tolerance)),
     [shown, t, hiddenSet, pickAt],
   );
+  // Hover picks what is drawn: a group of icons as a whole, not one icon hidden inside it.
   const onHoverMap = useCallback(
-    (p: MapPick | null) => setPointed(p ? pickEvent(shown, t, p.u, p.v, p.tolerance, hiddenSet) : null),
-    [shown, t, hiddenSet],
+    (p: MapPick | null) => {
+      const g = p ? pickGroup(shown, t, p, uvUnits, hiddenSet, groupPx, iconScale * (shown.length > MANY_MATCHES ? 0.55 : 1)) : null;
+      if (!g) {
+        setPointed(null);
+        setPointedGroup(null);
+      } else if (g.items.length === 1) {
+        const m = shown.find((x) => x.events.includes(g.items[0]));
+        setPointed(m ? { match: m.id, event: g.items[0] } : null);
+        setPointedGroup(null);
+      } else {
+        setPointed(null);
+        setPointedGroup((old) => (old && old.length === g.items.length && old[0] === g.items[0] ? old : g.items));
+      }
+    },
+    [shown, t, hiddenSet, uvUnits, groupPx, iconScale],
   );
   const pointAt = useCallback((e: MatchEvent | null) => {
     if (!e) return setPointed(null);
@@ -254,10 +313,14 @@ export function ReplayStage(props: StageProps) {
   const draw = useCallback(
     (ctx: CanvasRenderingContext2D, size: number) => {
       under?.(ctx, size);
-      if (shown.length) drawMatches(ctx, shown, uvUnits, size, t, play.playing, { mono, hidden: hiddenSet, hover, phase, activeEvent: active?.event ?? null, iconScale, groupPx });
+      if (shown.length)
+        drawMatches(ctx, shown, uvUnits, size, t, play.playing, {
+          mono, hidden: hiddenSet, hover: shownHover, phase, activeEvent: shownActive?.event ?? null, iconScale, groupPx,
+          dim, activeGroup: shownGroup, pathWidth, pathAlpha,
+        });
       if (focusMatch && focus) drawFocus(ctx, focusMatch, focus.player, uvUnits, size, t, active?.event ?? null, phase, story?.opponents ?? []);
     },
-    [shown, t, uvUnits, play.playing, mono, hiddenSet, hover, phase, under, focusMatch, focus, active, story, iconScale, groupPx],
+    [shown, t, uvUnits, play.playing, mono, hiddenSet, shownHover, phase, under, focusMatch, focus, active, shownActive, story, iconScale, groupPx, dim, shownGroup, pathWidth, pathAlpha],
   );
 
   if (!summaries.length) return <div className="empty">No match for these filters.</div>;
@@ -290,7 +353,8 @@ export function ReplayStage(props: StageProps) {
       </div>
       <div className="stage-main">
         {view3d ? (
-          <Suspense fallback={<div className="empty">Loading 3D…</div>}>
+          <ErrorBoundary label="The 3D view could not load.">
+          <Suspense fallback={<Loader label="Loading the 3D view" />}>
             <Map3D
               map={mapConfig}
               matches={shown}
@@ -308,14 +372,17 @@ export function ReplayStage(props: StageProps) {
               activeEvent={active?.event ?? null}
               onPointEvent={pointAt}
               iconScale={iconScale}
+              pathWidth={pathWidth}
+              pathAlpha={pathAlpha}
               onPickEvent={(e) => {
                 const m = shown.find((x) => x.events.includes(e));
                 if (m) pickAt({ match: m.id, event: e }, null);
               }}
             />
           </Suspense>
+          </ErrorBoundary>
         ) : (
-          <MapCanvas map={summaries[0].map} draw={draw} dim={0} uvUnits={uvUnits} onPick={onPick} onHover={onHoverMap} pointer={!!pointed} />
+          <MapCanvas map={summaries[0].map} draw={draw} dim={0} uvUnits={uvUnits} onPick={onPick} onHover={onHoverMap} pointer={!!pointed || !!pointedGroup} />
         )}
         {story && focus && (
           <PlayerCard
@@ -347,6 +414,7 @@ export function ReplayStage(props: StageProps) {
         speed={play.speed}
         events={events}
         active={active?.event ?? null}
+        activeGroup={pointedGroup}
         hoverKind={hover}
         hidden={hiddenSet}
         onPoint={pointAt}
