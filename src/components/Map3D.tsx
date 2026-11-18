@@ -435,7 +435,7 @@ export default function Map3D(props: Map3DProps) {
       }
     for (const [type, list] of byType) {
       list.sort((a, b) => a.t - b.t);
-      const size = type === 'loot' ? 7 : many ? 8 : 13;
+      const size = type === 'loot' ? 10 : many ? 8 : 13;
       const make = (opacity: number) =>
         new THREE.Points(
           new THREE.BufferGeometry().setFromPoints(list.map((e) => e.v)),

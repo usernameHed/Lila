@@ -27,7 +27,7 @@ export const EVENT_STYLE: Record<EventType, { label: string; color: string; shap
   diedToBot: { label: 'Player killed by a bot', color: '#f1f1f1', shape: 'skull', size: 7 },
   diedToPlayer: { label: 'Player killed by a player', color: '#ff0a54', shape: 'skull', size: 8 },
   storm: { label: 'Player died to the storm', color: '#b388ff', shape: 'storm', size: 8 },
-  loot: { label: 'Player looted an item', color: '#ffd166', shape: 'diamond', size: 3.5 },
+  loot: { label: 'Player looted an item', color: '#ffd166', shape: 'diamond', size: 5 },
   botKill: { label: 'Bot killed someone', color: '#f4a261', shape: 'cross', size: 4.5 },
   botDeath: { label: 'Bot died', color: '#f4a261', shape: 'skull', size: 4.5 },
 };
