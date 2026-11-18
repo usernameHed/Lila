@@ -6,7 +6,7 @@ import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 import { Line2 } from 'three/examples/jsm/lines/Line2.js';
 import { LineGeometry } from 'three/examples/jsm/lines/LineGeometry.js';
 import { LineMaterial } from 'three/examples/jsm/lines/LineMaterial.js';
-import type { LegendKey } from '../lib/draw';
+import { drawMarker, type LegendKey } from '../lib/draw';
 import { minimapUrl } from '../lib/data';
 import { EVENT_STYLE, FIRE_COLOR, MANY_MATCHES, MATCH_COLORS, PATH_COLOR } from '../lib/style';
 import { heightAt, positionAt, samplesUntil } from '../lib/timeline';
@@ -96,6 +96,25 @@ function terrainGeometry(map: MapConfig, t: Terrain): THREE.PlaneGeometry {
   }
   geo.computeVertexNormals();
   return geo;
+}
+
+/**
+ * The 2D marker of each event type (cross = kill, skull = death, diamond = loot, storm sign), drawn once into a
+ * texture: 3D events are camera-facing sprites with the same look as the 2D map.
+ */
+const MARKER_TEXTURES = new Map<EventType, THREE.CanvasTexture>();
+function markerTexture(type: EventType): THREE.CanvasTexture {
+  let tex = MARKER_TEXTURES.get(type);
+  if (!tex) {
+    const c = document.createElement('canvas');
+    c.width = c.height = 64;
+    const s = EVENT_STYLE[type];
+    drawMarker(c.getContext('2d')!, s.shape, s.color, 32, 32, 21);
+    tex = new THREE.CanvasTexture(c);
+    tex.colorSpace = THREE.SRGBColorSpace;
+    MARKER_TEXTURES.set(type, tex);
+  }
+  return tex;
 }
 
 /** World meters: x east, z south (image down), y up = height above the map's lowest point. */
@@ -197,7 +216,7 @@ export default function Map3D(props: Map3DProps) {
       }
       const mk = activeMarker.current;
       if (mk?.visible) {
-        (mk.material as THREE.PointsMaterial).size = 18 + 16 * k;
+        (mk.material as THREE.PointsMaterial).size = 30 + 22 * k;
         (mk.material as THREE.PointsMaterial).opacity = 1 - 0.4 * k;
       }
       controls.update();
@@ -420,12 +439,13 @@ export default function Map3D(props: Map3DProps) {
       const make = (opacity: number) =>
         new THREE.Points(
           new THREE.BufferGeometry().setFromPoints(list.map((e) => e.v)),
-          new THREE.PointsMaterial({ color: EVENT_STYLE[type].color, size, sizeAttenuation: false, map: DOT, alphaTest: 0.05, transparent: true, opacity }),
+          // White: the texture carries the marker's own colors.
+          new THREE.PointsMaterial({ color: 0xffffff, size: size * 1.6, sizeAttenuation: false, map: markerTexture(type), alphaTest: 0.05, transparent: true, opacity }),
         );
       const points = make(1);
       const future = make(0.35);
       content.add(points, future);
-      events.set(type, { points, future, times: list.map((e) => e.t), refs: list.map((e) => e.ref), size });
+      events.set(type, { points, future, times: list.map((e) => e.t), refs: list.map((e) => e.ref), size: size * 1.6 });
     }
     // The one event pointed at: a bigger dot that pulses (moved and colored per frame).
     const marker = new THREE.Points(
@@ -506,7 +526,11 @@ export default function Map3D(props: Map3DProps) {
         const [, type, u, v, , h] = activeEvent;
         (marker.geometry.attributes.position as THREE.BufferAttribute).setXYZ(0, ...place(map, uvUnits, u, v, h).toArray());
         marker.geometry.attributes.position.needsUpdate = true;
-        (marker.material as THREE.PointsMaterial).color.set(EVENT_STYLE[type].color);
+        const mat = marker.material as THREE.PointsMaterial;
+        if (mat.map !== markerTexture(type)) {
+          mat.map = markerTexture(type);
+          mat.needsUpdate = true;
+        }
       }
     }
     if (fights) {
