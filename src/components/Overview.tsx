@@ -1,4 +1,4 @@
-// The landing page: why the tool is built the way it is, the main data, a few preset views to try, what the data says
+// The landing page: why the tool is built the way it is, the main data, what the data says
 // in one line, what to log next, and the build notes. Links open the live views.
 import { InstallButton } from './InstallOffer';
 import type { Index } from '../lib/types';
@@ -6,7 +6,6 @@ import type { Index } from '../lib/types';
 const REPO = 'https://github.com/usernameHed/Lila';
 
 export const OVERVIEW_SECTIONS: [string, string][] = [
-  ['try', 'Try it'],
   ['findings', 'What the data says'],
   ['next', 'What to log next'],
   ['notes', 'Notes on the structure'],
@@ -45,25 +44,6 @@ export function Overview({ index }: { index: Index | null }) {
           <li>5 days (Feb 10-14)</li>
         </ul>
       </header>
-
-      <section id="try">
-        <h2>Try it</h2>
-        <p>Here are 4 examples of preset settings for the data currently loaded:</p>
-        <ul className="basics-list">
-          <li>
-            <a href="#mode=replay&map=AmbroseValley">Watch a match</a>: play, scrub, see every kill, death and loot.
-          </li>
-          <li>
-            <a href="#mode=replay&map=AmbroseValley&match=all">All 566 matches at once</a>: every player on one clock.
-          </li>
-          <li>
-            <a href="#mode=replay&map=AmbroseValley&under=1&layer=traffic,kills&hide=humanPath,botPath">Kill zones over traffic</a>: stacked heatmaps, right panel.
-          </li>
-          <li>
-            <a href="#mode=replay&map=Lockdown&view=3d&under=1&layer=traffic&match=all">3D, with terrain</a>: real heights, estimated ground.
-          </li>
-        </ul>
-      </section>
 
       <section id="findings">
         <h2>What the data says</h2>

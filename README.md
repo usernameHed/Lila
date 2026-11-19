@@ -16,7 +16,8 @@ The site opens on an **Overview**: what the tool is for, the four findings with 
 data details we had to get right, how it is built, and what the game should log next, each with links into the
 live views. It doubles as the walkthrough of the features below.
 
-**Match replay** (left: which matches; middle: the map; right: the layers).
+**Match replay**, in the order a designer works: filters on the left, the matches running on the map (an "On the
+  map" list in its top-left corner: click one for its player's card), the layers on the right.
 On a 16:9 screen (1366x768 to 1920x1080) everything fits without scrolling:
 - **Replay** one match or many on one clock, at 10x / 30x / 60x; Space plays and pauses; grabbing the timeline
   pauses. The timeline has a tick per fight and death, and a band where the storm kills (from minute 10.9).
@@ -26,7 +27,7 @@ On a 16:9 screen (1366x768 to 1920x1080) everything fits without scrolling:
 - **Match filters**, as one-click chips that show how many matches each would leave: how the player's run ended
   (survived, killed by a bot, by a player, by the storm), length (under 5, 5-10, over 10 min). In Custom, matches are
   grouped by day (fold a day, tick it to select all its matches), one line per match (duration, how it ended, kills,
-  loot; ⇄ when bots were recorded too). Picking a match plays it from 0:00. "Clear all filters" goes back to every match.
+  loot; ⇄ when bots were recorded too). Picking a match plays it from 0:00 (if the previous replay had ended, paused, it shows the new one whole). "Clear all filters" goes back to every match.
 - **Layers** (one list for icons and heatmaps): each kind of data is one row, with two switches. **Icons** draws it
   on the replay (path lines, or an icon per event), **Heat** draws it as a heatmap of the whole selection: the
   same events seen two ways, in one place ("Item looted" = gems and the loot heat; "Bot killed" = icons and where

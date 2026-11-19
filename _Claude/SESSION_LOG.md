@@ -15,6 +15,13 @@ about 300 lines, move the oldest entries word for word to `SESSION_HISTORY.md` (
 
 ---
 
+## 2026-11-19 (desktop session): "On the map" list, autoplay rule, no Try it
+
+- Ugo's flow: filters left -> matches running in the map -> layers right. Done: "On the map" list over the map's left
+  (`.stage-left`, color dot, day, length, outcome; click = player card below it; hover = path highlight; scrolls),
+  map opens shifted right (`inset`). Picking a match plays it unless the previous replay had ended paused (then shown
+  whole). Overview: "Try it" removed.
+
 ## 2026-11-19 (desktop session): heat colors = icon colors, autoplay, Sort removed
 
 - Heatmaps take their row's icon color (`heatRgb` in style.ts; kills and deaths drawn per side in that side's color).

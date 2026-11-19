@@ -26,6 +26,8 @@ interface Props {
   onHover?: (pick: MapPick | null) => void;
   /** Show a pointer cursor (something clickable is under the mouse). */
   pointer?: boolean;
+  /** Width (px) covered by a panel on the left of the map: the map opens shifted right by part of it. */
+  inset?: number;
 }
 
 /** Minimap pictures, loaded and decoded once per visit: switching back to a map is instant. */
@@ -63,7 +65,7 @@ interface Cam {
  * right of the square map is used when zooming). Scroll zooms around the cursor (up to 8x), drag pans,
  * double-click resets. The overlay is drawn at the zoomed size, so markers and lines keep their size on screen.
  */
-export function MapCanvas({ map, draw, dim = 0, uvUnits = 10_000, onPick, onHover, pointer }: Props) {
+export function MapCanvas({ map, draw, dim = 0, uvUnits = 10_000, onPick, onHover, pointer, inset = 0 }: Props) {
   const box = useRef<HTMLDivElement>(null);
   const canvas = useRef<HTMLCanvasElement>(null);
   const [view, setView] = useState({ w: 0, h: 0 });
@@ -75,7 +77,9 @@ export function MapCanvas({ map, draw, dim = 0, uvUnits = 10_000, onPick, onHove
 
   const fit = (w: number, h: number): Cam => {
     const s = Math.min(h * FIT, w * FIT);
-    return { s, x: (w - s) / 2, y: (h - s) / 2 };
+    // Shifted right by part of the left panel, so the map's left side shows beside it (only when there is room).
+    const shift = w > 600 ? inset * 0.45 : 0;
+    return { s, x: (w - s) / 2 + shift, y: (h - s) / 2 };
   };
   const base = Math.min(view.w, view.h) * FIT;
   const clamp = (c: Cam): Cam => {

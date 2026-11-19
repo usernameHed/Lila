@@ -2,7 +2,10 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 
 export const SPEEDS = [10, 30, 60] as const;
 
-/** Set before picking a match to replay: the next match loaded plays from 0:00 instead of showing its end. */
+/**
+ * Set before picking a match to replay: the next match loaded plays from 0:00, unless the previous replay had
+ * ended and was paused (then the new one shows whole, at its end, like the one before).
+ */
 export const playNext = { current: false };
 
 /**
@@ -15,17 +18,26 @@ export function usePlayback(duration: number, resetKey: unknown) {
   const [playing, setPlaying] = useState(false);
   const [speed, setSpeed] = useState<number>(SPEEDS[1]);
   const last = useRef<number | null>(null);
+  // The clock as it was before this match: did the previous replay end, paused?
+  const before = useRef({ ended: true });
 
   useEffect(() => {
     if (playNext.current && duration > 0 && resetKey !== null) {
       playNext.current = false;
-      setT(0);
-      setPlaying(true);
-      return;
+      if (!before.current.ended) {
+        setT(0);
+        setPlaying(true);
+        return;
+      }
     }
     setPlaying(false);
     setT(duration);
   }, [duration, resetKey]);
+
+  // Remembered after each change, while a match is loaded (not during the load between two matches).
+  useEffect(() => {
+    if (duration > 0) before.current = { ended: !playing && t >= duration };
+  }, [t, playing, duration]);
 
   useEffect(() => {
     if (!playing) return;

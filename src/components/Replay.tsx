@@ -3,7 +3,7 @@ import { loadMatches, loadTerrain } from '../lib/data';
 import { drawFocus, drawMatches, type LegendKey } from '../lib/draw';
 import { pickEvent, pickPlayer, type Focus, type PointedEvent } from '../lib/pick';
 import { playerStory } from '../lib/story';
-import { MANY_MATCHES, MAP_LABEL, MATCH_COLORS, formatDay, formatDuration } from '../lib/style';
+import { MANY_MATCHES, MAP_LABEL, MATCH_COLORS, PATH_COLOR, formatDay, formatDuration } from '../lib/style';
 import { endedOf } from '../lib/matchFilter';
 import { matchEnd } from '../lib/timeline';
 import type { MapConfig, Match, MatchEvent, MatchSummary, Terrain } from '../lib/types';
@@ -290,6 +290,19 @@ export function ReplayStage(props: StageProps) {
   );
   // Under the mouse: an event first; else a path, which is highlighted (click it for the player's card).
   const [hoverPath, setHoverPath] = useState<Focus | null>(null);
+  /** The recorded human of a match (each match is one player's run). */
+  const humanOf = (id: string): Focus | null => {
+    const m = shown.find((x) => x.id === id);
+    const i = m ? m.players.findIndex((p) => !p.bot) : -1;
+    return m ? { match: id, player: Math.max(0, i) } : null;
+  };
+  /** A match clicked in the "On the map" list: its player's card opens. */
+  const openMatch = (id: string) => {
+    const f = humanOf(id);
+    if (!f) return;
+    setPinned(null);
+    setFocus(f);
+  };
   const onHoverMap = useCallback(
     (p: MapPick | null) => {
       const ev = p ? pickEvent(shown, t, p.u, p.v, p.tolerance, hiddenSet) : null;
@@ -385,7 +398,40 @@ export function ReplayStage(props: StageProps) {
           </Suspense>
           </ErrorBoundary>
         ) : (
-          <MapCanvas map={summaries[0].map} draw={draw} dim={0} uvUnits={uvUnits} onPick={onPick} onHover={onHoverMap} pointer={!!pointed || !!hoverPath} />
+          <MapCanvas map={summaries[0].map} draw={draw} dim={0} uvUnits={uvUnits} onPick={onPick} onHover={onHoverMap} pointer={!!pointed || !!hoverPath} inset={290} />
+        )}
+        <div className={`stage-left ${story && focus ? 'has-card' : ''}`}>
+        {summaries.length > 0 && (
+          <section className="replayed" aria-label="Matches on the map">
+            <h3>
+              On the map <span>{summaries.length}</span>
+            </h3>
+            <ul>
+              {summaries.map((m, i) => {
+                const end = endedOf(m);
+                const color = many || mono ? PATH_COLOR.human : MATCH_COLORS[i];
+                return (
+                  <li key={m.id}>
+                    <button
+                      className={focus?.match === m.id ? 'on' : ''}
+                      onClick={() => openMatch(m.id)}
+                      onMouseEnter={() => setHoverPath(humanOf(m.id))}
+                      onMouseLeave={() => setHoverPath(null)}
+                      title="Open this player's card"
+                    >
+                      <span className="dot" style={{ background: color }} />
+                      <span className="r-day">{formatDay(m.day)}</span>
+                      <span className="r-dur">{formatDuration(m.durationMs)}</span>
+                      <span className={`r-end ${end === 'survived' ? 'ok' : 'dead'}`}>
+                        {ENDED_ICON[end] && <LegendIcon k={ENDED_ICON[end]!} size={13} />}
+                        {ENDED_SHORT[end]}
+                      </span>
+                    </button>
+                  </li>
+                );
+              })}
+            </ul>
+          </section>
         )}
         {story && focus && (
           <PlayerCard
@@ -408,6 +454,7 @@ export function ReplayStage(props: StageProps) {
             }}
           />
         )}
+        </div>
       </div>
       {error && <div className="empty">Could not load: {error}</div>}
       <PlaybackBar
