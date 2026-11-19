@@ -517,7 +517,6 @@ export function ReplayStage(props: StageProps) {
                       onClick={(e) => openMatch(m.id, e)}
                       onMouseEnter={() => setHoverPath(humanOf(m.id))}
                       onMouseLeave={() => setHoverPath(null)}
-                      data-tip="Click: this match alone, with its card (again: every match) · tick box or Ctrl / Cmd: add or remove · Shift: a range"
                     >
                       <span
                         className={`tick-box pick-box ${isTicked(m.id) ? 'on' : ''}`}
@@ -553,7 +552,6 @@ export function ReplayStage(props: StageProps) {
                               onClick={(e) => openBot({ match: m.id, player: b.player }, e)}
                               onMouseEnter={() => setHoverPath({ match: m.id, player: b.player })}
                               onMouseLeave={() => setHoverPath(null)}
-                              data-tip={`Click: this ${b.bot ? 'bot' : 'player'}'s card, its path in bold · tick box: show or hide it`}
                             >
                               <span
                                 className={`tick-box pick-box ${!offPlayers.includes(`${m.id}.${b.player}`) ? 'on' : ''}`}
