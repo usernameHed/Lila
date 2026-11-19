@@ -19,7 +19,8 @@ about 300 lines, move the oldest entries word for word to `SESSION_HISTORY.md` (
 
 - Ugo: the match list belongs in the Day filter, open only on Custom. Done: a day chip (or All days) = every
   filtered match of that day together (`match=all`); Custom = the list (day groups, Select all = every listed id).
-  Default replay link (no `match`) = Custom with one match.
+  Default replay link (no `match`) = Custom with one match. Then removed the "Only" filter (both sides, played
+  once; view fields `others`, `players` gone) and the sort "Day" chip reads "All".
 
 ## 2026-11-19 (desktop session): legend + heatmap merged into Layers
 

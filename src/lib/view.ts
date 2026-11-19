@@ -1,5 +1,5 @@
 // The view (what is on screen) lives in the URL hash, so a Level Designer can share exactly what they see.
-import type { Ended, Length, MatchFilter, SortBy } from './matchFilter';
+import type { Ended, Length, SortBy } from './matchFilter';
 import type { HeatLayer, MapId, Who } from './types';
 
 export type Mode = 'overview' | 'replay' | 'data';
@@ -20,8 +20,6 @@ export interface View {
   /** Heatmap: one color for all kinds instead of one per kind. */
   heatMono: boolean;
   /** Match list filters and order (see matchFilter.ts). */
-  players: MatchFilter['players'];
-  others: MatchFilter['others'];
   ended: Ended;
   length: Length;
   sort: SortBy;
@@ -46,7 +44,7 @@ export interface View {
 
 export const ALL = 'all';
 
-export const DEFAULT_VIEW: View = { mode: 'overview', map: 'AmbroseValley', day: 'all', matches: [], layers: ['traffic'], kills: 'both', deaths: 'both', mono: false, heatMono: false, players: 'all', others: 'any', ended: 'any', length: 'any', sort: 'day', hidden: [], heatUnder: false, replayOn: true, iconScale: 1, pathWidth: 1.5, pathAlpha: 1.3, view3d: false, exaggeration: 4, terrain: true };
+export const DEFAULT_VIEW: View = { mode: 'overview', map: 'AmbroseValley', day: 'all', matches: [], layers: ['traffic'], kills: 'both', deaths: 'both', mono: false, heatMono: false, ended: 'any', length: 'any', sort: 'day', hidden: [], heatUnder: false, replayOn: true, iconScale: 1, pathWidth: 1.5, pathAlpha: 1.3, view3d: false, exaggeration: 4, terrain: true };
 
 const MAPS: MapId[] = ['AmbroseValley', 'GrandRift', 'Lockdown'];
 const LAYERS: HeatLayer[] = ['traffic', 'loot', 'power', 'raised', 'fire', 'kills', 'deaths', 'storm']; // drawing order
@@ -70,8 +68,6 @@ export function parseView(hash: string): View {
     deaths: pick('deaths', WHO, 'both'),
     mono: q.get('mono') === '1',
     heatMono: q.get('hmono') === '1' || (legacyHeat && q.get('mono') === '1'),
-    players: pick<View['players']>('players', ['all', 'once'], 'all'),
-    others: pick<View['others']>('others', ['any', 'recorded'], 'any'),
     // Old links: "players=pvp" was the player-vs-player filter, now "ended: killed by a player".
     ended: q.get('players') === 'pvp' ? 'player' : pick<Ended>('end', ['any', 'survived', 'bot', 'storm', 'player'], 'any'),
     length: pick<Length>('len', ['any', 'short', 'mid', 'long'], 'any'),
@@ -115,8 +111,6 @@ export function viewHash(v: View): string {
   if (v.day !== 'all') q.set('day', v.day);
   if (v.matches.length) q.set('match', v.matches === ALL ? ALL : v.matches.join(','));
   if (v.mono) q.set('mono', '1');
-  if (v.players !== 'all') q.set('players', v.players);
-  if (v.others !== 'any') q.set('others', v.others);
   if (v.ended !== 'any') q.set('end', v.ended);
   if (v.length !== 'any') q.set('len', v.length);
   if (v.sort !== 'day') q.set('sort', v.sort);

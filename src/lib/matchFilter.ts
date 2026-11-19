@@ -6,14 +6,12 @@ export type Length = 'any' | 'short' | 'mid' | 'long';
 export type SortBy = 'day' | 'longest' | 'shortest' | 'kills' | 'loot';
 
 export interface MatchFilter {
-  players: 'all' | 'once'; // every player, or only matches of players who never played again
-  others: 'any' | 'recorded'; // only matches where bots (or a second player) were recorded too: fights from both sides
   ended: Ended;
   length: Length;
   sort: SortBy;
 }
 
-export const NO_FILTER: MatchFilter = { players: 'all', others: 'any', ended: 'any', length: 'any', sort: 'day' };
+export const NO_FILTER: MatchFilter = { ended: 'any', length: 'any', sort: 'day' };
 
 /** How the human's match ended. No death logged = survived (extraction is not logged). */
 export function endedOf(m: MatchSummary): Exclude<Ended, 'any'> {
@@ -34,8 +32,6 @@ const kills = (m: MatchSummary) => (m.events.killBot ?? 0) + (m.events.killPlaye
 export function applyFilter(list: MatchSummary[], f: MatchFilter): MatchSummary[] {
   const kept = list.filter(
     (m) =>
-      (f.players === 'all' || m.onlyMatch) &&
-      (f.others === 'any' || m.bots > 0 || m.humans > 1) &&
       (f.ended === 'any' || endedOf(m) === f.ended) &&
       (f.length === 'any' || lengthOf(m) === f.length),
   );

@@ -22,10 +22,10 @@ On a 16:9 screen (1366x768 to 1920x1080) everything fits without scrolling:
   pauses. The timeline has a tick per fight and death, and a band where the storm kills (from minute 10.9).
 - **Day**: one chip per day (or All days) replays every match of that day together; **Custom** opens the match list
   to pick matches one by one.
-- **Match filters**, as one-click chips that show how many matches each would leave: how it ended (survived, bot, storm, player), length (under 5, 5-10, over 10 min), others
-  recorded (bots or a second player logged too: fights from both sides, marked ⇄), players who played only once;
-  order by day, longest, shortest, most kills, most loot. By day, matches are grouped: fold a day, tick it to select
-  all its matches; one line per match (duration, how it ended, kills ✕, loot ◆).
+- **Match filters**, as one-click chips that show how many matches each would leave: how the player's run ended
+  (survived, killed by a bot, by a player, by the storm), length (under 5, 5-10, over 10 min); sort: all (data order,
+  grouped by day: fold a day, tick it to select all its matches), or longest, shortest, most kills, most loot. One
+  line per match (duration, how it ended, kills, loot; ⇄ when bots were recorded too).
 - **Layers** (one list for icons and heatmaps): each kind of data is one row, with two switches. **Icons** draws it
   on the replay (path lines, or an icon per event), **Heat** draws it as a heatmap of the whole selection: the
   same events seen two ways, in one place ("Item looted" = gems and the loot heat; "Bot killed" = icons and where

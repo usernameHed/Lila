@@ -93,8 +93,8 @@ export function App() {
   // The map and day's matches, then the filters on top.
   const pool = useMemo(() => (index?.matches ?? []).filter((m) => m.map === view.map && (view.day === 'all' || m.day === view.day)), [index, view.map, view.day]);
   const matches = useMemo(
-    () => applyFilter(pool, { players: view.players, others: view.others, ended: view.ended, length: view.length, sort: view.sort }),
-    [pool, view.players, view.others, view.ended, view.length, view.sort],
+    () => applyFilter(pool, { ended: view.ended, length: view.length, sort: view.sort }),
+    [pool, view.ended, view.length, view.sort],
   );
   const days = useMemo(() => (view.day === 'all' ? (index?.days ?? []) : [view.day]), [index, view.day]);
 

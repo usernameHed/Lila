@@ -38,7 +38,7 @@ const ENDED: Option<View['ended']>[] = [
   ['storm', <><LegendIcon k="storm" size={12} /> Storm</>, 'Died to the storm'],
 ];
 const LENGTH: Option<View['length']>[] = [['any', 'Any'], ['short', '<5 min'], ['mid', '5-10'], ['long', '>10']];
-const SORT: Option<View['sort']>[] = [['day', 'Day'], ['longest', 'Longest', 'Longest first'], ['shortest', 'Shortest', 'Shortest first'], ['kills', 'Kills', 'Most kills first'], ['loot', 'Loot', 'Most loot first']];
+const SORT: Option<View['sort']>[] = [['day', 'All', 'In data order, grouped by day'], ['longest', 'Longest', 'Longest first'], ['shortest', 'Shortest', 'Shortest first'], ['kills', 'Kills', 'Most kills first'], ['loot', 'Loot', 'Most loot first']];
 
 /** One filter as a row of chips: one click picks it, each chip says how many matches it would leave. */
 function FilterRow<T extends string>({ label, value, options, count, onChange }: { label: string; value: T; options: Option<T>[]; count?: (v: T) => number; onChange: (v: T) => void }) {
@@ -61,10 +61,10 @@ export function ReplaySide(p: ReplayProps) {
   const { view, update, matches, selected, pool } = p;
   /** Custom: matches picked one by one in the list. Otherwise every (filtered) match of the chosen day plays. */
   const custom = view.matches !== ALL;
-  const base = { players: view.players, others: view.others, ended: view.ended, length: view.length, sort: view.sort };
+  const base = { ended: view.ended, length: view.length, sort: view.sort };
   /** How many matches there would be with this one filter changed (the others kept). */
   const countWith = (patch: Partial<typeof base>) => applyFilter(pool, { ...base, ...patch }).length;
-  const filtered = view.ended !== 'any' || view.length !== 'any' || view.others !== 'any' || view.players !== 'all';
+  const filtered = view.ended !== 'any' || view.length !== 'any';
   return (
     <>
       <section className={custom ? 'grow' : ''}>
@@ -128,33 +128,12 @@ export function ReplaySide(p: ReplayProps) {
           <span title="Each match is one player's run: pick runs by how they went">Filters · player runs</span>
           {filtered && (
             <span className="actions">
-              <button onClick={() => update({ ended: 'any', length: 'any', others: 'any', players: 'all' })}>Reset</button>
+              <button onClick={() => update({ ended: 'any', length: 'any' })}>Reset</button>
             </span>
           )}
         </h2>
         <FilterRow label="Ended" value={view.ended} options={ENDED} count={(v) => countWith({ ended: v })} onChange={(v) => update({ ended: v })} />
         <FilterRow label="Length" value={view.length} options={LENGTH} onChange={(v) => update({ length: v })} />
-        <div className="filter-row">
-          <span className="filter-label">Only</span>
-          <span className="chips">
-            <button
-              className={`chip ${view.others === 'recorded' ? 'on' : ''}`}
-              aria-pressed={view.others === 'recorded'}
-              title="Matches where bots (or a second player) were recorded too: fights can be seen from both sides"
-              onClick={() => update({ others: view.others === 'recorded' ? 'any' : 'recorded' })}
-            >
-              ⇄ Both sides <i>{countWith({ others: 'recorded' })}</i>
-            </button>
-            <button
-              className={`chip ${view.players === 'once' ? 'on' : ''}`}
-              aria-pressed={view.players === 'once'}
-              title="Matches of players who never played again"
-              onClick={() => update({ players: view.players === 'once' ? 'all' : 'once' })}
-            >
-              Played once <i>{countWith({ players: 'once' })}</i>
-            </button>
-          </span>
-        </div>
         <FilterRow label="Sort" value={view.sort} options={SORT} onChange={(v) => update({ sort: v })} />
       </section>
       {selected.length > 1 && (

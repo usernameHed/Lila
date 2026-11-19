@@ -17,13 +17,11 @@ describe('match filters', () => {
     expect(list.map(lengthOf)).toEqual(['short', 'long', 'mid']);
   });
 
-  it('filters by outcome, length, players and others recorded', () => {
+  it('filters by outcome and length', () => {
     const ids = (f: Partial<typeof NO_FILTER>) => applyFilter(list, { ...NO_FILTER, ...f }).map((x) => x.id);
     expect(ids({})).toEqual(['a', 'b', 'c']);
     expect(ids({ ended: 'bot' })).toEqual(['c']);
     expect(ids({ length: 'long' })).toEqual(['b']);
-    expect(ids({ players: 'once' })).toEqual(['c']);
-    expect(ids({ others: 'recorded' })).toEqual(['b']);
   });
 
   it('sorts by length, kills or loot', () => {
