@@ -1,4 +1,4 @@
-"""App icons for the installable app (public/app/): the kill icon (a skull over crossed bones) on the tool's dark
+"""App icons for the installable app (public/app/): the white skull over crossed bones (as "Death by bot") on the dark
 background. Run once: .venv/bin/python pipeline/app_icons.py"""
 from pathlib import Path
 
@@ -6,7 +6,7 @@ from PIL import Image, ImageDraw
 
 OUT = Path(__file__).resolve().parent.parent / "public" / "app"
 BG = (14, 15, 18)
-RED = (229, 72, 77)
+BONE = (241, 241, 241)  # the white of "Death by bot" on the map
 INK = (17, 17, 17)
 
 
@@ -17,18 +17,18 @@ def icon(size: int, maskable: bool) -> Image.Image:
     d = ImageDraw.Draw(img)
     r = s * (0.24 if maskable else 0.29)  # maskable icons keep their art inside the middle 80%
     c = s / 2
-    a = r * 1.05
+    a = r * 0.97
     w = int(r * 0.34)
     kr = w * 0.62
     for x0, y0, x1, y1 in ((c - a, c - a, c + a, c + a), (c + a, c - a, c - a, c + a)):
-        d.line((x0, y0, x1, y1), fill=RED, width=w)
+        d.line((x0, y0, x1, y1), fill=BONE, width=w)
     for x, y in ((c - a, c - a), (c + a, c + a), (c + a, c - a), (c - a, c + a)):
         nx = -0.7 if (x - c) * (y - c) > 0 else 0.7
         for sgn in (1, -1):
             px, py = x + sgn * nx * kr, y + sgn * 0.7 * kr
-            d.ellipse((px - kr, py - kr, px + kr, py + kr), fill=RED)
-    sr = r * 0.72
-    d.ellipse((c - sr, c - sr, c + sr, c + sr), fill=RED, outline=INK, width=max(2, int(s / 120)))
+            d.ellipse((px - kr, py - kr, px + kr, py + kr), fill=BONE)
+    sr = r * 0.95
+    d.ellipse((c - sr, c - sr, c + sr, c + sr), fill=BONE, outline=INK, width=max(2, int(s / 120)))
     er = sr / 3.6
     for ex in (c - sr / 2.6, c + sr / 2.6):
         ey = c - sr / 6

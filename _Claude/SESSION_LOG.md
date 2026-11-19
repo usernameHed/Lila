@@ -20,7 +20,7 @@ about 300 lines, move the oldest entries word for word to `SESSION_HISTORY.md` (
 - Ugo's flow: filters left -> matches running in the map -> layers right. Done: "On the map" list over the map's left
   (`.stage-left`, color dot, day, length, outcome; click = player card below it; hover = path highlight; scrolls),
   map opens shifted right (`inset`). Picking a match plays it unless the previous replay had ended paused (then shown
-  whole). Overview: "Try it" removed.
+  whole). Overview: "Try it" removed. App logo: the white skull over crossed bones (`pipeline/app_icons.py`).
 
 ## 2026-11-19 (desktop session): heat colors = icon colors, autoplay, Sort removed
 
