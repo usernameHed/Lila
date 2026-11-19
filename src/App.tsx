@@ -5,7 +5,7 @@ import { DataPage } from './components/DataPage';
 import { Overview } from './components/Overview';
 import { useSourceId } from './components/useSourceId';
 import { ReplayStage } from './components/Replay';
-import { OverviewSide, ReplaySide, RightPanel, type LayerHandlers } from './components/SidePanels';
+import { OverviewSide, ReplaySide, RightPanel } from './components/SidePanels';
 import { UpdateButton } from './components/UpdateButton';
 import { loadIndex } from './lib/data';
 import { BUILTIN_ID, listUploads, restoreSource } from './lib/sources';
@@ -18,8 +18,8 @@ import { record, redo, start, undo, type History } from './lib/history';
 import type { LegendKey } from './lib/draw';
 import { MAP_LABEL, formatDay } from './lib/style';
 import { applyFilter } from './lib/matchFilter';
-import type { EventType, HeatLayer, Index, MapId, Who } from './lib/types';
-import { legendToggle, parseView, resolveSelection, setMany, toggleLayer, toggleMatch, viewHash, type Mode, type View } from './lib/view';
+import type { EventType, Index, MapId } from './lib/types';
+import { parseView, resolveSelection, setMany, toggleMatch, viewHash, type Mode, type View } from './lib/view';
 
 const TAB_LABEL: Record<Mode, string> = { overview: 'Overview', replay: 'Match replay', data: 'Data' };
 
@@ -120,10 +120,6 @@ export function App() {
 
   const heat = useHeat(view.map);
   const underDraw = useHeatDraw(view.heatUnder ? heat : null, days, { layers: view.layers, kills: view.kills, deaths: view.deaths, mono: view.heatMono }, index?.uvUnits ?? 10_000);
-  const layerHandlers: LayerHandlers = {
-    onToggle: (l: HeatLayer) => update({ layers: toggleLayer(view.layers, l) }),
-    onWho: (kind: 'kills' | 'deaths', who: Who) => update({ [kind]: who }),
-  };
 
   if (error) return <div className="fatal">Could not load the data: {error}</div>;
 
@@ -238,19 +234,7 @@ export function App() {
       </main>
 
       {replay && (
-        <RightPanel
-          view={view}
-          update={update}
-          heat={heat}
-          days={days}
-          layers={layerHandlers}
-          counts={counts}
-          hidden={hidden}
-          pointedKind={pointedKind}
-          onLegendToggle={(k) => update({ hidden: legendToggle(hidden, k) })}
-          onLegendAll={(show) => update({ hidden: show ? [] : [...LEGEND_KEYS] })}
-          onHover={setHover}
-        />
+        <RightPanel view={view} update={update} heat={heat} days={days} counts={counts} pointedKind={pointedKind} onHover={setHover} />
       )}
       <InstallOffer />
     </div>

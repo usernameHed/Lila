@@ -4,13 +4,11 @@ import { uvToPixel } from '../lib/coords';
 import { drawFightLine, drawHeat, heatCanvas } from '../lib/draw';
 import { contourPath } from '../lib/contours';
 import { bandEdges, blur, edgeColor, normalize, powerGrid, render, strongest, sumDays } from '../lib/heat';
-import { HEAT_LAYERS, MONO_RGB, WHO_LABEL, rgbCss } from '../lib/style';
+import { HEAT_LAYERS, MONO_RGB } from '../lib/style';
 import type { HeatData, HeatLayer, MapId, Who } from '../lib/types';
-import { Choice } from './Choice';
 import { useSourceId } from './useSourceId';
 
 const KINDS = Object.keys(HEAT_LAYERS) as HeatLayer[]; // drawing order
-const WHOS: Who[] = ['bots', 'players', 'both'];
 
 /** Pipeline layers behind a kind: kills and deaths split by the other side (bots, players). */
 export function sourcesOf(kind: HeatLayer, who: Who): string[] {
@@ -32,19 +30,6 @@ function sum(heat: HeatData, sources: string[], days: string[]): Float32Array {
 
 /** The killer-to-victim lines of the chosen days (too few for a heat grid: drawn as lines). */
 const fightsOf = (heat: HeatData, days: string[]) => heat.fights.filter((f) => days.includes(f[0]));
-
-/** Event count behind a kind for the chosen days (the line of fire counts fights, not cells). */
-function count(heat: HeatData | null, kind: HeatLayer, who: Who, days: string[]): number | null {
-  if (!heat) return null;
-  if (kind === 'fire') return fightsOf(heat, days).length;
-  if (kind === 'power') return null; // a rate, not a count
-  let n = 0;
-  for (const s of sourcesOf(kind, who)) for (const d of days) {
-    const cells = heat.layers[s]?.[d] ?? [];
-    for (let i = 1; i < cells.length; i += 2) n += cells[i];
-  }
-  return n;
-}
 
 export function useHeat(map: MapId) {
   const [heat, setHeat] = useState<HeatData | null>(null);
@@ -109,56 +94,5 @@ export function useHeatDraw(heat: HeatData | null, days: string[], o: HeatOption
       for (const [, ku, kv, vu, vv, bot, , , inferred] of fights) drawFightLine(ctx, uvToPixel(ku, kv, uvUnits, size), uvToPixel(vu, vv, uvUnits, size), bot, inferred ? 0.55 : 1);
     },
     [pictures, fights, uvUnits],
-  );
-}
-
-interface ListProps extends HeatOptions {
-  heat: HeatData | null;
-  days: string[];
-  onToggle: (l: HeatLayer) => void;
-  /** Kinds to pulse because their partner in the legend is hovered or was just ticked. */
-  linked?: HeatLayer[];
-  /** Show (or hide, with null) the explanation of a kind next to it. */
-  onTip?: (k: HeatLayer | null, el?: HTMLElement) => void;
-  onWho: (kind: 'kills' | 'deaths', who: Who) => void;
-}
-
-/** Every kind in its color: click a row (or its box) to show or hide it; kills and deaths also pick bots, players
- * or both. */
-export function LayerList({ heat, days, onToggle, onWho, linked = [], onTip, ...o }: ListProps) {
-  return (
-    <div className="segmented layers">
-      {KINDS.map((id) => {
-        const on = o.layers.includes(id);
-        const { label, hint, rgb, split } = HEAT_LAYERS[id];
-        const color = o.mono ? MONO_RGB : rgb;
-        const who = id === 'kills' ? o.kills : o.deaths;
-        return (
-          <div
-            key={id}
-            className={`layer ${on ? 'on' : ''} ${linked.includes(id) ? 'pulse' : ''}`}
-            onMouseEnter={(e) => onTip?.(id, e.currentTarget)}
-            onMouseLeave={() => onTip?.(null)}
-          >
-            <div className="layer-row">
-              <button
-                className="swatch-box"
-                onClick={() => onToggle(id)}
-                aria-pressed={on}
-                aria-label={`${on ? 'Hide' : 'Add'} ${label}`}
-                style={on ? { background: rgbCss(color), borderColor: rgbCss(color) } : { borderColor: rgbCss(color, 0.7) }}
-              />
-              <button className="layer-name" onClick={() => onToggle(id)} aria-pressed={on} aria-label={`${label}: ${hint}`}>
-                {label}
-                <span className="count">{count(heat, id, split ? who : 'both', days)?.toLocaleString('en') ?? ''}</span>
-              </button>
-            </div>
-            {split && on && (
-              <Choice label={`${label}: against`} options={WHOS.map((w) => [w, WHO_LABEL[w]])} value={who} onChange={(w) => onWho(id as 'kills' | 'deaths', w)} />
-            )}
-          </div>
-        );
-      })}
-    </div>
   );
 }

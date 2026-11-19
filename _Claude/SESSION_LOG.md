@@ -15,12 +15,18 @@ about 300 lines, move the oldest entries word for word to `SESSION_HISTORY.md` (
 
 ---
 
+## 2026-11-19 (desktop session): legend + heatmap merged into Layers
+
+- Ugo said yes: one "Layers" card, a row per kind with Icons and Heat switches (`lib/layers.ts`, tested: kills and
+  deaths rows drive the bots / players side of the split heat), column headers = all / none, "Analysis, heat only"
+  for power positions and raised kills. Removed: Legend component, LayerList, `lib/links.ts`, the two On / Off cards.
+  URLs unchanged (`hide`, `layer`, `under`, `kills`, `deaths`). Checked 2D, 3D, 1366x768 and phone.
+
 ## 2026-11-19 (desktop session): clearer filters and match rows
 
 - Ugo did not get "Bot / Player" in Ended (it means how the player's run ended): chips now show the death icons
   (Bot, Player, Storm, tooltips "Killed by a bot"...), header "Filters · player runs", red squared chips like the map
-  tiles; match rows show the death icon + "By bot" / "By player", kill and loot icons. Proposed (not built): merge the
-  legend and heatmap into one layer list with Icons / Heat per kind.
+  tiles; match rows show the death icon + "By bot" / "By player", kill and loot icons. 
 
 ## 2026-11-19 (desktop session): Overview, simpler still
 

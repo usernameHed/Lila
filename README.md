@@ -16,7 +16,7 @@ The site opens on an **Overview**: what the tool is for, the four findings with 
 data details we had to get right, how it is built, and what the game should log next, each with links into the
 live views. It doubles as the walkthrough of the features below.
 
-**Match replay** (left: which matches; middle: the map; right: the legend and the heatmap, each with On / Off).
+**Match replay** (left: which matches; middle: the map; right: the layers).
 On a 16:9 screen (1366x768 to 1920x1080) everything fits without scrolling:
 - **Replay** one match or many on one clock, at 10x / 30x / 60x; Space plays and pauses; grabbing the timeline
   pauses. The timeline has a tick per fight and death, and a band where the storm kills (from minute 10.9).
@@ -24,25 +24,23 @@ On a 16:9 screen (1366x768 to 1920x1080) everything fits without scrolling:
   recorded (bots or a second player logged too: fights from both sides, marked ⇄), players who played only once;
   order by day, longest, shortest, most kills, most loot. By day, matches are grouped: fold a day, tick it to select
   all its matches; one line per match (duration, how it ended, kills ✕, loot ◆).
-- **Legend**: On / Off for the whole replay (Off = the heatmap alone); click a row to show or hide it (paths
-  included), All / None; hover a row and those markers pulse on the map and their ticks light up on the timeline
-  (future ones shown see-through). Every legend and heatmap row explains itself in a tooltip; rows showing the
-  same events (e.g. "Death by bot" and "Position when killed") pulse together. Sliders for icon size,
-  path width and path opacity.
-  Legend rows: a tick box, then the icon as drawn on the map, then a short name ("Bot killed", "Death by bot",
-  "Item looted"...). Icons: a robot spider where a player killed a bot, a crosshair for other kills, a skull over
-  crossed bones where a player died, a dead monster for a bot's death, a diamond for loot and the storm.
+- **Layers** (one list for icons and heatmaps): each kind of data is one row, with two switches. **Icons** draws it
+  on the replay (path lines, or an icon per event), **Heat** draws it as a heatmap of the whole selection: the
+  same events seen two ways, in one place ("Item looted" = gems and the loot heat; "Bot killed" = icons and where
+  players stand when killing bots). Column headers turn a whole column on or off. Heat only, under "Analysis":
+  power positions (kills per minute spent) and raised kills (from 3 m above the ground). Hover a row: it explains
+  itself, its markers pulse on the map and their ticks light up on the timeline. Heat per kind or merged; sliders
+  for icon size, path width and path opacity. Heatmaps are toon bands with vector outlines, sharp at any zoom.
+  Icons: a robot spider where a player killed a bot, a crosshair for other kills, a skull over crossed bones where
+  a player died, a dead monster for a bot's death, a diamond for loot and the storm.
   Hovering a path in 2D highlights it; click it for the player's card (each event with its icon).
 - **Map picker**: the three maps as tiles (picture, name, matches), the same tiles on the Data page.
   Paths keep the same peak brightness whatever the number of matches shown.
 - **Hover never hides**: what is pointed at stays bright and pulses, the rest fades back halfway, eased in and out.
 - **Everything is linked**: hover an event on the map, its tick on the timeline or its row in a player's card,
-  and it pulses in all of them and in the legend. Click a player or an event for its card (how it ended,
+  and it pulses in all of them and in the layer list. Click a player or an event for its card (how it ended,
   distance, height range, fights, every event; click one to jump there). Everyone that player fought is
   highlighted with them, and each fight links to the other side.
-- **Heatmap panel**: traffic, loot, power positions (kills per minute spent), raised kills (from 3 m above the
-  ground), line of fire, kills and deaths (bots / players / both), storm deaths; one color per kind or one color;
-  toon bands with vector outlines, sharp at any zoom.
 - **2D**: the map fills the stage, opens just past its dark border; scroll, pinch or + / - to zoom (8x) into the side
   space, drag to pan, double-click to reset. Each map has a small picture in the map list and on the Data page.
 - **3D**: an estimated terrain (from where players walked), paths, events and the heatmap at their real height;
@@ -115,5 +113,5 @@ No environment variables are needed: the app is fully static.
 | `public/minimaps/` | The three minimaps, 2048 x 2048 JPEG |
 | `src/lib/` | Pure logic: coordinate mapping, playback clock, heatmap binning and colors, URL view, drawing, the in-browser pipeline (with tests) |
 | `src/workers/loadData.ts` | Web Worker for dropped data: unzip (fflate), parquet (hyparquet), pipeline |
-| `src/components/` | Map canvas, match replay, playback bar, heatmaps, legend |
+| `src/components/` | Map canvas, match replay, playback bar, heatmaps, layer list |
 | `_Claude/`, `CLAUDE.md`, `.claude/agents/` | How this was built with Claude: brief, data notes, decisions, session log |
