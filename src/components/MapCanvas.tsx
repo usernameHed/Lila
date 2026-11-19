@@ -171,11 +171,11 @@ export function MapCanvas({ map, draw, dim = 0, uvUnits = 10_000, onPick, onHove
   };
 
   // Fingers and mouse: one pointer drags the map, two pinch (zoom around their middle, and move with it).
-  const pointers = useRef(new Map<number, { x: number; y: number }>());
+  const pointers = useRef(new Map<number, { x: number; y: number; cx: number; cy: number }>());
   const pinch = useRef<{ d: number; mx: number; my: number; cam: Cam } | null>(null);
   const local = (e: React.PointerEvent) => {
     const r = (e.currentTarget as HTMLElement).getBoundingClientRect();
-    return { x: e.clientX - r.left, y: e.clientY - r.top };
+    return { x: e.clientX - r.left, y: e.clientY - r.top, cx: e.clientX, cy: e.clientY };
   };
   const startPinch = () => {
     const [a, b] = [...pointers.current.values()];
@@ -219,10 +219,11 @@ export function MapCanvas({ map, draw, dim = 0, uvUnits = 10_000, onPick, onHove
   const onPointerUp = (e: React.PointerEvent) => {
     pointers.current.delete(e.pointerId);
     if (pinch.current) {
-      // One finger left after a pinch: it goes on dragging from here, it never counts as a tap.
+      // One finger left after a pinch: it goes on dragging from where that finger is (not the lifted one, or the
+      // map would jump by the gap between the fingers), and it never counts as a tap.
       pinch.current = null;
       const [rest] = [...pointers.current.values()];
-      drag.current = rest && cam ? { x: e.clientX, y: e.clientY, cam, moved: true } : null;
+      drag.current = rest && cam ? { x: rest.cx, y: rest.cy, cam, moved: true } : null;
       return;
     }
     const d = drag.current;
