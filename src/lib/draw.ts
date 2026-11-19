@@ -1,7 +1,6 @@
 // Canvas drawing for the map: a match at a given time, and heatmap pixels.
 import { uvToPixel } from './coords';
 import { EVENT_LAYER, EVENT_STYLE, FIRE_COLOR, MANY_MATCHES, MATCH_COLORS, PATH_COLOR, type MarkerShape } from './style';
-import { cluster, groupScale, type Group } from './cluster';
 import { drawMarker } from './icons';
 
 export { drawMarker };
@@ -31,12 +30,9 @@ export interface ReplayOptions {
   hover?: LegendKey | null; // legend row under the mouse: its markers pulse, the rest fade
   activeEvent?: MatchEvent | null; // one event pointed at (map, timeline, card): it pulses
   iconScale?: number; // size of the event icons (1 = default)
-  groupPx?: number; // group icons of the same kind closer than this many screen pixels (0 = never)
   phase?: number; // animation clock (ms) for the pulse
   /** 0 -> 1, eased: how far the rest has faded back because something is hovered (never fully hidden). */
   dim?: number;
-  /** A group of icons under the mouse: its count is written inside it. */
-  activeGroup?: readonly MatchEvent[] | null;
   pathWidth?: number; // path thickness factor (1 = default)
   pathAlpha?: number; // path opacity factor (1 = default)
 }
@@ -137,83 +133,46 @@ function drawPaths(ctx: CanvasRenderingContext2D, match: Match, uvUnits: number,
   ctx.globalAlpha = 1;
 }
 
-/** Icons drawn on the map at time t: past events not turned off, grouped by screen distance (same kind). */
-export function visibleEvents(matches: Match[], t: number, hidden: ReadonlySet<string>): MatchEvent[] {
-  return matches.flatMap((m) => m.events).filter((e) => e[0] <= t && !hidden.has(e[1]));
-}
-
-/** Groups of icons as drawn: a crowd of loot zoomed out is one bigger icon. Shared by drawing and hover picking. */
-export function eventGroups(events: MatchEvent[], uvUnits: number, size: number, groupPx: number): Group<MatchEvent>[] {
-  const sorted = [...events].sort((a, b) => EVENT_LAYER[a[1]] - EVENT_LAYER[b[1]]);
-  return cluster(sorted.map((e) => ({ ...uvToPixel(e[2], e[3], uvUnits, size), kind: e[1], item: e })), groupPx);
-}
-
-/** On-screen radius of a group's icon. */
-export const groupRadius = (g: Group<MatchEvent>, scale: number) => EVENT_STYLE[g.kind as EventType].size * scale * groupScale(g.items.length) * 1.2;
-
 /**
  * Event icons. Nothing is ever hidden by a hover: the rest fades back (eased, by `o.dim`) while what is pointed at
- * (a legend kind, one event, a group) stays bright and pulses. A hovered group shows its count inside.
+ * (a legend kind, one event) stays bright and pulses. Loot is drawn first, kills and deaths on top.
  */
 function drawEvents(ctx: CanvasRenderingContext2D, all: MatchEvent[], uvUnits: number, size: number, t: number, playing: boolean, scale: number, o: ReplayOptions) {
   const px = (u: number, v: number) => uvToPixel(u, v, uvUnits, size);
   const k = pulse(o.phase);
   const dim = o.dim ?? 0;
-  const group = o.activeGroup && o.activeGroup.length > 1 ? new Set(o.activeGroup) : null;
-  const past = all.filter((e) => e[0] <= t);
-  const groups = eventGroups(past, uvUnits, size, o.groupPx ?? 0);
-  const single = (g: Group<MatchEvent>) => g.items.length === 1 && g.items[0] === o.activeEvent; // drawn last, on its own
-  const isLit = (g: Group<MatchEvent>) => g.kind === o.hover || single(g);
-  const inGroup = (g: Group<MatchEvent>) => !!group && g.items.some((e) => group.has(e));
+  const past = all.filter((e) => e[0] <= t).sort((a, b) => EVENT_LAYER[a[1]] - EVENT_LAYER[b[1]]);
+  const lit = (e: MatchEvent) => e[1] === o.hover || e === o.activeEvent;
 
-  for (const g of groups) {
-    if (isLit(g) || inGroup(g)) continue;
-    const type = g.kind as EventType;
-    const style = EVENT_STYLE[type];
-    const n = g.items.length;
-    const r = style.size * scale * groupScale(n);
+  for (const e of past) {
+    if (lit(e)) continue;
+    const style = EVENT_STYLE[e[1]];
+    const { x, y } = px(e[2], e[3]);
+    const r = style.size * scale;
     ctx.globalAlpha = 1 - HOVER_FADE.icons * dim;
-    if (n === 1 && playing && !dim && type !== 'loot' && t - g.items[0][0] < FRESH_MS) {
-      const age = (t - g.items[0][0]) / FRESH_MS;
-      ctx.beginPath();
-      ctx.strokeStyle = style.color;
-      ctx.lineWidth = 2;
-      ctx.globalAlpha = 1 - age;
-      ctx.arc(g.x, g.y, r + 4 + age * 10, 0, Math.PI * 2);
-      ctx.stroke();
-      ctx.globalAlpha = 1;
+    if (playing && !dim && e[1] !== 'loot' && t - e[0] < FRESH_MS) {
+      const age = (t - e[0]) / FRESH_MS;
+      ring(ctx, x, y, r + 4 + age * 10, style.color, 2, 1 - age);
     }
-    stampMarker(ctx, style.shape, style.color, g.x, g.y, r);
+    stampMarker(ctx, style.shape, style.color, x, y, r);
   }
   ctx.globalAlpha = 1;
 
-  // The hovered kind: its groups bright, pulsing; its future events (not happened yet) see-through.
-  for (const g of groups) {
-    if (!isLit(g) || inGroup(g) || single(g)) continue;
-    const style = EVENT_STYLE[g.kind as EventType];
-    const r = style.size * scale * groupScale(g.items.length);
-    ring(ctx, g.x, g.y, r + 3 + k * 12, style.color, 2, 1 - k);
-    stampMarker(ctx, style.shape, style.color, g.x, g.y, r * (1.15 + 0.15 * k));
-  }
+  // The hovered kind: bright and pulsing; its future events (not happened yet) see-through.
   if (o.hover)
     for (const e of all) {
-      if (e[0] <= t || e[1] !== o.hover) continue;
+      if (e[1] !== o.hover || e === o.activeEvent) continue;
       const style = EVENT_STYLE[e[1]];
       const { x, y } = px(e[2], e[3]);
-      ctx.globalAlpha = 0.35;
-      stampMarker(ctx, style.shape, style.color, x, y, style.size * scale);
-    }
-  ctx.globalAlpha = 1;
-
-  // A hovered group: its icon as usual, with how many it holds written inside. Nothing else changes.
-  if (group)
-    for (const g of groups) {
-      if (!inGroup(g)) continue;
-      const style = EVENT_STYLE[g.kind as EventType];
-      // A little larger while hovered, so the number sits inside the icon.
-      const r = Math.max(11, style.size * scale * groupScale(g.items.length) * 1.5);
-      stampMarker(ctx, style.shape, style.color, g.x, g.y, r);
-      drawCount(ctx, g.x, g.y, g.items.length, r);
+      const r = style.size * scale;
+      if (e[0] > t) {
+        ctx.globalAlpha = 0.35;
+        stampMarker(ctx, style.shape, style.color, x, y, r);
+        ctx.globalAlpha = 1;
+        continue;
+      }
+      ring(ctx, x, y, r + 3 + k * 12, style.color, 2, 1 - k);
+      stampMarker(ctx, style.shape, style.color, x, y, r * (1.15 + 0.15 * k));
     }
 
   // One event pointed at (map, timeline, card): biggest, pulsing ring, faded if it has not happened yet.
@@ -238,22 +197,6 @@ function ring(ctx: CanvasRenderingContext2D, x: number, y: number, r: number, co
   ctx.arc(x, y, r, 0, Math.PI * 2);
   ctx.stroke();
   ctx.globalAlpha = 1;
-}
-
-/** A group's count, written in the middle of its icon (white on a dark edge, readable on any color). */
-function drawCount(ctx: CanvasRenderingContext2D, x: number, y: number, n: number, r: number) {
-  const text = n > 999 ? `${Math.round(n / 1000)}k` : String(n);
-  ctx.save();
-  ctx.font = `800 ${Math.max(9, Math.round(r * (text.length > 2 ? 0.62 : text.length > 1 ? 0.8 : 0.95)))}px Inter, system-ui, sans-serif`;
-  ctx.textAlign = 'center';
-  ctx.textBaseline = 'middle';
-  ctx.lineJoin = 'round';
-  ctx.lineWidth = 3.5;
-  ctx.strokeStyle = 'rgba(8,9,12,0.9)';
-  ctx.strokeText(text, x, y + 0.5);
-  ctx.fillStyle = '#fff';
-  ctx.fillText(text, x, y + 0.5);
-  ctx.restore();
 }
 
 /**

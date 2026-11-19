@@ -34,7 +34,6 @@ export interface View {
   /** Size of the event icons on the map (1 = default). */
   iconScale: number;
   /** Group icons of the same kind closer than this many screen pixels (0 = never). */
-  groupPx: number;
   pathWidth: number; // path thickness factor
   pathAlpha: number; // path opacity factor
   /** Replay: 3D view (height from the data's y) instead of the flat map. */
@@ -47,7 +46,7 @@ export interface View {
 
 export const ALL = 'all';
 
-export const DEFAULT_VIEW: View = { mode: 'overview', map: 'AmbroseValley', day: 'all', matches: [], layers: ['traffic'], kills: 'both', deaths: 'both', mono: false, heatMono: false, players: 'all', others: 'any', ended: 'any', length: 'any', sort: 'day', hidden: [], heatUnder: false, replayOn: true, iconScale: 1, groupPx: 18, pathWidth: 1.5, pathAlpha: 1.3, view3d: false, exaggeration: 4, terrain: true };
+export const DEFAULT_VIEW: View = { mode: 'overview', map: 'AmbroseValley', day: 'all', matches: [], layers: ['traffic'], kills: 'both', deaths: 'both', mono: false, heatMono: false, players: 'all', others: 'any', ended: 'any', length: 'any', sort: 'day', hidden: [], heatUnder: false, replayOn: true, iconScale: 1, pathWidth: 1.5, pathAlpha: 1.3, view3d: false, exaggeration: 4, terrain: true };
 
 const MAPS: MapId[] = ['AmbroseValley', 'GrandRift', 'Lockdown'];
 const LAYERS: HeatLayer[] = ['traffic', 'loot', 'power', 'raised', 'fire', 'kills', 'deaths', 'storm']; // drawing order
@@ -83,7 +82,6 @@ export function parseView(hash: string): View {
     pathWidth: q.has('pw') ? Math.min(4, Math.max(0.5, Math.round(Number(q.get('pw')) * 10) / 10 || DEFAULT_VIEW.pathWidth)) : DEFAULT_VIEW.pathWidth,
     pathAlpha: q.has('pa') ? Math.min(2.5, Math.max(0.3, Math.round(Number(q.get('pa')) * 10) / 10 || DEFAULT_VIEW.pathAlpha)) : DEFAULT_VIEW.pathAlpha,
     iconScale: Math.min(4, Math.max(0.6, Math.round((Number(q.get('icons')) || 1) * 10) / 10)),
-    groupPx: q.has('group') ? Math.min(60, Math.max(0, Math.round(Number(q.get('group')) || 0))) : DEFAULT_VIEW.groupPx,
     view3d: q.get('view') === '3d',
     terrain: q.get('ground') !== 'flat',
     exaggeration: Math.min(8, Math.max(1, Math.round(Number(q.get('ex')) || DEFAULT_VIEW.exaggeration))),
@@ -125,7 +123,6 @@ export function viewHash(v: View): string {
   if (v.hidden.length) q.set('hide', v.hidden.join(','));
   if (!v.replayOn) q.set('replay', '0');
   if (v.iconScale !== 1) q.set('icons', String(v.iconScale));
-  if (v.groupPx !== DEFAULT_VIEW.groupPx) q.set('group', String(v.groupPx));
   if (v.pathWidth !== DEFAULT_VIEW.pathWidth) q.set('pw', String(v.pathWidth));
   if (v.pathAlpha !== DEFAULT_VIEW.pathAlpha) q.set('pa', String(v.pathAlpha));
   if (v.view3d) q.set('view', '3d');

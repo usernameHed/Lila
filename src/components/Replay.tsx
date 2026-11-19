@@ -1,7 +1,7 @@
 import { Suspense, lazy, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { loadMatches, loadTerrain } from '../lib/data';
 import { drawFocus, drawMatches, type LegendKey } from '../lib/draw';
-import { pickEvent, pickGroup, pickPlayer, type Focus, type PointedEvent } from '../lib/pick';
+import { pickEvent, pickPlayer, type Focus, type PointedEvent } from '../lib/pick';
 import { playerStory } from '../lib/story';
 import { MANY_MATCHES, MAP_LABEL, MATCH_COLORS, formatDay, formatDuration } from '../lib/style';
 import { endedOf } from '../lib/matchFilter';
@@ -135,7 +135,6 @@ interface StageProps {
   /** Replay only this match (from the details card). */
   onOnlyMatch: (id: string) => void;
   iconScale: number;
-  groupPx: number;
   pathWidth: number;
   pathAlpha: number;
 }
@@ -207,7 +206,7 @@ function useLast<T>(value: T | null, fading: boolean): T | null {
 
 /** Every selected match on its map, all starting together at 0:00, with one playback. */
 export function ReplayStage(props: StageProps) {
-  const { summaries, uvUnits, mono, hidden, hover, onPointedKind, under, mapConfig, view3d, exaggeration, terrain, onView, onOnlyMatch, iconScale, groupPx, pathWidth, pathAlpha } = props;
+  const { summaries, uvUnits, mono, hidden, hover, onPointedKind, under, mapConfig, view3d, exaggeration, terrain, onView, onOnlyMatch, iconScale, pathWidth, pathAlpha } = props;
   const [loaded, setLoaded] = useState<Match[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -244,13 +243,10 @@ export function ReplayStage(props: StageProps) {
   const [focus, setFocus] = useState<Focus | null>(null);
   const [pinned, setPinned] = useState<PointedEvent | null>(null);
   const [pointed, setPointed] = useState<PointedEvent | null>(null);
-  // A group of icons under the mouse (several events drawn as one): its members show where they really are.
-  const [pointedGroup, setPointedGroup] = useState<MatchEvent[] | null>(null);
   useEffect(() => {
     setFocus(null);
     setPinned(null);
     setPointed(null);
-    setPointedGroup(null);
   }, [key]);
   const active = pointed ?? pinned;
   useEffect(() => onPointedKind(active ? active.event[1] : null), [active, onPointedKind]);
@@ -259,7 +255,6 @@ export function ReplayStage(props: StageProps) {
   const fading = dim > 0;
   const shownHover = useLast(hover, fading);
   const shownActive = useLast(active, fading);
-  const shownGroup = useLast(pointedGroup, fading);
   const phase = usePulse(!!hover || !!active);
 
   const focusMatch = focus ? shown.find((m) => m.id === focus.match) : undefined;
@@ -285,23 +280,9 @@ export function ReplayStage(props: StageProps) {
     ({ u, v, tolerance }: MapPick) => pickAt(pickEvent(shown, t, u, v, tolerance, hiddenSet), pickPlayer(shown, t, u, v, tolerance)),
     [shown, t, hiddenSet, pickAt],
   );
-  // Hover picks what is drawn: a group of icons as a whole, not one icon hidden inside it.
   const onHoverMap = useCallback(
-    (p: MapPick | null) => {
-      const g = p ? pickGroup(shown, t, p, uvUnits, hiddenSet, groupPx, iconScale * (shown.length > MANY_MATCHES ? 0.55 : 1)) : null;
-      if (!g) {
-        setPointed(null);
-        setPointedGroup(null);
-      } else if (g.items.length === 1) {
-        const m = shown.find((x) => x.events.includes(g.items[0]));
-        setPointed(m ? { match: m.id, event: g.items[0] } : null);
-        setPointedGroup(null);
-      } else {
-        setPointed(null);
-        setPointedGroup((old) => (old && old.length === g.items.length && old[0] === g.items[0] ? old : g.items));
-      }
-    },
-    [shown, t, hiddenSet, uvUnits, groupPx, iconScale],
+    (p: MapPick | null) => setPointed(p ? pickEvent(shown, t, p.u, p.v, p.tolerance, hiddenSet) : null),
+    [shown, t, hiddenSet],
   );
   const pointAt = useCallback((e: MatchEvent | null) => {
     if (!e) return setPointed(null);
@@ -315,12 +296,12 @@ export function ReplayStage(props: StageProps) {
       under?.(ctx, size);
       if (shown.length)
         drawMatches(ctx, shown, uvUnits, size, t, play.playing, {
-          mono, hidden: hiddenSet, hover: shownHover, phase, activeEvent: shownActive?.event ?? null, iconScale, groupPx,
-          dim, activeGroup: shownGroup, pathWidth, pathAlpha,
+          mono, hidden: hiddenSet, hover: shownHover, phase, activeEvent: shownActive?.event ?? null, iconScale,
+          dim, pathWidth, pathAlpha,
         });
       if (focusMatch && focus) drawFocus(ctx, focusMatch, focus.player, uvUnits, size, t, active?.event ?? null, phase, story?.opponents ?? []);
     },
-    [shown, t, uvUnits, play.playing, mono, hiddenSet, shownHover, phase, under, focusMatch, focus, active, shownActive, story, iconScale, groupPx, dim, shownGroup, pathWidth, pathAlpha],
+    [shown, t, uvUnits, play.playing, mono, hiddenSet, shownHover, phase, under, focusMatch, focus, active, shownActive, story, iconScale, dim, pathWidth, pathAlpha],
   );
 
   if (!summaries.length) return <div className="empty">No match for these filters.</div>;
@@ -382,7 +363,7 @@ export function ReplayStage(props: StageProps) {
           </Suspense>
           </ErrorBoundary>
         ) : (
-          <MapCanvas map={summaries[0].map} draw={draw} dim={0} uvUnits={uvUnits} onPick={onPick} onHover={onHoverMap} pointer={!!pointed || !!pointedGroup} />
+          <MapCanvas map={summaries[0].map} draw={draw} dim={0} uvUnits={uvUnits} onPick={onPick} onHover={onHoverMap} pointer={!!pointed} />
         )}
         {story && focus && (
           <PlayerCard

@@ -1,8 +1,5 @@
 // Which player a click on the map means: the nearest path (drawn up to time t) or current position.
 import { positionAt, samplesUntil } from './timeline';
-import type { Group } from './cluster';
-import { uvToPixel } from './coords';
-import { eventGroups, groupRadius, visibleEvents } from './draw';
 import type { Match, MatchEvent } from './types';
 
 export interface Focus {
@@ -55,20 +52,4 @@ export function pickEvent(matches: Match[], t: number, u: number, v: number, tol
       if (d <= tolerance && (!best || d < best.d)) best = { d, p: { match: m.id, event: e } };
     }
   return best?.p ?? null;
-}
-
-/**
- * The icon group under the mouse, exactly as drawn (same grouping at the same zoom): a crowd of loot drawn as one
- * icon is picked as one. Within an icon's radius (at least 10 px), the nearest center wins.
- */
-export function pickGroup(
-  matches: Match[], t: number, p: { u: number; v: number; size: number }, uvUnits: number, hidden: ReadonlySet<string>, groupPx: number, scale: number,
-): Group<MatchEvent> | null {
-  const at = uvToPixel(p.u, p.v, uvUnits, p.size);
-  let best: { d: number; g: Group<MatchEvent> } | null = null;
-  for (const g of eventGroups(visibleEvents(matches, t, hidden), uvUnits, p.size, groupPx)) {
-    const d = Math.hypot(g.x - at.x, g.y - at.y);
-    if (d <= Math.max(10, groupRadius(g, scale)) && (!best || d < best.d)) best = { d, g };
-  }
-  return best?.g ?? null;
 }

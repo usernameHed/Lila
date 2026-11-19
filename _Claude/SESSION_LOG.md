@@ -15,6 +15,13 @@ about 300 lines, move the oldest entries word for word to `SESSION_HISTORY.md` (
 
 ---
 
+## 2026-11-19 (desktop session): grouping removed, Overview rewritten
+
+- Ugo's rule from now on: only remove or improve existing features. Removed icon grouping (`cluster.ts`, slider,
+  URL `group`, group hover); all 566 Ambrose matches still draw in ~20 ms. Overview rewritten in Ugo's words: note
+  (browser tool on his site, not an artifact), TL;DR basics list with Install, 4 presets, findings in one line,
+  "What to log next" as text, build notes under "Notes from my Claude agent on the structure".
+
 ## 2026-11-18 (desktop session): group count, new kill / death / bot death icons
 
 - Ugo: group hover = only the count inside the icon (drawn a bit larger), no fade, no legend or timeline effect.

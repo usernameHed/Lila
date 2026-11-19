@@ -208,29 +208,11 @@ select {
 .stat { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 12px 14px; display: grid; }
 .stat-value { font-size: 24px; font-weight: 700; font-variant-numeric: tabular-nums; }
 .stat-label { color: var(--muted); font-size: 12.5px; }
-.basics { list-style: none; padding: 0; margin: 14px 0 0; display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 10px; }
-.basics-app .install-btn, .basics-app .install-done { margin-top: 10px; }
-.basics-app .install-btn { display: inline-flex; }
-.basics li { border: 1px solid rgba(76,201,240,0.3); background: rgba(76,201,240,0.05); border-radius: 10px; }
-.basics strong, .basics span, .basics a { display: block; }
-.basics li { padding: 12px 14px; }
-.basics li:has(a) { padding: 0; }
-.basics a { padding: 12px 14px; color: inherit; text-decoration: none; height: 100%; box-sizing: border-box; }
-.basics a:hover strong { color: var(--blue); }
-.basics strong { font-size: 14px; }
-.basics span { color: var(--muted); font-size: 12.5px; margin-top: 3px; line-height: 1.45; }
 .cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 10px; }
 .card { display: grid; gap: 4px; padding: 14px 16px; background: var(--panel); border: 1px solid var(--line); border-radius: 10px; color: inherit; text-decoration: none; }
 .card:hover { border-color: var(--accent); }
 .card span { color: var(--muted); font-size: 13px; }
 .hint-line { color: var(--muted); font-size: 13px; margin-top: 12px; }
-.finding { background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 18px; margin-bottom: 14px; }
-.finding .num { display: inline-grid; place-items: center; width: 24px; height: 24px; border-radius: 50%; background: var(--accent); color: #fff; font-size: 13px; flex: none; }
-.finding-body { display: grid; gap: 12px; }
-.finding-text { max-width: 760px; }
-.finding-figs { display: grid; grid-template-columns: repeat(auto-fit, minmax(380px, 1fr)); gap: 10px; }
-.finding-figs img { width: 100%; border-radius: 8px; display: block; }
-.go { display: inline-block; margin-top: 6px; color: var(--accent); font-weight: 600; text-decoration: none; }
 .go:hover { text-decoration: underline; }
 .ov-table { width: 100%; border-collapse: collapse; font-size: 13.5px; margin-bottom: 8px; }
 .ov-table th { text-align: left; color: var(--muted); font-weight: 600; font-size: 12px; padding: 6px 8px; border-bottom: 1px solid var(--line); }
@@ -248,7 +230,6 @@ select {
 @media (max-width: 760px) {
   .overview { padding: 20px 16px 48px; }
   .ov-hero h1 { font-size: 24px; }
-  .finding-figs { grid-template-columns: 1fr; }
   .stage-page { height: auto; }
   .ov-table { font-size: 12.5px; }
 }
@@ -475,3 +456,8 @@ select {
 .ov-more[open] > summary::before { transform: rotate(90deg); }
 .ov-more[open] { padding-bottom: 16px; }
 #try .cards { grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); }
+
+/* Overview: the note on top, and the basics as a plain list */
+.ov-note { margin: 0 0 18px; padding: 10px 14px; border-left: 3px solid var(--blue); background: rgba(76,201,240,0.06); border-radius: 0 8px 8px 0; color: var(--text); font-size: 13.5px; line-height: 1.5; }
+#notes .ov-more:first-of-type { margin-top: 0; }
+.basics-list a, #findings a { color: var(--blue); }

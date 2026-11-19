@@ -28,8 +28,7 @@ On a 16:9 screen (1366x768 to 1920x1080) everything fits without scrolling:
   included), All / None; hover a row and those markers pulse on the map and their ticks light up on the timeline
   (future ones shown see-through). Every legend and heatmap row explains itself in a tooltip; rows showing the
   same events (e.g. "Player killed by a bot" and "Position when killed") pulse together. Sliders for icon size,
-  path width and path opacity, and Grouping: nearby icons of the same kind merge into one bigger icon; hover it to
-  read how many it holds, written inside.
+  path width and path opacity.
   Icons: a crosshair where someone killed, a skull over crossed bones where a player died, a dead monster for a
   bot death, a diamond for loot and the storm.
   Paths keep the same peak brightness whatever the number of matches shown.

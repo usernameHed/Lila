@@ -231,7 +231,6 @@ export function App() {
             onView={update}
             onOnlyMatch={(id) => update({ matches: [id] })}
             iconScale={view.iconScale}
-            groupPx={view.groupPx}
             pathWidth={view.pathWidth}
             pathAlpha={view.pathAlpha}
           />

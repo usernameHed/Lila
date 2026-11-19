@@ -196,11 +196,6 @@ export function RightPanel(p: RightProps) {
             <input type="range" min={0.3} max={2.5} step={0.1} value={view.pathAlpha} onChange={(e) => update({ pathAlpha: Number(e.target.value) })} />
             <span>x{view.pathAlpha.toFixed(1)}</span>
           </label>
-          <label className="icon-size" title="Icons of the same kind closer than this are drawn as one bigger icon. Hover it to read how many it holds. Zoom in to split them. 0 = never group.">
-            Grouping
-            <input type="range" min={0} max={60} step={2} value={view.groupPx} onChange={(e) => update({ groupPx: Number(e.target.value) })} />
-            <span>{view.groupPx ? `${view.groupPx} px` : 'off'}</span>
-          </label>
         </div>
       </section>
       <section className="panel-card">
@@ -256,11 +251,7 @@ export function OverviewSide() {
         {OVERVIEW_SECTIONS.map(([id, label]) => (
           <button
             key={id}
-            onClick={() => {
-              const el = document.getElementById(id);
-              if (el instanceof HTMLDetailsElement) el.open = true; // folded sections open when picked here
-              el?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-            }}
+            onClick={() => document.getElementById(id)?.scrollIntoView({ behavior: 'smooth', block: 'start' })}
           >
             {label}
           </button>
