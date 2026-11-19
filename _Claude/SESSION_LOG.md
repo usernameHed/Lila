@@ -15,6 +15,13 @@ about 300 lines, move the oldest entries word for word to `SESSION_HISTORY.md` (
 
 ---
 
+## 2026-11-19 (desktop session): clearer filters and match rows
+
+- Ugo did not get "Bot / Player" in Ended (it means how the player's run ended): chips now show the death icons
+  (Bot, Player, Storm, tooltips "Killed by a bot"...), header "Filters · player runs", red squared chips like the map
+  tiles; match rows show the death icon + "By bot" / "By player", kill and loot icons. Proposed (not built): merge the
+  legend and heatmap into one layer list with Icons / Heat per kind.
+
 ## 2026-11-19 (desktop session): Overview, simpler still
 
 - Ugo: title removed, the artifact note moved into the TL;DR, main data as a plain list, Try it as a vertical list of

@@ -9,7 +9,7 @@ import type { HeatData, HeatLayer, MatchSummary, Who } from '../lib/types';
 import { ALL, ALL_LAYERS, type View } from '../lib/view';
 import { Choice } from './Choice';
 import { LayerList } from './Heat';
-import { Legend } from './Legend';
+import { Legend, LegendIcon } from './Legend';
 import { OVERVIEW_SECTIONS } from './Overview';
 import { MatchList } from './Replay';
 
@@ -32,10 +32,16 @@ interface ReplayProps {
   onSetMany: (ids: string[], on: boolean) => void;
 }
 
-type Option<T> = [T, string];
-const ENDED: Option<View['ended']>[] = [['any', 'Any'], ['survived', 'Survived'], ['bot', 'Bot'], ['storm', 'Storm'], ['player', 'Player']];
+type Option<T> = [T, React.ReactNode, string?]; // value, chip content, tooltip
+const ENDED: Option<View['ended']>[] = [
+  ['any', 'Any'],
+  ['survived', 'Survived', 'No death logged'],
+  ['bot', <><LegendIcon k="diedToBot" size={12} /> Bot</>, 'Killed by a bot'],
+  ['player', <><LegendIcon k="diedToPlayer" size={12} /> Player</>, 'Killed by a player'],
+  ['storm', <><LegendIcon k="storm" size={12} /> Storm</>, 'Died to the storm'],
+];
 const LENGTH: Option<View['length']>[] = [['any', 'Any'], ['short', '<5 min'], ['mid', '5-10'], ['long', '>10']];
-const SORT: Option<View['sort']>[] = [['day', 'Day'], ['longest', 'Longest'], ['shortest', 'Shortest'], ['kills', 'Kills'], ['loot', 'Loot']];
+const SORT: Option<View['sort']>[] = [['day', 'Day'], ['longest', 'Longest', 'Longest first'], ['shortest', 'Shortest', 'Shortest first'], ['kills', 'Kills', 'Most kills first'], ['loot', 'Loot', 'Most loot first']];
 
 /** One filter as a row of chips: one click picks it, each chip says how many matches it would leave. */
 function FilterRow<T extends string>({ label, value, options, count, onChange }: { label: string; value: T; options: Option<T>[]; count?: (v: T) => number; onChange: (v: T) => void }) {
@@ -43,8 +49,8 @@ function FilterRow<T extends string>({ label, value, options, count, onChange }:
     <div className="filter-row" role="radiogroup" aria-label={label}>
       <span className="filter-label">{label}</span>
       <span className="chips">
-        {options.map(([v, text]) => (
-          <button key={v} role="radio" aria-checked={v === value} className={`chip ${v === value ? 'on' : ''}`} onClick={() => onChange(v)}>
+        {options.map(([v, text, tip]) => (
+          <button key={v} role="radio" aria-checked={v === value} title={tip} className={`chip ${v === value ? 'on' : ''}`} onClick={() => onChange(v)}>
             {text}
             {count && v !== 'any' && <i>{count(v)}</i>}
           </button>
@@ -64,7 +70,7 @@ export function ReplaySide(p: ReplayProps) {
     <>
       <section>
         <h2 className="with-actions">
-          <span>Filters</span>
+          <span title="Each match is one player's run: pick runs by how they went">Filters · player runs</span>
           {filtered && (
             <span className="actions">
               <button onClick={() => update({ ended: 'any', length: 'any', others: 'any', players: 'all' })}>Reset</button>

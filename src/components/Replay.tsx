@@ -8,6 +8,7 @@ import { endedOf } from '../lib/matchFilter';
 import { matchEnd } from '../lib/timeline';
 import type { MapConfig, Match, MatchEvent, MatchSummary, Terrain } from '../lib/types';
 import { Choice } from './Choice';
+import { LegendIcon } from './Legend';
 import { ErrorBoundary } from './ErrorBoundary';
 import { Loader } from './Loader';
 import { MapCanvas, type MapPick } from './MapCanvas';
@@ -28,7 +29,9 @@ interface ListProps {
   grouped: boolean;
 }
 
-const ENDED_SHORT: Record<ReturnType<typeof endedOf>, string> = { storm: 'Storm', player: 'Player', bot: 'Bot', survived: 'Survived' };
+const ENDED_SHORT: Record<ReturnType<typeof endedOf>, string> = { storm: 'Storm', player: 'By player', bot: 'By bot', survived: 'Survived' };
+/** The icon of how the run ended, as on the map. */
+const ENDED_ICON: Record<ReturnType<typeof endedOf>, LegendKey | null> = { storm: 'storm', player: 'diedToPlayer', bot: 'diedToBot', survived: null };
 const ENDED_LONG: Record<ReturnType<typeof endedOf>, string> = {
   storm: 'Died to the storm',
   player: 'Killed by a player',
@@ -95,13 +98,15 @@ export function MatchList({ matches, selected, mono, onOnly, onToggle, onSetMany
                         <span className="num">{grouped ? `#${n + 1}` : formatDay(m.day).replace(' Feb', '')}</span>
                         <span className="dur">{formatDuration(m.durationMs)}</span>
                         <span className={`end ${end === 'survived' ? 'ok' : 'dead'}`}>
+                          {ENDED_ICON[end] && <LegendIcon k={ENDED_ICON[end]!} size={14} />}
                           {ENDED_SHORT[end]}
                         </span>
                         <span className="m-stats">
                           {m.bots > 0 && <span className="linked" title="Bots recorded too: fights from both sides">⇄ </span>}
-                          {kills}
-                          <small className="k" title="kills"> ✕</small> {m.events.loot ?? 0}
-                          <small className="l" title="loot"> ◆</small>
+                          <span title="bots and players killed">{kills}</span>
+                          <LegendIcon k="killBot" size={13} />
+                          <span title="items looted">{m.events.loot ?? 0}</span>
+                          <LegendIcon k="loot" size={13} />
                         </span>
                       </button>
                     </li>
