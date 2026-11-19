@@ -32,6 +32,7 @@ describe('match selection', () => {
     expect(parseView(viewHash({ ...DEFAULT_VIEW, mode: 'replay', matches: ALL, recent: 100 })).recent).toBe(100);
     const picked = [{ match: 'abc-1', player: 0 }, { match: 'def-2', player: 3 }];
     expect(parseView(viewHash({ ...DEFAULT_VIEW, mode: 'replay', picked })).picked).toEqual(picked);
+    expect(parseView(viewHash({ ...DEFAULT_VIEW, mode: 'replay', offMap: ['abc-1'] })).offMap).toEqual(['abc-1']);
     expect(resolveSelection(['c', 'x', 'a'], list).map((m) => m.id)).toEqual(['c', 'a']);
     expect(resolveSelection(['x'], list).map((m) => m.id)).toEqual(['a']);
     expect(resolveSelection([], [])).toEqual([]);

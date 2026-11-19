@@ -21,7 +21,9 @@ about 300 lines, move the oldest entries word for word to `SESSION_HISTORY.md` (
   humans > 1; counts in tooltips to fit one line). Rows "+1 player"; a picked match lists everyone (players then
   bots, each with died at / alive); the card names the other player and the bots. Then: native `title` tooltips
   did not show in Ugo's app window -> instant `data-tip` tooltips (`Tips.tsx`); tick box on each "On the map" row
-  (and each player / bot under a match) to pick several without Ctrl.
+  (and each player / bot under a match) to pick several without Ctrl. Then Ugo: filter change should show everything
+  -> match tick boxes = shown on the map (`offMap`, URL `off`, all ticked by default); changing map / day / show /
+  game / ended / length / matches clears `offMap` and `picked` (`RESET_ON` in App).
 
 ## 2026-11-19 (desktop session): layers on the left, zoom by 2D / 3D, picked match alone
 

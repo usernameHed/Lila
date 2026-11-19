@@ -17,6 +17,8 @@ export interface View {
   seed: number;
   /** Players picked on the map or in the "On the map" list (highlighted; the last one's card is open). */
   picked: { match: string; player: number }[];
+  /** Matches unticked in the "On the map" list: hidden from the map (all shown by default). */
+  offMap: string[];
   /** Heatmap kinds shown together, at least one. */
   layers: HeatLayer[];
   /** Kills and deaths: against bots, players or both. */
@@ -51,7 +53,7 @@ export interface View {
 export const ALL = 'all';
 export const NONE = 'none';
 
-export const DEFAULT_VIEW: View = { mode: 'overview', map: 'AmbroseValley', day: 'all', matches: [], recent: 0, random: true, seed: 0, picked: [], layers: ['traffic'], kills: 'both', deaths: 'both', mono: false, ended: 'any', length: 'any', game: 'any', sort: 'day', hidden: [], heatUnder: false, replayOn: true, iconScale: 1, pathWidth: 1.5, pathAlpha: 1.3, view3d: false, exaggeration: 4, terrain: true };
+export const DEFAULT_VIEW: View = { mode: 'overview', map: 'AmbroseValley', day: 'all', matches: [], recent: 0, random: true, seed: 0, picked: [], offMap: [], layers: ['traffic'], kills: 'both', deaths: 'both', mono: false, ended: 'any', length: 'any', game: 'any', sort: 'day', hidden: [], heatUnder: false, replayOn: true, iconScale: 1, pathWidth: 1.5, pathAlpha: 1.3, view3d: false, exaggeration: 4, terrain: true };
 
 const MAPS: MapId[] = ['AmbroseValley', 'GrandRift', 'Lockdown'];
 const LAYERS: HeatLayer[] = ['traffic', 'loot', 'power', 'raised', 'fire', 'kills', 'deaths', 'storm']; // drawing order
@@ -74,6 +76,7 @@ export function parseView(hash: string): View {
     random: q.get('rnd') !== '0',
     seed: Math.max(0, Math.min(1e6, Math.round(Number(q.get('seed')) || 0))),
     picked: parsePicked(q.get('pick')),
+    offMap: (q.get('off') ?? '').split(',').filter((id) => /^[\w-]{1,64}$/.test(id)),
     layers: parseLayers(q.get('layer')),
     kills: pick('kills', WHO, 'both'),
     deaths: pick('deaths', WHO, 'both'),
@@ -136,6 +139,7 @@ export function viewHash(v: View): string {
     if (!v.random) q.set('rnd', '0');
     else if (v.seed) q.set('seed', String(v.seed));
   }
+  if (v.offMap.length) q.set('off', v.offMap.join(','));
   if (v.picked.length) q.set('pick', v.picked.map((p) => `${p.match}.${p.player}`).join(','));
   if (v.mono) q.set('mono', '1');
   if (v.ended !== 'any') q.set('end', v.ended);

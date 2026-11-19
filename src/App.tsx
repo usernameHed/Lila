@@ -23,6 +23,9 @@ import { applyFilter } from './lib/matchFilter';
 import type { EventType, Index, MapId } from './lib/types';
 import { parseView, resolveSelection, setMany, toggleMatch, viewHash, type Mode, type View } from './lib/view';
 
+/** Settings that change which matches are on the map. */
+const RESET_ON = new Set(['map', 'day', 'recent', 'random', 'seed', 'game', 'ended', 'length', 'matches']);
+
 const TAB_LABEL: Record<Mode, string> = { overview: 'Overview', replay: 'Match replay', data: 'Data' };
 
 export function App() {
@@ -34,9 +37,11 @@ export function App() {
   const update = useCallback(
     (patch: Partial<View>) =>
       setHist((h) => {
+        // Changing what the filters keep shows every match they keep: all ticked again, nothing picked.
+        if (Object.keys(patch).some((k) => RESET_ON.has(k))) patch = { offMap: [], picked: [], ...patch };
         const key = Object.keys(patch).sort().join(',');
         // Picking matches or players: every click is its own undo step (sliders and the like merge).
-        return record(h, { ...h.present, ...patch }, /\b(picked|matches)\b/.test(key) ? null : key, Date.now());
+        return record(h, { ...h.present, ...patch }, /\b(picked|matches|offMap)\b/.test(key) ? null : key, Date.now());
       }),
     [],
   );
@@ -209,6 +214,8 @@ export function App() {
             pathWidth={view.pathWidth}
             pathAlpha={view.pathAlpha}
             picked={view.picked}
+            offMap={view.offMap}
+            onOffMap={(offMap) => update({ offMap })}
             history={
               <span className="history-btns">
                 <button onClick={() => setHist(undo)} disabled={!hist.past.length} data-tip="Undo (Cmd/Ctrl+Z)" aria-label="Undo">

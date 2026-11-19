@@ -145,6 +145,9 @@ interface StageProps {
   emptyHint: string;
   /** Players picked (view state: undo / redo, links). */
   picked: Focus[];
+  /** Matches unticked in the list (hidden from the map), and the setter. */
+  offMap: string[];
+  onOffMap: (ids: string[]) => void;
   /** The match filters, shown at the top of the "On the map" panel. */
   filters?: React.ReactNode;
   /** Undo / redo buttons, shown after the zoom buttons. */
@@ -220,7 +223,7 @@ function useLast<T>(value: T | null, fading: boolean): T | null {
 
 /** Every selected match on its map, all starting together at 0:00, with one playback. */
 export function ReplayStage(props: StageProps) {
-  const { summaries, uvUnits, mono, hidden, hover, onPointedKind, under, mapConfig, view3d, exaggeration, terrain, onView, iconScale, pathWidth, pathAlpha, emptyHint, picked, onPicked } = props;
+  const { summaries, uvUnits, mono, hidden, hover, onPointedKind, under, mapConfig, view3d, exaggeration, terrain, onView, iconScale, pathWidth, pathAlpha, emptyHint, picked, onPicked, offMap, onOffMap } = props;
   const [loaded, setLoaded] = useState<Match[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -257,7 +260,10 @@ export function ReplayStage(props: StageProps) {
   const picks = useMemo(() => picked.filter((f) => shown.some((m) => m.id === f.match)), [picked, shown]);
   const focus = picks.length ? picks[picks.length - 1] : null;
   // With something picked, only the picked matches show (map, 3D, timeline); the others are hidden, not dimmed.
-  const visible = useMemo(() => (picks.length ? shown.filter((m) => picks.some((p) => p.match === m.id)) : shown), [picks, shown]);
+  const visible = useMemo(
+    () => (picks.length ? shown.filter((m) => picks.some((p) => p.match === m.id)) : shown.filter((m) => !offMap.includes(m.id))),
+    [picks, shown, offMap],
+  );
   const events = useMemo(() => (current ? visible : []).flatMap((m) => m.events), [current, visible]);
   const setFocus = useCallback((f: Focus | null) => onPicked(f ? [f] : []), [onPicked]);
   const [pinned, setPinned] = useState<PointedEvent | null>(null);
@@ -491,16 +497,17 @@ export function ReplayStage(props: StageProps) {
                       onClick={(e) => openMatch(m.id, e)}
                       onMouseEnter={() => setHoverPath(humanOf(m.id))}
                       onMouseLeave={() => setHoverPath(null)}
-                      data-tip="Click: this match alone · tick box (or Ctrl / Cmd): add or remove · Shift: a range"
+                      data-tip="Click: this match alone, with its card · Ctrl / Cmd: add or remove · Shift: a range"
                     >
                       <span
-                        className={`tick-box pick-box ${picks.some((p) => p.match === m.id) ? 'on' : ''}`}
+                        className={`tick-box pick-box ${!offMap.includes(m.id) ? 'on' : ''}`}
                         role="checkbox"
-                        aria-checked={picks.some((p) => p.match === m.id)}
-                        aria-label="Add or remove this match"
+                        aria-checked={!offMap.includes(m.id)}
+                        aria-label="Show or hide this match on the map"
+                        data-tip="Shown on the map (untick to hide it)"
                         onClick={(e) => {
                           e.stopPropagation();
-                          openMatch(m.id, { ...e, ctrlKey: true, metaKey: false, shiftKey: false } as React.MouseEvent);
+                          onOffMap(offMap.includes(m.id) ? offMap.filter((x) => x !== m.id) : [...offMap, m.id]);
                         }}
                       />
                       <span className="dot" style={{ background: color }} />
