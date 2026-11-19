@@ -551,3 +551,17 @@ button.map-tile:not(.on) .map-thumb { opacity: 0.75; }
 .side, .stage-left, .stage-right .player-card header, .stage-tools, .playback { user-select: none; -webkit-user-select: none; }
 .pick-box.some { border-color: var(--accent); background: linear-gradient(var(--accent), var(--accent)) center / 7px 2px no-repeat; }
 .replayed h3 .pick-box { margin-right: 6px; }
+
+/* Phone: nothing covers the map. The map comes first, then the playback bar, then the filters and match list, then
+   the picked player's card, each in the page's flow. */
+@media (max-width: 760px) {
+  .stage { position: relative; }
+  .stage-main { display: contents; }
+  .stage > .stage-tools { order: 0; }
+  .stage-main > .map-box, .stage-main > .map3d { order: 1; flex: none; height: calc(100vw - 32px); }
+  .stage > .playback { order: 2; }
+  .stage-main > .stage-left, .stage-main > .stage-left.has-card { order: 3; position: static; width: auto; height: auto; max-height: none; }
+  .stage-main > .stage-right { order: 4; position: static; width: auto; height: auto; }
+  .stage-left .replayed, .stage-left.has-card .replayed { max-height: 70vh; }
+  .stage-right .player-card { max-height: 80vh; }
+}

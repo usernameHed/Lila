@@ -19,6 +19,8 @@ about 300 lines, move the oldest entries word for word to `SESSION_HISTORY.md` (
 
 - Ugo: change the "Bot killed" icon. Showed 4 drawn options; he picked a white crosshair over a robot head
   (`botTarget` in icons.ts, replaces the player bust). Checked on the map and in the Elements list.
+- Ugo (iPhone): the filters / match list covered half the map. Phone layout (styles.css, last block): nothing over
+  the map; map, playback bar, filters + "On the map", then the player card, in the page flow. Checked at 390 px.
 
 ## 2026-11-19 (desktop session): elements and heatmaps apart again, select all
 
