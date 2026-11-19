@@ -146,6 +146,8 @@ interface StageProps {
   emptyHint: string;
   /** Players picked (view state: undo / redo, links). */
   picked: Focus[];
+  /** The match filters, shown at the top of the "On the map" panel. */
+  filters?: React.ReactNode;
   onPicked: (p: Focus[]) => void;
 }
 
@@ -319,6 +321,23 @@ export function ReplayStage(props: StageProps) {
     } else if (e.ctrlKey || e.metaKey) onPicked(has ? picks.filter((p) => p.match !== id) : [...picks, f]);
     else onPicked(has && picks.length === 1 ? [] : [f]);
   };
+  /** The bots recorded in a match: id, index, and when they died (null: alive when the log ends). */
+  const botsOf = (id: string) => {
+    const m = shown.find((x) => x.id === id);
+    if (!m) return [];
+    return m.players.flatMap((p, i) => {
+      if (!p.bot) return [];
+      const death = m.events.find((e) => e[4] === i && e[1] === 'botDeath');
+      return [{ player: i, id: p.id, died: death ? death[0] : null }];
+    });
+  };
+  /** A bot clicked under its match: it alone is picked (its card opens); Ctrl / Cmd adds or removes it. */
+  const openBot = (f: Focus, e: React.MouseEvent) => {
+    setPinned(null);
+    const has = picks.some((p) => p.match === f.match && p.player === f.player);
+    if (e.ctrlKey || e.metaKey) onPicked(has ? picks.filter((p) => !(p.match === f.match && p.player === f.player)) : [...picks, f]);
+    else onPicked(has && picks.length === 1 ? [] : [f]);
+  };
   const onHoverMap = useCallback(
     (p: MapPick | null) => {
       const ev = p ? pickEvent(shown, t, p.u, p.v, p.tolerance, hiddenSet) : null;
@@ -357,7 +376,12 @@ export function ReplayStage(props: StageProps) {
   if (!summaries.length)
     return (
       <div className="stage-main">
-        <MapCanvas map={mapConfig.id} draw={noDraw} dim={0} uvUnits={uvUnits} />
+        <MapCanvas map={mapConfig.id} draw={noDraw} dim={0} uvUnits={uvUnits} inset={312} />
+        <div className="stage-left">
+          <section className="replayed" aria-label="Matches on the map">
+            {props.filters}
+          </section>
+        </div>
         <div className="stage-hint">{emptyHint}</div>
       </div>
     );
@@ -419,11 +443,12 @@ export function ReplayStage(props: StageProps) {
           </Suspense>
           </ErrorBoundary>
         ) : (
-          <MapCanvas map={summaries[0].map} draw={draw} dim={0} uvUnits={uvUnits} onPick={onPick} onHover={onHoverMap} pointer={!!pointed || !!hoverPath} inset={290} />
+          <MapCanvas map={summaries[0].map} draw={draw} dim={0} uvUnits={uvUnits} onPick={onPick} onHover={onHoverMap} pointer={!!pointed || !!hoverPath} inset={312} />
         )}
-        <div className={`stage-left ${story && focus ? 'has-card' : ''}`}>
+        <div className="stage-left">
         {summaries.length > 0 && (
           <section className="replayed" aria-label="Matches on the map">
+            {props.filters}
             <h3>
               On the map <span>{summaries.length}</span>
               {summaries.length > 1 && !many && (
@@ -463,13 +488,34 @@ export function ReplayStage(props: StageProps) {
                         </span>
                       )}
                     </button>
+                    {picks.some((p) => p.match === m.id) && m.bots > 0 && (
+                      <ul className="r-bot-list" aria-label="Bots of this match">
+                        {botsOf(m.id).map((b) => (
+                          <li key={b.player}>
+                            <button
+                              className={picks.some((p) => p.match === m.id && p.player === b.player) ? 'on' : ''}
+                              onClick={(e) => openBot({ match: m.id, player: b.player }, e)}
+                              onMouseEnter={() => setHoverPath({ match: m.id, player: b.player })}
+                              onMouseLeave={() => setHoverPath(null)}
+                              title="Click: this bot's path and card · Ctrl / Cmd: add or remove"
+                            >
+                              <LegendIcon k="botPath" size={13} />
+                              <span className="r-day">Bot {b.id}</span>
+                              <span className={`r-end ${b.died === null ? 'ok' : 'dead'}`}>{b.died === null ? 'Alive' : `Died ${formatDuration(b.died)}`}</span>
+                            </button>
+                          </li>
+                        ))}
+                      </ul>
+                    )}
                   </li>
                 );
               })}
             </ul>
           </section>
         )}
+        </div>
         {story && focus && (
+          <div className="stage-right">
           <PlayerCard
             story={story}
             title={`${MAP_LABEL[mapConfig.id]} · ${formatDay(focusMatch!.day)}`}
@@ -486,15 +532,15 @@ export function ReplayStage(props: StageProps) {
             onOnlyThisMatch={summaries.length > 1 ? () => onOnlyMatch(focus.match) : undefined}
             note={(() => {
               const bots = focusMatch?.players.filter((x) => x.bot).length ?? 0;
-              return bots && !story.bot ? `${bots} bots were recorded in this match too: click a dashed orange path for a bot's own card.` : undefined;
+              return bots && !story.bot ? `${bots} bots were recorded in this match too: pick one under the match in the list, or click a dashed orange path.` : undefined;
             })()}
             onFocusOther={(player) => {
               setPinned(null);
               setFocus({ match: focus.match, player });
             }}
           />
+          </div>
         )}
-        </div>
       </div>
       {error && <div className="empty">Could not load: {error}</div>}
       <PlaybackBar

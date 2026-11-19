@@ -15,6 +15,12 @@ about 300 lines, move the oldest entries word for word to `SESSION_HISTORY.md` (
 
 ---
 
+## 2026-11-19 (desktop session): filters over the map, card on the right, bots in the list
+
+- "All" chip back in every row and the days. Game / Ended / Length (`MatchFilters`) now at the top of the "On the map"
+  panel (also shown when nothing matches); the player card is on the right of the map; both span the map's height.
+  A picked match with bots lists them (id, died at / alive): click = that bot's path and card, Ctrl adds.
+
 ## 2026-11-19 (desktop session): one-line filters, match colors in the map list, bots made explicit
 
 - Every filter is one line (no "Any" chips: click an active chip again = all; Day chips are the dates under "Feb";

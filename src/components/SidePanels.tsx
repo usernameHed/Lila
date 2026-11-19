@@ -18,8 +18,6 @@ interface ReplayProps {
   view: View;
   update: Update;
   matches: MatchSummary[];
-  /** The map and day's matches before the filters: chips count from it. */
-  pool: MatchSummary[];
   /** Every day of the data, for the Day chips. */
   days: string[];
   selected: MatchSummary[];
@@ -50,6 +48,9 @@ function FilterRow<T extends string>({ label, value, options, count, countInTip,
     <div className="filter-row" role="group" aria-label={label}>
       <span className="filter-label">{label}</span>
       <span className="chips one-line">
+        <button aria-pressed={value === 'any'} className={`chip ${value === 'any' ? 'on' : ''}`} title="Every match" onClick={() => onChange('any')}>
+          All
+        </button>
         {options.map(([v, text, tip]) => {
           const n = count?.(v);
           const title = [tip, countInTip && n !== undefined ? `${n} matches` : null, v === value ? 'Click again to show every match' : null].filter(Boolean).join(' · ');
@@ -66,16 +67,9 @@ function FilterRow<T extends string>({ label, value, options, count, countInTip,
 }
 
 export function ReplaySide(p: ReplayProps) {
-  const { view, update, matches, selected, pool } = p;
+  const { view, update, matches, selected } = p;
   /** Custom: matches picked one by one in the list. Otherwise every (filtered) match of the chosen day plays. */
   const custom = view.matches !== ALL;
-  const base = { ended: view.ended, length: view.length, game: view.game, sort: view.sort };
-  /** How many matches there would be with this one filter changed (the others kept). */
-  const countWith = (patch: Partial<typeof base>) => applyFilter(pool, { ...base, ...patch }).length;
-  const dayPicked = view.day !== 'all' || (!custom && view.recent > 0);
-  const filtered = view.ended !== 'any' || view.length !== 'any' || view.game !== 'any' || dayPicked;
-  /** Back to every match: any outcome, any length, all days (matches picked in Custom are kept). */
-  const clearAll = () => update({ ended: 'any', length: 'any', game: 'any', ...(dayPicked ? { day: 'all', recent: 0 } : {}) });
   return (
     <>
       <section className={custom ? 'grow' : ''}>
@@ -88,6 +82,9 @@ export function ReplaySide(p: ReplayProps) {
         <div className="filter-row" role="group" aria-label="Day">
           <span className="filter-label" title="Day of the match (all in February 2026)">Feb</span>
           <span className="chips one-line">
+            <button aria-pressed={view.day === 'all'} className={`chip ${view.day === 'all' ? 'on' : ''}`} title="Every day" onClick={() => update({ day: 'all' })}>
+              All
+            </button>
             {p.days.map((d) => (
               <button
                 key={d}
@@ -104,6 +101,9 @@ export function ReplaySide(p: ReplayProps) {
         <div className="filter-row" role="group" aria-label="How many matches">
           <span className="filter-label">Show</span>
           <span className="chips one-line">
+            <button aria-pressed={!custom && !view.recent} className={`chip ${!custom && !view.recent ? 'on' : ''}`} title="Every match of the day(s), replayed together" onClick={() => update({ matches: ALL, recent: 0 })}>
+              All
+            </button>
             {([10, 100] as const).map((n) => (
               <button
                 key={n}
@@ -160,7 +160,25 @@ export function ReplaySide(p: ReplayProps) {
           </>
         )}
       </section>
-      <section>
+    </>
+  );
+}
+
+/**
+ * The player-run filters (game, outcome, length), shown at the top of the "On the map" panel over the map. Each
+ * chip says how many matches it would leave; "Clear all filters" also resets the day and the 10 / 100 choice.
+ */
+export function MatchFilters({ view, update, pool }: { view: View; update: Update; pool: MatchSummary[] }) {
+  const custom = view.matches !== ALL;
+  const base = { ended: view.ended, length: view.length, game: view.game, sort: view.sort };
+  /** How many matches there would be with this one filter changed (the others kept). */
+  const countWith = (patch: Partial<typeof base>) => applyFilter(pool, { ...base, ...patch }).length;
+  const dayPicked = view.day !== 'all' || (!custom && view.recent > 0);
+  const filtered = view.ended !== 'any' || view.length !== 'any' || view.game !== 'any' || dayPicked;
+  /** Back to every match: any game, outcome and length, all days (matches picked in Custom are kept). */
+  const clearAll = () => update({ ended: 'any', length: 'any', game: 'any', ...(dayPicked ? { day: 'all', recent: 0 } : {}) });
+  return (
+      <section className="map-filters">
         <h2 className="with-actions">
           <span title="Each match is one player's run: pick runs by how they went">Filters · player runs</span>
           <span className="actions">
@@ -173,7 +191,6 @@ export function ReplaySide(p: ReplayProps) {
         <FilterRow label="Ended" value={view.ended} options={ENDED} count={(v) => countWith({ ended: v })} countInTip onChange={(v) => update({ ended: v })} />
         <FilterRow label="Length" value={view.length} options={LENGTH} onChange={(v) => update({ length: v })} />
       </section>
-    </>
   );
 }
 

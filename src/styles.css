@@ -516,3 +516,23 @@ button.map-tile:not(.on) .map-thumb { opacity: 0.75; }
 .colors-switch button { white-space: nowrap; }
 .replayed .r-bots { margin-left: auto; font-size: 10.5px; color: #f4a261; white-space: nowrap; }
 .card-note { margin: 8px 0 0; padding: 6px 8px; border-radius: 6px; background: rgba(244,162,97,0.1); border: 1px solid rgba(244,162,97,0.35); font-size: 12px; color: var(--text); }
+
+/* Over the map: on the left the filters and the matches on the map, on the right the picked player's card; both
+   span the map's full height on a computer. */
+.stage-left, .stage-left.has-card { width: 312px; }
+.stage-left .replayed, .stage-left.has-card .replayed { flex: 1 1 auto; max-height: 100%; }
+.stage-right { position: absolute; top: 10px; right: 10px; bottom: 10px; width: 290px; display: flex; flex-direction: column; z-index: 2; pointer-events: none; }
+.stage-right > * { pointer-events: auto; }
+.stage-right .player-card { position: static; width: auto; max-height: 100%; min-height: 0; display: flex; flex-direction: column; overflow: hidden; flex: 0 1 auto; }
+.stage-right .player-card > * { flex: none; }
+.stage-right .player-card > .story.events { flex: 1 1 auto; min-height: 60px; overflow-y: auto; }
+.stage-right .player-card > .go-btn { margin-top: 8px; }
+.map-filters { margin: 0 0 8px; padding: 0 2px 8px; border-bottom: 1px solid var(--line); }
+.map-filters h2 { margin: 0 0 4px; font-size: 11px; text-transform: uppercase; letter-spacing: 0.08em; color: var(--muted); }
+.r-bot-list { list-style: none; margin: 0 0 4px 16px; padding: 0; border-left: 1px solid rgba(244,162,97,0.4); }
+.r-bot-list button { padding: 2px 6px; font-size: 11.5px; }
+.r-bot-list .r-day { width: auto; color: var(--text); }
+@media (max-width: 760px) { .stage-right { top: auto; left: 10px; width: auto; height: 50%; } .stage-left { bottom: auto; height: 45%; } }
+.stage-left .replayed, .stage-left.has-card .replayed { flex: 0 1 auto; }
+.stage-hint { left: 340px; transform: none; }
+@media (max-width: 760px) { .stage-hint { left: 10px; top: auto; bottom: 10px; } }

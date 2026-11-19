@@ -5,7 +5,7 @@ import { DataPage } from './components/DataPage';
 import { Overview } from './components/Overview';
 import { useSourceId } from './components/useSourceId';
 import { ReplayStage } from './components/Replay';
-import { OverviewSide, ReplaySide, RightPanel } from './components/SidePanels';
+import { MatchFilters, OverviewSide, ReplaySide, RightPanel } from './components/SidePanels';
 import { UpdateButton } from './components/UpdateButton';
 import { loadIndex } from './lib/data';
 import { BUILTIN_ID, listUploads, restoreSource } from './lib/sources';
@@ -175,7 +175,6 @@ export function App() {
               view={view}
               update={update}
               matches={matches}
-              pool={pool}
               days={index?.days ?? []}
               selected={selected}
               onOnlyMatch={(id) => {
@@ -226,6 +225,7 @@ export function App() {
             pathWidth={view.pathWidth}
             pathAlpha={view.pathAlpha}
             picked={view.picked}
+            filters={<MatchFilters view={view} update={update} pool={pool} />}
             onPicked={(picked) => update({ picked })}
             emptyHint={matches.length ? 'Tick a match in the list to replay it.' : 'No match for these filters.'}
           />
