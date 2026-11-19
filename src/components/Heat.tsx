@@ -4,7 +4,7 @@ import { uvToPixel } from '../lib/coords';
 import { drawFightLine, drawHeat, heatCanvas } from '../lib/draw';
 import { contourPath } from '../lib/contours';
 import { bandEdges, blur, edgeColor, normalize, powerGrid, render, strongest, sumDays } from '../lib/heat';
-import { HEAT_LAYERS, MONO_RGB } from '../lib/style';
+import { HEAT_LAYERS, MONO_RGB, heatRgb } from '../lib/style';
 import type { HeatData, HeatLayer, MapId, Who } from '../lib/types';
 import { useSourceId } from './useSourceId';
 
@@ -60,11 +60,17 @@ export interface HeatOptions {
 export function useHeatDraw(heat: HeatData | null, days: string[], o: HeatOptions, uvUnits: number) {
   const pictures = useMemo(() => {
     if (!heat) return [];
-    const kinds = KINDS.filter((l) => l !== 'fire' && o.layers.includes(l));
-    const grids = kinds.map((l) => {
+    // One picture per kind, and per side for kills and deaths (each side in its own icon color).
+    type Part = { l: HeatLayer; who?: Exclude<Who, 'both'> };
+    const kinds = KINDS.filter((l) => l !== 'fire' && o.layers.includes(l)).flatMap((l): Part[] => {
+      const who = l === 'kills' ? o.kills : l === 'deaths' ? o.deaths : null;
+      if (!who) return [{ l }];
+      return who === 'both' ? [{ l, who: 'bots' }, { l, who: 'players' }] : [{ l, who }];
+    });
+    const grids = kinds.map(({ l, who }) => {
       // Power: kills per time spent, already a 0-1 intensity.
       if (l === 'power') return powerGrid(sum(heat, sourcesOf('power', 'both'), days), sum(heat, ['traffic'], days), heat.grid);
-      const values = sum(heat, sourcesOf(l, l === 'kills' ? o.kills : o.deaths), days);
+      const values = sum(heat, sourcesOf(l, who ?? 'both'), days);
       const total = values.reduce((a, b) => a + b, 0);
       // Sparse kinds (storm deaths: 39 in all) get a wider blur, so single events stay visible.
       return normalize(blur(values, heat.grid, total < 200 ? 3 : 2));
@@ -74,7 +80,7 @@ export function useHeatDraw(heat: HeatData | null, days: string[], o: HeatOption
       const fill = render(k, heat.grid, rgb);
       return { canvas: heatCanvas(fill.pixels, fill.size), edges: bandEdges(k, heat.grid).map(contourPath), stroke: edgeColor(rgb) };
     };
-    return o.mono ? (grids.length ? [make(strongest(grids), MONO_RGB)] : []) : grids.map((k, i) => make(k, HEAT_LAYERS[kinds[i]].rgb));
+    return o.mono ? (grids.length ? [make(strongest(grids), MONO_RGB)] : []) : grids.map((k, i) => make(k, heatRgb(kinds[i].l, kinds[i].who)));
   }, [heat, days, o.layers, o.kills, o.deaths, o.mono]);
 
   const fights = useMemo(() => (heat && o.layers.includes('fire') ? fightsOf(heat, days) : []), [heat, days, o.layers]);

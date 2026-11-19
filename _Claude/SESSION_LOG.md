@@ -15,6 +15,12 @@ about 300 lines, move the oldest entries word for word to `SESSION_HISTORY.md` (
 
 ---
 
+## 2026-11-19 (desktop session): heat colors = icon colors, autoplay, Sort removed
+
+- Heatmaps take their row's icon color (`heatRgb` in style.ts; kills and deaths drawn per side in that side's color).
+  Picking a match (row or "Replay only this match") plays it from 0:00 (`playNext` in usePlayback). Many-match paths
+  0.5 -> 0.8 of the width; path opacity slider to x7.5. Sort chips removed for now (data order, `sort` kept in code).
+
 ## 2026-11-19 (desktop session): Day chips, Custom opens the match list
 
 - Ugo: the match list belongs in the Day filter, open only on Custom. Done: a day chip (or All days) = every

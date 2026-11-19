@@ -40,15 +40,32 @@ export const EVENT_LAYER: Record<EventType, number> = {
 
 /** Heatmap kinds, in drawing order (traffic at the bottom, the rarest on top), each with its own color. */
 export const HEAT_LAYERS: Record<HeatLayer, { label: string; hint: string; rgb: [number, number, number]; split?: true }> = {
-  traffic: { label: 'Traffic', hint: 'where players spend time', rgb: [61, 220, 132] },
+  traffic: { label: 'Traffic', hint: 'where players spend time', rgb: [76, 201, 240] },
   loot: { label: 'Loot', hint: 'where players pick up items', rgb: [255, 209, 102] },
   power: { label: 'Power positions', hint: 'kills per minute spent, 1x to 4x the map average: spots that win fights', rgb: [255, 110, 199] },
   raised: { label: 'Raised kills', hint: 'kills made 3 m or more above the ground: rooftops, towers, ledges', rgb: [77, 163, 255] },
   fire: { label: 'Line of fire', hint: 'arrow from killer to victim: 36 recorded fights, 6 inferred (lighter)', rgb: [255, 140, 66] },
-  kills: { label: 'Position when killing', hint: 'where players stand when they kill', rgb: [255, 51, 85], split: true },
-  deaths: { label: 'Position when killed', hint: 'where players die to bots or players', rgb: [240, 244, 255], split: true },
+  kills: { label: 'Position when killing', hint: 'where players stand when they kill', rgb: [255, 77, 109], split: true },
+  deaths: { label: 'Position when killed', hint: 'where players die to bots or players', rgb: [241, 241, 241], split: true },
   storm: { label: 'Storm deaths', hint: 'where the storm catches players', rgb: [179, 136, 255] },
 };
+
+const hexRgb = (hex: string): [number, number, number] => [1, 3, 5].map((i) => parseInt(hex.slice(i, i + 2), 16)) as [number, number, number];
+
+/**
+ * A heatmap's color is the color of the icons it sums up, so a row of the layer list reads as one thing: traffic
+ * in the player path's blue, loot in the gems' yellow, kills of bots in the "Bot killed" red, deaths to players in
+ * the "Death by player" crimson... Kills and deaths take their side's color (bots or players).
+ */
+export function heatRgb(layer: HeatLayer, who?: Exclude<Who, 'both'>): [number, number, number] {
+  if (layer === 'traffic') return hexRgb(PATH_COLOR.human);
+  if (layer === 'loot') return hexRgb(EVENT_STYLE.loot.color);
+  if (layer === 'storm') return hexRgb(EVENT_STYLE.storm.color);
+  if (layer === 'fire') return hexRgb(FIRE_COLOR);
+  if (layer === 'kills') return hexRgb(EVENT_STYLE[who === 'players' ? 'killPlayer' : 'killBot'].color);
+  if (layer === 'deaths') return hexRgb(EVENT_STYLE[who === 'players' ? 'diedToPlayer' : 'diedToBot'].color);
+  return HEAT_LAYERS[layer].rgb;
+}
 
 /** One-color mode, for heatmaps and for replays of several matches. */
 export const MONO_RGB: [number, number, number] = [76, 201, 240];

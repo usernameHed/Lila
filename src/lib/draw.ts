@@ -102,7 +102,7 @@ function drawPaths(ctx: CanvasRenderingContext2D, match: Match, uvUnits: number,
     const n = samplesUntil(p.path, t);
     if (!n) continue;
     const color = p.bot ? PATH_COLOR.bot : look.human;
-    const width = (p.bot ? 2 : 2.4) * (look.faint ? 0.5 : 1) * look.width;
+    const width = (p.bot ? 2 : 2.4) * (look.faint ? 0.8 : 1) * look.width;
     const alpha = Math.min(1, (p.bot ? 0.85 : 0.95) * (look.faint ? (look.density ?? 0.22) : 1) * look.alpha) * (look.fade ?? 1);
     ctx.beginPath();
     for (let i = 0; i < n * 3; i += 3) {

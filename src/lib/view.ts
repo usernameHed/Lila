@@ -77,7 +77,7 @@ export function parseView(hash: string): View {
     heatUnder: legacyHeat || q.get('under') === '1',
     replayOn: q.get('replay') !== '0',
     pathWidth: q.has('pw') ? Math.min(4, Math.max(0.5, Math.round(Number(q.get('pw')) * 10) / 10 || DEFAULT_VIEW.pathWidth)) : DEFAULT_VIEW.pathWidth,
-    pathAlpha: q.has('pa') ? Math.min(2.5, Math.max(0.3, Math.round(Number(q.get('pa')) * 10) / 10 || DEFAULT_VIEW.pathAlpha)) : DEFAULT_VIEW.pathAlpha,
+    pathAlpha: q.has('pa') ? Math.min(7.5, Math.max(0.3, Math.round(Number(q.get('pa')) * 10) / 10 || DEFAULT_VIEW.pathAlpha)) : DEFAULT_VIEW.pathAlpha,
     iconScale: Math.min(4, Math.max(0.6, Math.round((Number(q.get('icons')) || 1) * 10) / 10)),
     view3d: q.get('view') === '3d',
     terrain: q.get('ground') !== 'flat',

@@ -23,16 +23,17 @@ On a 16:9 screen (1366x768 to 1920x1080) everything fits without scrolling:
 - **Day**: one chip per day (or All days) replays every match of that day together; **Custom** opens the match list
   to pick matches one by one.
 - **Match filters**, as one-click chips that show how many matches each would leave: how the player's run ended
-  (survived, killed by a bot, by a player, by the storm), length (under 5, 5-10, over 10 min); sort: all (data order,
-  grouped by day: fold a day, tick it to select all its matches), or longest, shortest, most kills, most loot. One
-  line per match (duration, how it ended, kills, loot; ⇄ when bots were recorded too).
+  (survived, killed by a bot, by a player, by the storm), length (under 5, 5-10, over 10 min). In Custom, matches are
+  grouped by day (fold a day, tick it to select all its matches), one line per match (duration, how it ended, kills,
+  loot; ⇄ when bots were recorded too). Picking a match plays it from 0:00.
 - **Layers** (one list for icons and heatmaps): each kind of data is one row, with two switches. **Icons** draws it
   on the replay (path lines, or an icon per event), **Heat** draws it as a heatmap of the whole selection: the
   same events seen two ways, in one place ("Item looted" = gems and the loot heat; "Bot killed" = icons and where
   players stand when killing bots). Column headers turn a whole column on or off. Heat only, under "Analysis":
   power positions (kills per minute spent) and raised kills (from 3 m above the ground). Hover a row: it explains
-  itself, its markers pulse on the map and their ticks light up on the timeline. Heat per kind or merged; sliders
-  for icon size, path width and path opacity. Heatmaps are toon bands with vector outlines, sharp at any zoom.
+  itself, its markers pulse on the map and their ticks light up on the timeline. Each heatmap takes the color of its row's icons (traffic in the path blue, loot in the gem yellow, kills and
+  deaths in their side's color). Heat per kind or merged; sliders for icon size, path width and path opacity (up to
+  x7.5, for the many-match view). Heatmaps are toon bands with vector outlines, sharp at any zoom.
   Icons: a robot spider where a player killed a bot, a crosshair for other kills, a skull over crossed bones where
   a player died, a dead monster for a bot's death, a diamond for loot and the storm.
   Hovering a path in 2D highlights it; click it for the player's card (each event with its icon).

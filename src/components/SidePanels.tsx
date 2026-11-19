@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { LAYER_ROWS, allHeat, heatOn, toggleHeat, type LayerRow } from '../lib/layers';
 import { applyFilter } from '../lib/matchFilter';
-import { EXPLAIN, HEAT_LAYERS, MONO_RGB, formatDay, rgbCss } from '../lib/style';
+import { EXPLAIN, HEAT_LAYERS, MONO_RGB, formatDay, heatRgb, rgbCss } from '../lib/style';
 // The panels around the map: left (which matches), right (the layers: icons and heatmaps), and the Overview's
 // table of contents.
 // App owns the state; these only show it.
@@ -38,7 +38,6 @@ const ENDED: Option<View['ended']>[] = [
   ['storm', <><LegendIcon k="storm" size={12} /> Storm</>, 'Died to the storm'],
 ];
 const LENGTH: Option<View['length']>[] = [['any', 'Any'], ['short', '<5 min'], ['mid', '5-10'], ['long', '>10']];
-const SORT: Option<View['sort']>[] = [['day', 'All', 'In data order, grouped by day'], ['longest', 'Longest', 'Longest first'], ['shortest', 'Shortest', 'Shortest first'], ['kills', 'Kills', 'Most kills first'], ['loot', 'Loot', 'Most loot first']];
 
 /** One filter as a row of chips: one click picks it, each chip says how many matches it would leave. */
 function FilterRow<T extends string>({ label, value, options, count, onChange }: { label: string; value: T; options: Option<T>[]; count?: (v: T) => number; onChange: (v: T) => void }) {
@@ -112,7 +111,7 @@ export function ReplaySide(p: ReplayProps) {
                 matches={matches}
                 selected={selected}
                 mono={view.mono}
-                grouped={view.sort === 'day'}
+                grouped
                 onOnly={p.onOnlyMatch}
                 onToggle={p.onToggleMatch}
                 onSetMany={p.onSetMany}
@@ -134,7 +133,6 @@ export function ReplaySide(p: ReplayProps) {
         </h2>
         <FilterRow label="Ended" value={view.ended} options={ENDED} count={(v) => countWith({ ended: v })} onChange={(v) => update({ ended: v })} />
         <FilterRow label="Length" value={view.length} options={LENGTH} onChange={(v) => update({ length: v })} />
-        <FilterRow label="Sort" value={view.sort} options={SORT} onChange={(v) => update({ sort: v })} />
       </section>
       {selected.length > 1 && (
         <section>
@@ -162,7 +160,7 @@ function LayerLine({ row, p, showTip }: { row: LayerRow; p: RightProps; showTip:
   const k = row.icons;
   const iconsOn = !!k && view.replayOn && !view.hidden.includes(k);
   const heatIsOn = heatOn(view, row);
-  const heatRgb = row.heat ? (view.heatMono ? MONO_RGB : HEAT_LAYERS[row.heat.layer].rgb) : null;
+  const rowRgb = row.heat ? (view.heatMono ? MONO_RGB : heatRgb(row.heat.layer, row.heat.who)) : null;
   const label = k ? legendLabel(k) : row.heat ? HEAT_LAYERS[row.heat.layer].label : row.id;
   const count = k ? (k === 'humanPath' || k === 'botPath' ? null : p.counts[k] ?? 0) : null;
   const toggleIcons = () => k && update({ replayOn: true, hidden: view.replayOn ? legendToggle(view.hidden, k) : LEGEND_KEYS.filter((x) => x !== k) });
@@ -180,7 +178,7 @@ function LayerLine({ row, p, showTip }: { row: LayerRow; p: RightProps; showTip:
       }}
     >
       <button className="layer-label" onClick={k ? toggleIcons : toggleHeatRow}>
-        <span className="legend-icon">{k ? <LegendIcon k={k} /> : <span className="heat-dot" style={{ background: heatRgb ? rgbCss(heatRgb) : undefined }} />}</span>
+        <span className="legend-icon">{k ? <LegendIcon k={k} /> : <span className="heat-dot" style={{ background: rowRgb ? rgbCss(rowRgb) : undefined }} />}</span>
         <span className="legend-label">{label}</span>
         {count !== null && <span className="count">{count}</span>}
       </button>
@@ -190,8 +188,8 @@ function LayerLine({ row, p, showTip }: { row: LayerRow; p: RightProps; showTip:
         ) : (
           <span className="tick-none" />
         )}
-        {row.heat && heatRgb ? (
-          <button className={`tick-box heat ${heatIsOn ? 'on' : ''}`} style={heatIsOn ? { background: rgbCss(heatRgb), borderColor: rgbCss(heatRgb) } : { borderColor: rgbCss(heatRgb, 0.8) }} onClick={toggleHeatRow} aria-pressed={heatIsOn} aria-label={`${label}: heatmap`} title={`Heatmap: ${HEAT_LAYERS[row.heat.layer].hint}`} />
+        {row.heat && rowRgb ? (
+          <button className={`tick-box heat ${heatIsOn ? 'on' : ''}`} style={heatIsOn ? { background: rgbCss(rowRgb), borderColor: rgbCss(rowRgb) } : { borderColor: rgbCss(rowRgb, 0.8) }} onClick={toggleHeatRow} aria-pressed={heatIsOn} aria-label={`${label}: heatmap`} title={`Heatmap: ${HEAT_LAYERS[row.heat.layer].hint}`} />
         ) : (
           <span className="tick-none" title="No heatmap for this kind" />
         )}
@@ -251,7 +249,7 @@ export function RightPanel(p: RightProps) {
           </label>
           <label className="icon-size" title="How solid the paths are (lower: see-through, higher: solid)">
             Path opacity
-            <input type="range" min={0.3} max={2.5} step={0.1} value={view.pathAlpha} onChange={(e) => update({ pathAlpha: Number(e.target.value) })} />
+            <input type="range" min={0.3} max={7.5} step={0.1} value={view.pathAlpha} onChange={(e) => update({ pathAlpha: Number(e.target.value) })} />
             <span>x{view.pathAlpha.toFixed(1)}</span>
           </label>
         </div>

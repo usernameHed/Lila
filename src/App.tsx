@@ -13,6 +13,7 @@ import { Icon } from './components/Icon';
 import { Loader } from './components/Loader';
 import { MapTile, MapTiles } from './components/MapBadge';
 import { InstallOffer } from './components/InstallOffer';
+import { playNext } from './components/usePlayback';
 import { minimap } from './components/MapCanvas';
 import { record, redo, start, undo, type History } from './lib/history';
 import type { LegendKey } from './lib/draw';
@@ -93,8 +94,8 @@ export function App() {
   // The map and day's matches, then the filters on top.
   const pool = useMemo(() => (index?.matches ?? []).filter((m) => m.map === view.map && (view.day === 'all' || m.day === view.day)), [index, view.map, view.day]);
   const matches = useMemo(
-    () => applyFilter(pool, { ended: view.ended, length: view.length, sort: view.sort }),
-    [pool, view.ended, view.length, view.sort],
+    () => applyFilter(pool, { ended: view.ended, length: view.length, sort: 'day' }), // sorting is off for now
+    [pool, view.ended, view.length],
   );
   const days = useMemo(() => (view.day === 'all' ? (index?.days ?? []) : [view.day]), [index, view.day]);
 
@@ -172,7 +173,10 @@ export function App() {
               pool={pool}
               days={index?.days ?? []}
               selected={selected}
-              onOnlyMatch={(id) => update({ matches: [id] })}
+              onOnlyMatch={(id) => {
+                playNext.current = true; // picking one match replays it
+                update({ matches: [id] });
+              }}
               onToggleMatch={(id) => update({ matches: toggleMatch(selectedIds, id) })}
               onSetMany={(ids, on) => update({ matches: setMany(selectedIds, ids, on) })}
             />
@@ -209,7 +213,10 @@ export function App() {
             exaggeration={view.exaggeration}
             terrain={view.terrain}
             onView={update}
-            onOnlyMatch={(id) => update({ matches: [id] })}
+            onOnlyMatch={(id) => {
+              playNext.current = true;
+              update({ matches: [id] });
+            }}
             iconScale={view.iconScale}
             pathWidth={view.pathWidth}
             pathAlpha={view.pathAlpha}

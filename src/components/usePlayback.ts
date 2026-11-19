@@ -2,9 +2,13 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 
 export const SPEEDS = [10, 30, 60] as const;
 
+/** Set before picking a match to replay: the next match loaded plays from 0:00 instead of showing its end. */
+export const playNext = { current: false };
+
 /**
- * Match clock for playback. Starts at the end (the whole journey shown); Play from the end restarts at 0.
- * Driven by requestAnimationFrame, so it stays smooth and stops when the tab is hidden.
+ * Match clock for playback. Starts at the end (the whole journey shown), or plays from 0:00 when `playNext` asked
+ * for it; Play from the end restarts at 0. Driven by requestAnimationFrame, so it stays smooth and stops when the
+ * tab is hidden.
  */
 export function usePlayback(duration: number, resetKey: unknown) {
   const [t, setT] = useState(duration);
@@ -13,6 +17,12 @@ export function usePlayback(duration: number, resetKey: unknown) {
   const last = useRef<number | null>(null);
 
   useEffect(() => {
+    if (playNext.current && duration > 0 && resetKey !== null) {
+      playNext.current = false;
+      setT(0);
+      setPlaying(true);
+      return;
+    }
     setPlaying(false);
     setT(duration);
   }, [duration, resetKey]);
