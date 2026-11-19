@@ -17,9 +17,9 @@ data details we had to get right, how it is built, and what the game should log 
 live views. It doubles as the walkthrough of the features below.
 
 **Match replay**, in the order a designer works: map, day and layers on the left, the matches running on the map (an "On the
-  map" list under the filters, with "+N bots" when the bots were recorded and the match colors switch:
+  map" list under the filters, with "+1 player" / "+N bots" when more than the player was recorded and the match colors switch:
   click one for its player's card (on the right of the map) and only that match stays on the map; a picked
-  match lists its bots to pick too (a bot picked: one click on its match goes back to the player, a second unpicks), Ctrl / Cmd adds or removes, Shift picks a
+  match lists everyone recorded in it (players, then bots) to pick too (a bot picked: one click on its match goes back to the player, a second unpicks), Ctrl / Cmd adds or removes, Shift picks a
   range; the list and the card each span the map's height, the card's events scroll), the layers on the right.
 On a 16:9 screen (1366x768 to 1920x1080) everything fits without scrolling:
 - **Replay** one match or many on one clock, at 10x / 30x / 60x; Space plays and pauses; grabbing the timeline
@@ -27,8 +27,8 @@ On a 16:9 screen (1366x768 to 1920x1080) everything fits without scrolling:
 - **Left panel**: map, day (All, 10 to 14 Feb) and Show: **All**, **10** or **100** (drawn at random, ticked by default, ↻ draws again; unticked: the last ones, by
   day since the time of day is not logged) or **Custom** (the match list, to pick matches one by one).
 - **Over the map, on the left**: the match filters, one line each (All, or chips that show how many matches each
-  would leave; "Clear all filters"): game (Player only: only the
-  player was recorded; With bots: the bots were recorded too beside the player, 52 of 796 matches), how the player's run ended
+  would leave; "Clear all filters"): game (No bots: only the player
+  was recorded; Bots: the bots were recorded too, 52 of 796 matches; 2 players: two players recorded, 2 matches), how the player's run ended
   (survived, killed by a bot, by a player, by the storm), length (under 5, 5-10, over 10 min). In Custom, matches are
   grouped by day (fold a day, tick it to select all its matches), one line per match (duration, how it ended, kills,
   loot; ⇄ when bots were recorded too). Picking a match plays it from 0:00 (if the previous replay had ended, paused, it shows the new one whole). In the

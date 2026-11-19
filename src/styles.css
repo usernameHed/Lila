@@ -543,3 +543,4 @@ button.map-tile:not(.on) .map-thumb { opacity: 0.75; }
 .stage-tools .history-btns { margin-left: 0; }
 .stage-tools .history-btns button { width: 26px; height: 24px; border: 1px solid var(--line); background: #1d2026; color: var(--text); }
 .stage-tools .history-btns button:disabled { opacity: 0.35; }
+.r-plus-player { color: var(--blue); }

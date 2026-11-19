@@ -15,6 +15,12 @@ about 300 lines, move the oldest entries word for word to `SESSION_HISTORY.md` (
 
 ---
 
+## 2026-11-19 (desktop session): "2 players" filter
+
+- Ugo: a filter for matches with 2 players (only 2, Ambrose 12 Feb). Game = No bots / Bots / 2 players (`multi`,
+  humans > 1; counts in tooltips to fit one line). Rows "+1 player"; a picked match lists everyone (players then
+  bots, each with died at / alive); the card names the other player and the bots.
+
 ## 2026-11-19 (desktop session): layers on the left, zoom by 2D / 3D, picked match alone
 
 - Layers panel moved to the bottom of the left sidebar (no right column; tooltips open to the right). Zoom + / - next

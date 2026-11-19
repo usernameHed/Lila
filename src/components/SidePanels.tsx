@@ -34,8 +34,9 @@ const ENDED: Option<View['ended']>[] = [
   ['storm', <><LegendIcon k="storm" size={12} /> Storm</>, 'Died to the storm'],
 ];
 const GAME: Option<View['game']>[] = [
-  ['player', <><LegendIcon k="humanPath" size={12} /> Player only</>, 'Matches where only the player was recorded (every match has its player)'],
-  ['bots', <><LegendIcon k="botPath" size={12} /> With bots</>, 'Matches where the bots were recorded too, beside the player: their paths, kills and deaths are on the map'],
+  ['player', <><LegendIcon k="humanPath" size={12} /> No bots</>, 'Matches where only the player was recorded, no bot'],
+  ['bots', <><LegendIcon k="botPath" size={12} /> Bots</>, 'Matches where the bots were recorded too, beside the player: their paths, kills and deaths are on the map'],
+  ['multi', <><LegendIcon k="humanPath" size={12} /> 2 players</>, 'Matches where two players were recorded'],
 ];
 const LENGTH: Option<View['length']>[] = [['short', '<5 min'], ['mid', '5-10 min'], ['long', '>10 min']];
 
@@ -187,7 +188,7 @@ export function MatchFilters({ view, update, pool }: { view: View; update: Updat
             </button>
           </span>
         </h2>
-        <FilterRow label="Game" value={view.game} options={GAME} count={(v) => countWith({ game: v })} onChange={(v) => update({ game: v })} />
+        <FilterRow label="Game" value={view.game} options={GAME} count={(v) => countWith({ game: v })} countInTip onChange={(v) => update({ game: v })} />
         <FilterRow label="Ended" value={view.ended} options={ENDED} count={(v) => countWith({ ended: v })} countInTip onChange={(v) => update({ ended: v })} />
         <FilterRow label="Length" value={view.length} options={LENGTH} onChange={(v) => update({ length: v })} />
       </section>

@@ -81,7 +81,7 @@ export function parseView(hash: string): View {
     // Old links: "players=pvp" was the player-vs-player filter, now "ended: killed by a player".
     ended: q.get('players') === 'pvp' ? 'player' : pick<Ended>('end', ['any', 'survived', 'bot', 'storm', 'player'], 'any'),
     length: pick<Length>('len', ['any', 'short', 'mid', 'long'], 'any'),
-    game: pick<Game>('game', ['any', 'bots', 'player'], 'any'),
+    game: pick<Game>('game', ['any', 'bots', 'player', 'multi'], 'any'),
     sort: pick<SortBy>('sort', ['day', 'longest', 'shortest', 'kills', 'loot'], 'day'),
     hidden: legacyHeat ? ['humanPath', 'botPath'] : (q.get('hide') ?? '').split(',').filter((k) => /^[a-zA-Z]{2,20}$/.test(k)),
     heatUnder: legacyHeat || q.get('under') === '1',

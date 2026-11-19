@@ -327,15 +327,17 @@ export function ReplayStage(props: StageProps) {
     // picked, the first click goes back to the player (a second click unpicks).
     else onPicked(picks.length === 1 && picks[0].match === id && picks[0].player === f.player ? [] : [f]);
   };
-  /** The bots recorded in a match: id, index, and when they died (null: alive when the log ends). */
-  const botsOf = (id: string) => {
+  /** Everyone recorded in a match, players first then bots: index, id, and when they died (null: no death logged). */
+  const playersOf = (id: string) => {
     const m = shown.find((x) => x.id === id);
     if (!m) return [];
-    return m.players.flatMap((p, i) => {
-      if (!p.bot) return [];
-      const death = m.events.find((e) => e[4] === i && e[1] === 'botDeath');
-      return [{ player: i, id: p.id, died: death ? death[0] : null }];
-    });
+    const DEATHS = new Set(['botDeath', 'diedToBot', 'diedToPlayer', 'storm']);
+    return m.players
+      .map((p, i) => {
+        const death = m.events.find((e) => e[4] === i && DEATHS.has(e[1]));
+        return { player: i, id: p.id, bot: p.bot, died: death ? death[0] : null };
+      })
+      .sort((a, b) => Number(a.bot) - Number(b.bot));
   };
   /** A bot clicked under its match: it alone is picked (its card opens); Ctrl / Cmd adds or removes it. */
   const openBot = (f: Focus, e: React.MouseEvent) => {
@@ -498,25 +500,26 @@ export function ReplayStage(props: StageProps) {
                         {ENDED_ICON[end] && <LegendIcon k={ENDED_ICON[end]!} size={13} />}
                         {ENDED_SHORT[end]}
                       </span>
-                      {m.bots > 0 && (
-                        <span className="r-bots" title={`${m.bots} bots recorded in this match too (dashed orange paths)`}>
-                          +{m.bots} bots
+                      {(m.humans > 1 || m.bots > 0) && (
+                        <span className="r-bots" title="Also recorded in this match: pick the match to see everyone">
+                          {m.humans > 1 && <span className="r-plus-player">+{m.humans - 1} player</span>}
+                          {m.bots > 0 && ` +${m.bots} bots`}
                         </span>
                       )}
                     </button>
-                    {picks.some((p) => p.match === m.id) && m.bots > 0 && (
-                      <ul className="r-bot-list" aria-label="Bots of this match">
-                        {botsOf(m.id).map((b) => (
+                    {picks.some((p) => p.match === m.id) && (m.bots > 0 || m.humans > 1) && (
+                      <ul className="r-bot-list" aria-label="Everyone recorded in this match">
+                        {playersOf(m.id).map((b) => (
                           <li key={b.player}>
                             <button
                               className={picks.some((p) => p.match === m.id && p.player === b.player) ? 'on' : ''}
                               onClick={(e) => openBot({ match: m.id, player: b.player }, e)}
                               onMouseEnter={() => setHoverPath({ match: m.id, player: b.player })}
                               onMouseLeave={() => setHoverPath(null)}
-                              title="Click: this bot's path and card · Ctrl / Cmd: add or remove"
+                              title={`Click: this ${b.bot ? 'bot' : 'player'}'s path and card · Ctrl / Cmd: add or remove`}
                             >
-                              <LegendIcon k="botPath" size={13} />
-                              <span className="r-day">Bot {b.id}</span>
+                              <LegendIcon k={b.bot ? 'botPath' : 'humanPath'} size={13} />
+                              <span className="r-day">{b.bot ? `Bot ${b.id}` : `Player ${b.id.slice(0, 8)}`}</span>
                               <span className={`r-end ${b.died === null ? 'ok' : 'dead'}`}>{b.died === null ? 'Alive' : `Died ${formatDuration(b.died)}`}</span>
                             </button>
                           </li>
@@ -555,7 +558,10 @@ export function ReplayStage(props: StageProps) {
             }}
             note={(() => {
               const bots = focusMatch?.players.filter((x) => x.bot).length ?? 0;
-              return bots && !story.bot ? `${bots} bots were recorded in this match too: pick one under the match in the list, or click a dashed orange path.` : undefined;
+              const others = (focusMatch?.players.filter((x) => !x.bot).length ?? 1) - 1;
+              if (story.bot || (!bots && !others)) return undefined;
+              const who = [others ? `${others} other player` : '', bots ? `${bots} bots` : ''].filter(Boolean).join(' and ');
+              return `${who} recorded in this match too: pick one under the match in the list, or click a path on the map.`;
             })()}
             onFocusOther={(player) => {
               setPinned(null);
