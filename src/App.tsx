@@ -38,10 +38,10 @@ export function App() {
     (patch: Partial<View>) =>
       setHist((h) => {
         // Changing what the filters keep shows every match they keep: all ticked again, nothing picked.
-        if (Object.keys(patch).some((k) => RESET_ON.has(k))) patch = { offMap: [], picked: [], ...patch };
+        if (Object.keys(patch).some((k) => RESET_ON.has(k))) patch = { offMap: [], onlyMap: [], offPlayers: [], picked: [], ...patch };
         const key = Object.keys(patch).sort().join(',');
         // Picking matches or players: every click is its own undo step (sliders and the like merge).
-        return record(h, { ...h.present, ...patch }, /\b(picked|matches|offMap)\b/.test(key) ? null : key, Date.now());
+        return record(h, { ...h.present, ...patch }, /\b(picked|matches|offMap|onlyMap|offPlayers)\b/.test(key) ? null : key, Date.now());
       }),
     [],
   );
@@ -215,7 +215,9 @@ export function App() {
             pathAlpha={view.pathAlpha}
             picked={view.picked}
             offMap={view.offMap}
-            onOffMap={(offMap) => update({ offMap })}
+            onlyMap={view.onlyMap}
+            offPlayers={view.offPlayers}
+            onSelect={(patch) => update(patch)}
             history={
               <span className="history-btns">
                 <button onClick={() => setHist(undo)} disabled={!hist.past.length} data-tip="Undo (Cmd/Ctrl+Z)" aria-label="Undo">

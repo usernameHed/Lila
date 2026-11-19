@@ -23,7 +23,10 @@ about 300 lines, move the oldest entries word for word to `SESSION_HISTORY.md` (
   did not show in Ugo's app window -> instant `data-tip` tooltips (`Tips.tsx`); tick box on each "On the map" row
   (and each player / bot under a match) to pick several without Ctrl. Then Ugo: filter change should show everything
   -> match tick boxes = shown on the map (`offMap`, URL `off`, all ticked by default); changing map / day / show /
-  game / ended / length / matches clears `offMap` and `picked` (`RESET_ON` in App).
+  game / ended / length / matches clears `offMap` and `picked` (`RESET_ON` in App). Then Ugo: tick and selection
+  must mean the same -> ticked = selected = shown; row click = only this ticked + card (again = all); tick box /
+  Ctrl toggles; Shift = range. Stored as the shorter list (`onlyMap` URL `only`, or `offMap`; '-' = none ticked).
+  Players / bots under a match: ticked by default, untick hides path + events (`offPlayers`, URL `offp`, 2D + 3D).
 
 ## 2026-11-19 (desktop session): layers on the left, zoom by 2D / 3D, picked match alone
 

@@ -40,6 +40,8 @@ export interface Map3DProps {
   iconScale: number;
   pathWidth: number;
   pathAlpha: number;
+  /** Players unticked in the list ("match.player"). */
+  offPlayers?: readonly string[];
 }
 
 /** Size of the ground texture: minimap + heatmap painted together. */
@@ -493,12 +495,12 @@ export default function Map3D(props: Map3DProps) {
       const n = samplesUntil(p.path, t);
       p.line.geometry.instanceCount = Math.max(0, n - 1); // Line2 draws one instance per segment
       p.shadow.geometry.setDrawRange(0, n);
-      const hide = hidden.has(p.bot ? 'botPath' : 'humanPath');
+      const hide = hidden.has(p.bot ? 'botPath' : 'humanPath') || !!props.offPlayers?.includes(`${p.match}.${p.player}`);
       p.line.visible = !hide;
       p.shadow.visible = !terrain && !hide; // a flat shadow would be buried under the terrain
       const at = positionAt(p.path, t);
       const h = heightAt(p.path, p.h, t);
-      p.head.visible = !!at && t < p.path[p.path.length - 3] && !hidden.has(p.bot ? 'botPath' : 'humanPath');
+      p.head.visible = !!at && t < p.path[p.path.length - 3] && !hide;
       if (at && h !== null) {
         p.head.position.copy(place(map, uvUnits, at.u, at.v, h));
       }
@@ -540,7 +542,7 @@ export default function Map3D(props: Map3DProps) {
       fights.points.visible = !hidden.has('fights');
       fights.points.geometry.setDrawRange(0, count(fights.times) * 2);
     }
-  }, [t, hidden, map, uvUnits, matches, terrain, hoverKind, activeEvent]);
+  }, [t, hidden, map, uvUnits, matches, terrain, hoverKind, activeEvent, props.offPlayers]);
 
   return (
     <div className="map3d" ref={box}>

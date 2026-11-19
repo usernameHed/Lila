@@ -145,9 +145,13 @@ interface StageProps {
   emptyHint: string;
   /** Players picked (view state: undo / redo, links). */
   picked: Focus[];
-  /** Matches unticked in the list (hidden from the map), and the setter. */
+  /** Matches unticked in the list (hidden from the map), or, when not empty, the only ones ticked. */
   offMap: string[];
-  onOffMap: (ids: string[]) => void;
+  onlyMap: string[];
+  /** Players or bots unticked under their match ("match.player"). */
+  offPlayers: string[];
+  /** Changes the ticks and the picked players in one step (one undo). */
+  onSelect: (p: { offMap?: string[]; onlyMap?: string[]; picked?: Focus[]; offPlayers?: string[] }) => void;
   /** The match filters, shown at the top of the "On the map" panel. */
   filters?: React.ReactNode;
   /** Undo / redo buttons, shown after the zoom buttons. */
@@ -223,7 +227,7 @@ function useLast<T>(value: T | null, fading: boolean): T | null {
 
 /** Every selected match on its map, all starting together at 0:00, with one playback. */
 export function ReplayStage(props: StageProps) {
-  const { summaries, uvUnits, mono, hidden, hover, onPointedKind, under, mapConfig, view3d, exaggeration, terrain, onView, iconScale, pathWidth, pathAlpha, emptyHint, picked, onPicked, offMap, onOffMap } = props;
+  const { summaries, uvUnits, mono, hidden, hover, onPointedKind, under, mapConfig, view3d, exaggeration, terrain, onView, iconScale, pathWidth, pathAlpha, emptyHint, picked, onPicked, offMap, onlyMap, onSelect, offPlayers } = props;
   const [loaded, setLoaded] = useState<Match[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -260,10 +264,9 @@ export function ReplayStage(props: StageProps) {
   const picks = useMemo(() => picked.filter((f) => shown.some((m) => m.id === f.match)), [picked, shown]);
   const focus = picks.length ? picks[picks.length - 1] : null;
   // With something picked, only the picked matches show (map, 3D, timeline); the others are hidden, not dimmed.
-  const visible = useMemo(
-    () => (picks.length ? shown.filter((m) => picks.some((p) => p.match === m.id)) : shown.filter((m) => !offMap.includes(m.id))),
-    [picks, shown, offMap],
-  );
+  // Ticked in the "On the map" list = selected = shown on the map (all ticked by default).
+  const isTicked = useCallback((id: string) => (onlyMap.length ? onlyMap.includes(id) : !offMap.includes(id)), [onlyMap, offMap]);
+  const visible = useMemo(() => shown.filter((m) => isTicked(m.id)), [shown, isTicked]);
   const events = useMemo(() => (current ? visible : []).flatMap((m) => m.events), [current, visible]);
   const setFocus = useCallback((f: Focus | null) => onPicked(f ? [f] : []), [onPicked]);
   const [pinned, setPinned] = useState<PointedEvent | null>(null);
@@ -317,21 +320,37 @@ export function ReplayStage(props: StageProps) {
    * A match clicked in the "On the map" list: it alone is picked (its player's card opens), or unpicked if it was the
    * only one. Ctrl / Cmd adds or removes it; Shift picks every match from the last picked one to this one.
    */
+  /**
+   * One meaning for the list: ticked = selected = shown on the map. A click ticks this match alone and opens its
+   * player's card (a second click ticks every match again); the tick box, or Ctrl / Cmd, adds or removes it; Shift
+   * ticks every match from the one whose card is open to this one.
+   */
+  const ids = summaries.map((m) => m.id);
+  const toggleTick = (id: string) => {
+    const was = isTicked(id);
+    // Kept as the shorter list: "only these" while few are ticked, else "all but these".
+    const ticked = was ? ids.filter((x) => x !== id && isTicked(x)) : ids.filter((x) => x === id || isTicked(x));
+    const unticked = ids.filter((x) => !ticked.includes(x));
+    // Nothing ticked: a one-character marker ('-' is no match id) instead of listing every match.
+    const lists = !ticked.length ? { onlyMap: ['-'], offMap: [] } : ticked.length < unticked.length ? { onlyMap: ticked, offMap: [] } : { onlyMap: [], offMap: unticked };
+    // A match unticked while its card is open: the card closes with it.
+    onSelect({ ...lists, ...(was && picks.some((p) => p.match === id) ? { picked: picks.filter((p) => p.match !== id) } : {}) });
+  };
   const openMatch = (id: string, e: React.MouseEvent) => {
     const f = humanOf(id);
     if (!f) return;
     setPinned(null);
-    const has = picks.some((p) => p.match === id);
-    if (e.shiftKey && picks.length) {
-      const ids = summaries.map((m) => m.id);
-      const a = ids.indexOf(picks[picks.length - 1].match);
+    if (e.ctrlKey || e.metaKey) return toggleTick(id);
+    if (e.shiftKey && focus) {
+      const a = ids.indexOf(focus.match);
       const b = ids.indexOf(id);
-      const range = ids.slice(Math.min(a, b), Math.max(a, b) + 1).map(humanOf).filter((x): x is Focus => !!x);
-      onPicked([...picks.filter((p) => !range.some((r) => r.match === p.match)), ...(a <= b ? range : range.reverse())]);
-    } else if (e.ctrlKey || e.metaKey) onPicked(has ? picks.filter((p) => p.match !== id) : [...picks, f]);
-    // A plain click: this match's player alone. If only that player was picked, unpick it; if one of its bots was
-    // picked, the first click goes back to the player (a second click unpicks).
-    else onPicked(picks.length === 1 && picks[0].match === id && picks[0].player === f.player ? [] : [f]);
+      const range = new Set(ids.slice(Math.min(a, b), Math.max(a, b) + 1));
+      return onSelect({ onlyMap: ids.filter((x) => range.has(x)), offMap: [] });
+    }
+    const alone = ids.filter(isTicked).length === 1 && isTicked(id);
+    // Already alone with its player's card: back to every match. A bot of it was picked: back to its player first.
+    if (alone && picks.length === 1 && picks[0].match === id && picks[0].player === f.player) onSelect({ onlyMap: [], offMap: [], picked: [] });
+    else onSelect({ onlyMap: [id], offMap: [], picked: [f] });
   };
   /** Everyone recorded in a match, players first then bots: index, id, and when they died (null: no death logged). */
   const playersOf = (id: string) => {
@@ -375,7 +394,7 @@ export function ReplayStage(props: StageProps) {
       if (shown.length)
         drawMatches(ctx, visible, uvUnits, size, t, play.playing, {
           mono, hidden: hiddenSet, hover: shownHover, phase, activeEvent: shownActive?.event ?? null, iconScale,
-          dim, pathWidth, pathAlpha, hoverPath: focus && hoverPath && focus.match === hoverPath.match && focus.player === hoverPath.player ? null : hoverPath,
+          dim, pathWidth, pathAlpha, offPlayers, hoverPath: focus && hoverPath && focus.match === hoverPath.match && focus.player === hoverPath.player ? null : hoverPath,
         });
       // Every picked player bold over a dimmed map; the last one (its card is open) with the players it fought.
       picks.forEach((p, i) => {
@@ -384,7 +403,7 @@ export function ReplayStage(props: StageProps) {
         if (m) drawFocus(ctx, m, p.player, uvUnits, size, t, last ? active?.event ?? null : null, phase, last ? story?.opponents ?? [] : [], false);
       });
     },
-    [visible, t, uvUnits, play.playing, mono, hiddenSet, shownHover, phase, under, focusMatch, focus, active, shownActive, story, iconScale, dim, pathWidth, pathAlpha, hoverPath, picks],
+    [visible, t, uvUnits, play.playing, mono, hiddenSet, shownHover, phase, under, focusMatch, focus, active, shownActive, story, iconScale, dim, pathWidth, pathAlpha, hoverPath, picks, offPlayers],
   );
 
   if (!summaries.length)
@@ -459,6 +478,7 @@ export function ReplayStage(props: StageProps) {
               iconScale={iconScale}
               pathWidth={pathWidth}
               pathAlpha={pathAlpha}
+              offPlayers={offPlayers}
               onPickEvent={(e) => {
                 const m = shown.find((x) => x.events.includes(e));
                 if (m) pickAt({ match: m.id, event: e }, null);
@@ -497,17 +517,17 @@ export function ReplayStage(props: StageProps) {
                       onClick={(e) => openMatch(m.id, e)}
                       onMouseEnter={() => setHoverPath(humanOf(m.id))}
                       onMouseLeave={() => setHoverPath(null)}
-                      data-tip="Click: this match alone, with its card · Ctrl / Cmd: add or remove · Shift: a range"
+                      data-tip="Click: this match alone, with its card (again: every match) · tick box or Ctrl / Cmd: add or remove · Shift: a range"
                     >
                       <span
-                        className={`tick-box pick-box ${!offMap.includes(m.id) ? 'on' : ''}`}
+                        className={`tick-box pick-box ${isTicked(m.id) ? 'on' : ''}`}
                         role="checkbox"
-                        aria-checked={!offMap.includes(m.id)}
-                        aria-label="Show or hide this match on the map"
-                        data-tip="Shown on the map (untick to hide it)"
+                        aria-checked={isTicked(m.id)}
+                        aria-label="Select this match (shown on the map)"
+                        data-tip="Selected and shown on the map: untick to hide it, tick to add it"
                         onClick={(e) => {
                           e.stopPropagation();
-                          onOffMap(offMap.includes(m.id) ? offMap.filter((x) => x !== m.id) : [...offMap, m.id]);
+                          toggleTick(m.id);
                         }}
                       />
                       <span className="dot" style={{ background: color }} />
@@ -533,16 +553,18 @@ export function ReplayStage(props: StageProps) {
                               onClick={(e) => openBot({ match: m.id, player: b.player }, e)}
                               onMouseEnter={() => setHoverPath({ match: m.id, player: b.player })}
                               onMouseLeave={() => setHoverPath(null)}
-                              data-tip={`Click: this ${b.bot ? 'bot' : 'player'} alone · tick box (or Ctrl / Cmd): add or remove`}
+                              data-tip={`Click: this ${b.bot ? 'bot' : 'player'}'s card, its path in bold · tick box: show or hide it`}
                             >
                               <span
-                                className={`tick-box pick-box ${picks.some((p) => p.match === m.id && p.player === b.player) ? 'on' : ''}`}
+                                className={`tick-box pick-box ${!offPlayers.includes(`${m.id}.${b.player}`) ? 'on' : ''}`}
                                 role="checkbox"
-                                aria-checked={picks.some((p) => p.match === m.id && p.player === b.player)}
-                                aria-label="Add or remove"
+                                aria-checked={!offPlayers.includes(`${m.id}.${b.player}`)}
+                                aria-label="Show or hide on the map"
+                                data-tip="Shown on the map: untick to hide this path and its events"
                                 onClick={(e) => {
                                   e.stopPropagation();
-                                  openBot({ match: m.id, player: b.player }, { ...e, ctrlKey: true, metaKey: false } as React.MouseEvent);
+                                  const k = `${m.id}.${b.player}`;
+                                  onSelect({ offPlayers: offPlayers.includes(k) ? offPlayers.filter((x) => x !== k) : [...offPlayers, k] });
                                 }}
                               />
                               <LegendIcon k={b.bot ? 'botPath' : 'humanPath'} size={13} />

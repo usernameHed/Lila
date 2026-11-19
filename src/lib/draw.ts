@@ -16,6 +16,7 @@ interface Look {
   density?: number; // per-line opacity when many matches overlap (see pathDensity)
   hideHumans?: boolean;
   hideBots?: boolean;
+  off?: ReadonlySet<number>; // players of this match unticked in the list
   fade?: number; // something else is hovered: paths step back
   width: number; // path thickness factor (setting)
   alpha: number; // path opacity factor (setting)
@@ -36,11 +37,20 @@ export interface ReplayOptions {
   /** The path under the mouse: highlighted, under the icons. */
   hoverPath?: { match: string; player: number } | null;
   pathWidth?: number; // path thickness factor (1 = default)
+  /** Players unticked in the list, as "match.player". */
+  offPlayers?: readonly string[];
   pathAlpha?: number; // path opacity factor (1 = default)
 }
 
 /** How much the rest fades when something is hovered, at the end of the fade: it stays readable. */
 export const HOVER_FADE = { icons: 0.5, paths: 0.4, lines: 0.5 };
+
+/** The players of one match unticked in the list. */
+function offOf(off: readonly string[] | undefined, match: string): Set<number> {
+  const out = new Set<number>();
+  for (const k of off ?? []) if (k.startsWith(`${match}.`)) out.add(Number(k.slice(match.length + 1)));
+  return out;
+}
 
 /** Several matches on one clock: all start at t = 0 (each match's own clock). */
 export function drawMatches(ctx: CanvasRenderingContext2D, matches: Match[], uvUnits: number, size: number, t: number, playing: boolean, o: ReplayOptions = {}) {
@@ -54,6 +64,7 @@ export function drawMatches(ctx: CanvasRenderingContext2D, matches: Match[], uvU
       density,
       hideHumans: hidden.has('humanPath'),
       hideBots: hidden.has('botPath'),
+      off: offOf(o.offPlayers, m.id),
       fade: 1 - HOVER_FADE.paths * (o.dim ?? 0) * (o.hover === 'humanPath' || o.hover === 'botPath' ? 0 : 1),
       width: o.pathWidth ?? 1,
       alpha: o.pathAlpha ?? 1,
@@ -65,7 +76,10 @@ export function drawMatches(ctx: CanvasRenderingContext2D, matches: Match[], uvU
   if (hp && hm) drawPathHover(ctx, hm, hp.player, uvUnits, size, t);
   // Events after every path, so no marker is hidden under another match's lines.
   // Past events, plus the future ones of the hovered kind and the pointed-at event (drawn faded).
-  const events = matches.flatMap((m) => m.events).filter((e) => !hidden.has(e[1]));
+  const events = matches.flatMap((m) => {
+    const off = offOf(o.offPlayers, m.id);
+    return off.size ? m.events.filter((e) => !off.has(e[4])) : m.events;
+  }).filter((e) => !hidden.has(e[1]));
   drawEvents(ctx, events, uvUnits, size, t, playing, (many ? 0.55 : 1) * (o.iconScale ?? 1), o);
   // Killer-to-victim lines last: short (median ~9 m), they would hide under the markers.
   if (!hidden.has('fights')) {
@@ -99,6 +113,7 @@ function drawPaths(ctx: CanvasRenderingContext2D, match: Match, uvUnits: number,
   const players = [...match.players].sort((a, b) => Number(b.bot) - Number(a.bot));
   for (const p of players) {
     if (p.bot ? look.hideBots : look.hideHumans) continue;
+    if (look.off?.has(match.players.indexOf(p))) continue;
     const n = samplesUntil(p.path, t);
     if (!n) continue;
     const color = p.bot ? PATH_COLOR.bot : look.human;

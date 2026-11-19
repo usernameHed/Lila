@@ -18,8 +18,10 @@ live views. It doubles as the walkthrough of the features below.
 
 **Match replay**, in the order a designer works: map, day and layers on the left, the matches running on the map (an "On the
   map" list under the filters, with "+1 player" / "+N bots" when more than the player was recorded and the match colors switch:
-  click one for its player's card (on the right of the map) and only that match stays on the map; the tick box at the
-  start of each row shows or hides that match (all ticked by default; any filter change ticks them all again); a picked
+  click one for its player's card (on the right of the map) and only that match stays on the map; one meaning for the list:
+  ticked = selected = shown on the map (all ticked by default; any filter change ticks them all again); a click ticks
+  that match alone with its player's card (again: every match), the tick box or Ctrl / Cmd adds or removes one, Shift
+  ticks a range; under a selected match, its players and bots are ticked too and can be hidden one by one; a picked
   match lists everyone recorded in it (players, then bots) to pick too (a bot picked: one click on its match goes back to the player, a second unpicks), Ctrl / Cmd adds or removes, Shift picks a
   range; the list and the card each span the map's height, the card's events scroll), the layers on the right.
 On a 16:9 screen (1366x768 to 1920x1080) everything fits without scrolling:
