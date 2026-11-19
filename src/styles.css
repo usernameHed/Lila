@@ -139,7 +139,6 @@ select {
 .stage-note { font-size: 13px; padding: 0 2px; }
 
 /* Update button: the same green pill as Ugo's dashboard */
-.side header.brand { display: flex; align-items: flex-start; justify-content: space-between; gap: 8px; }
 .update-btn {
   display: inline-flex; align-items: center; gap: 6px; padding: 6px 12px; border-radius: 999px; flex: none;
   background: rgba(79, 209, 139, 0.14); border: 1px solid var(--ok); color: var(--ok); font-weight: 700; cursor: pointer;
@@ -291,7 +290,6 @@ select {
 }
 @media (min-width: 981px) and (max-height: 860px) {
   .side { gap: 8px; }
-  .side header.brand h1 { font-size: 16px; }
   .side .sub { display: none; }
   .tabs button { padding: 6px 0; }
   .segmented button { padding: 4px 10px; }
@@ -315,7 +313,6 @@ select {
 .history-btns button { display: inline-grid; place-items: center; width: 30px; height: 30px; border-radius: 8px; border: 0; background: transparent; color: var(--muted); cursor: pointer; }
 .history-btns button:disabled { opacity: 0.35; cursor: default; }
 .history-btns button:hover:not(:disabled) { background: #23262d; color: var(--text); }
-.side header.brand { align-items: center; }
 
 /* Data tab */
 .data-line { display: flex; align-items: baseline; gap: 6px; width: 100%; padding: 7px 10px; background: rgba(76,201,240,0.06); border: 1px solid rgba(76,201,240,0.35); border-radius: 8px; color: var(--text); cursor: pointer; text-align: left; font-size: 12.5px; }
@@ -543,3 +540,6 @@ button.map-tile:not(.on) .map-thumb { opacity: 0.75; }
 .zoom-btns { display: inline-flex; gap: 3px; }
 .zoom-btns button { width: 26px; height: 24px; border-radius: 6px; border: 1px solid var(--line); background: #1d2026; color: var(--text); font-size: 15px; line-height: 1; cursor: pointer; }
 .zoom-btns button:hover { border-color: var(--accent); }
+.stage-tools .history-btns { margin-left: 0; }
+.stage-tools .history-btns button { width: 26px; height: 24px; border: 1px solid var(--line); background: #1d2026; color: var(--text); }
+.stage-tools .history-btns button:disabled { opacity: 0.35; }

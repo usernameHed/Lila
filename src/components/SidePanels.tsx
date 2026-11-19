@@ -266,7 +266,7 @@ export function RightPanel(p: RightProps) {
           <h2>Layers</h2>
         </header>
         <div className="layer-head">
-          <span>Hover to read what it is</span>
+          <span />
           <button onClick={() => update(anyIcons ? { hidden: [...LEGEND_KEYS] } : { replayOn: true, hidden: [] })} title={anyIcons ? 'Hide every icon and path' : 'Show every icon and path'}>
             Icons
           </button>

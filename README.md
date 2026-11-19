@@ -60,7 +60,7 @@ On a 16:9 screen (1366x768 to 1920x1080) everything fits without scrolling:
   runs on it. It is read and processed in the browser (a Web Worker running the same pipeline as `pipeline/build.py`,
   ported to `src/lib/build.ts` and checked value for value against it), kept in this browser, and shown when ready;
   the left panel always says which data is on screen, one click to change it.
-- **Undo / redo** for every setting and every pick (matches, players), with the arrows in the header, Cmd/Ctrl+Z,
+- **Undo / redo** for every setting and every pick (matches, players), with the arrows next to the zoom buttons, Cmd/Ctrl+Z,
   Shift+Cmd/Ctrl+Z; dragging a slider is one step, each pick is its own step. Picked players are in the link too.
 - **Works offline** after the first visit: a service worker keeps every file (app, maps, data, about 10 MB) in the
   browser; a new version downloads only the files that changed. A loading screen while files arrive, and a Reload

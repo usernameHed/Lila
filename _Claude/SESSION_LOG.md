@@ -20,7 +20,8 @@ about 300 lines, move the oldest entries word for word to `SESSION_HISTORY.md` (
 - Layers panel moved to the bottom of the left sidebar (no right column; tooltips open to the right). Zoom + / - next
   to 2D / 3D (`zoomRef` on MapCanvas). Picking hides every other match (`visible` in ReplayStage: map, 3D, picking,
   timeline). Bot picked + click on its match = back to the player; second click unpicks. Card button "Replay this
-  match" = pick its player and play from 0:00; the "On the map" list is kept.
+  match" = pick its player and play from 0:00; the "On the map" list is kept. Then: title and subtitle removed, undo /
+  redo moved after the zoom buttons (replay page only, also in the empty view), layer hint text removed.
 
 ## 2026-11-19 (desktop session): filters over the map, card on the right, bots in the list
 

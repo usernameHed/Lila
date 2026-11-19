@@ -134,21 +134,7 @@ export function App() {
   return (
     <div className="app">
       <aside className="side">
-        <header className="brand">
-          <div>
-            <h1>LILA BLACK</h1>
-            <p className="sub">Player journeys · Feb 10-14, 2026</p>
-          </div>
-          <div className="history-btns">
-            <button onClick={() => setHist(undo)} disabled={!hist.past.length} title="Undo (Cmd/Ctrl+Z)" aria-label="Undo">
-              <Icon name="undo" size={17} />
-            </button>
-            <button onClick={() => setHist(redo)} disabled={!hist.future.length} title="Redo (Shift+Cmd/Ctrl+Z)" aria-label="Redo">
-              <Icon name="redo" size={17} />
-            </button>
-          </div>
-          <UpdateButton />
-        </header>
+        <UpdateButton />
 
         <div className="tabs" role="tablist">
           {(['overview', 'replay', 'data'] as Mode[]).map((m) => (
@@ -222,6 +208,16 @@ export function App() {
             pathWidth={view.pathWidth}
             pathAlpha={view.pathAlpha}
             picked={view.picked}
+            history={
+              <span className="history-btns">
+                <button onClick={() => setHist(undo)} disabled={!hist.past.length} title="Undo (Cmd/Ctrl+Z)" aria-label="Undo">
+                  <Icon name="undo" size={16} />
+                </button>
+                <button onClick={() => setHist(redo)} disabled={!hist.future.length} title="Redo (Shift+Cmd/Ctrl+Z)" aria-label="Redo">
+                  <Icon name="redo" size={16} />
+                </button>
+              </span>
+            }
             filters={<MatchFilters view={view} update={update} pool={pool} />}
             onPicked={(picked) => update({ picked })}
             emptyHint={matches.length ? 'Tick a match in the list to replay it.' : 'No match for these filters.'}

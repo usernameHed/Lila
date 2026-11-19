@@ -147,6 +147,8 @@ interface StageProps {
   picked: Focus[];
   /** The match filters, shown at the top of the "On the map" panel. */
   filters?: React.ReactNode;
+  /** Undo / redo buttons, shown after the zoom buttons. */
+  history?: React.ReactNode;
   onPicked: (p: Focus[]) => void;
 }
 
@@ -379,6 +381,8 @@ export function ReplayStage(props: StageProps) {
 
   if (!summaries.length)
     return (
+      <>
+      <div className="stage-tools">{props.history}</div>
       <div className="stage-main">
         <MapCanvas map={mapConfig.id} draw={noDraw} dim={0} uvUnits={uvUnits} inset={312} />
         <div className="stage-left">
@@ -388,6 +392,7 @@ export function ReplayStage(props: StageProps) {
         </div>
         <div className="stage-hint">{emptyHint}</div>
       </div>
+      </>
     );
 
   const many = summaries.length > MANY_MATCHES;
@@ -405,6 +410,7 @@ export function ReplayStage(props: StageProps) {
             <button onClick={() => zoomRef.current?.(1 / 1.5)} aria-label="Zoom out" title="Zoom out">−</button>
           </span>
         )}
+        {props.history}
         {view3d && (
           <Choice label="Ground" options={[['terrain', 'Terrain'], ['flat', 'Flat']]} value={terrain ? 'terrain' : 'flat'} onChange={(g) => onView({ terrain: g === 'terrain' })} />
         )}
