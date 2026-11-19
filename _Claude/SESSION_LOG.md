@@ -15,6 +15,12 @@ about 300 lines, move the oldest entries word for word to `SESSION_HISTORY.md` (
 
 ---
 
+## 2026-11-19 (desktop session): one-line filters, match colors in the map list, bots made explicit
+
+- Every filter is one line (no "Any" chips: click an active chip again = all; Day chips are the dates under "Feb";
+  Ended counts in tooltips). Match colors switch moved to the "On the map" header. Ugo saw "Bots" yet a Player card:
+  chips renamed "Player only" / "With bots", rows show "+N bots", the card says how many bots and to click a dashed path.
+
 ## 2026-11-19 (desktop session): day rows, random draw, Game = Player / Bots / Both
 
 - Ugo asked if some matches are played by bots: no, every match has its human (794 one, 2 two); bots recorded too in

@@ -14,10 +14,12 @@ interface Props {
   onOnlyThisMatch?: () => void;
   /** Open the other side of a fight. */
   onFocusOther: (player: number) => void;
+  /** One line about the match (e.g. its recorded bots). */
+  note?: string;
 }
 
 /** Everything about one player in one match: identity, numbers, every event (click to jump there), fights. */
-export function PlayerCard({ story: s, title, active, onPoint, onSeek, onClose, onOnlyThisMatch, onFocusOther }: Props) {
+export function PlayerCard({ story: s, title, active, onPoint, onSeek, onClose, onOnlyThisMatch, onFocusOther, note }: Props) {
   return (
     <aside className="player-card" aria-label="Player details">
       <header>
@@ -34,6 +36,7 @@ export function PlayerCard({ story: s, title, active, onPoint, onSeek, onClose, 
         <div><dt>Walked</dt><dd>{Math.round(s.meters).toLocaleString('en')} m</dd></div>
         <div><dt>Height</dt><dd>{Math.round(s.heightMin)}-{Math.round(s.heightMax)} m</dd></div>
       </dl>
+      {note && <p className="card-note">{note}</p>}
       {s.pvpMissing && (
         <p className="pvp-note">
           <b>Player vs player:</b> the other player is not in the data. Their file is missing: only this side was logged, with

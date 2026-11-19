@@ -17,16 +17,17 @@ data details we had to get right, how it is built, and what the game should log 
 live views. It doubles as the walkthrough of the features below.
 
 **Match replay**, in the order a designer works: filters on the left, the matches running on the map (an "On the
-  map" list in its top-left corner: click one for its player's card, Ctrl / Cmd adds or removes, Shift picks a
+  map" list in its top-left corner, with "+N bots" when the bots were recorded and the match colors switch:
+  click one for its player's card, Ctrl / Cmd adds or removes, Shift picks a
   range; the list and the card share the height, the card's events scroll), the layers on the right.
 On a 16:9 screen (1366x768 to 1920x1080) everything fits without scrolling:
 - **Replay** one match or many on one clock, at 10x / 30x / 60x; Space plays and pauses; grabbing the timeline
   pauses. The timeline has a tick per fight and death, and a band where the storm kills (from minute 10.9).
-- **Day**: All days or one day. Below it, how many: **All** (every match together), **10** or **100** (drawn at
-  random, ticked by default, ↻ draws again; unticked: the last 10 or 100, by day since the time of day is not
-  logged), or **Custom** (the match list, to pick matches one by one).
-- **Match filters**, as one-click chips that show how many matches each would leave: game (Player: only the player was
-  recorded; Bots: the bots were recorded too, 52 of 796 matches; Both), how the player's run ended
+- **Filters, one line each**: click a chip to keep only those matches, click it again for every match. Day (10 to
+  14 Feb); Show: **10** or **100** (drawn at random, ticked by default, ↻ draws again; unticked: the last ones, by
+  day since the time of day is not logged) or **Custom** (the match list, to pick matches one by one).
+- **Match filters**, as one-click chips that show how many matches each would leave: game (Player only: only the
+  player was recorded; With bots: the bots were recorded too beside the player, 52 of 796 matches), how the player's run ended
   (survived, killed by a bot, by a player, by the storm), length (under 5, 5-10, over 10 min). In Custom, matches are
   grouped by day (fold a day, tick it to select all its matches), one line per match (duration, how it ended, kills,
   loot; ⇄ when bots were recorded too). Picking a match plays it from 0:00 (if the previous replay had ended, paused, it shows the new one whole). "Clear all filters" goes back to every match.

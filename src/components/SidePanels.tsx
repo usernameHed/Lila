@@ -8,7 +8,6 @@ import { EXPLAIN, HEAT_LAYERS, formatDay, heatRgb, rgbCss } from '../lib/style';
 import type { LegendKey } from '../lib/draw';
 import type { HeatData, MatchSummary } from '../lib/types';
 import { ALL, NONE, legendToggle, type View } from '../lib/view';
-import { Choice } from './Choice';
 import { LEGEND_KEYS, LegendIcon, legendColor, legendLabel } from './Legend';
 import { OVERVIEW_SECTIONS } from './Overview';
 import { MatchList } from './Replay';
@@ -31,31 +30,36 @@ interface ReplayProps {
 
 type Option<T> = [T, React.ReactNode, string?]; // value, chip content, tooltip
 const ENDED: Option<View['ended']>[] = [
-  ['any', 'Any'],
   ['survived', 'Survived', 'No death logged'],
   ['bot', <><LegendIcon k="diedToBot" size={12} /> Bot</>, 'Killed by a bot'],
   ['player', <><LegendIcon k="diedToPlayer" size={12} /> Player</>, 'Killed by a player'],
   ['storm', <><LegendIcon k="storm" size={12} /> Storm</>, 'Died to the storm'],
 ];
 const GAME: Option<View['game']>[] = [
-  ['player', <><LegendIcon k="humanPath" size={12} /> Player</>, 'Only the player was recorded in the match'],
-  ['bots', <><LegendIcon k="botPath" size={12} /> Bots</>, 'The bots were recorded too: their paths, kills and deaths are on the map'],
-  ['any', 'Both', 'Every match'],
+  ['player', <><LegendIcon k="humanPath" size={12} /> Player only</>, 'Matches where only the player was recorded (every match has its player)'],
+  ['bots', <><LegendIcon k="botPath" size={12} /> With bots</>, 'Matches where the bots were recorded too, beside the player: their paths, kills and deaths are on the map'],
 ];
-const LENGTH: Option<View['length']>[] = [['any', 'Any'], ['short', '<5 min'], ['mid', '5-10'], ['long', '>10']];
+const LENGTH: Option<View['length']>[] = [['short', '<5 min'], ['mid', '5-10 min'], ['long', '>10 min']];
 
-/** One filter as a row of chips: one click picks it, each chip says how many matches it would leave. */
-function FilterRow<T extends string>({ label, value, options, count, onChange }: { label: string; value: T; options: Option<T>[]; count?: (v: T) => number; onChange: (v: T) => void }) {
+/**
+ * One filter on one line: a label, then chips. Click a chip to keep only those matches, click it again to show
+ * every match. `count` says how many matches each chip would leave (shown, or in the tooltip when space is short).
+ */
+function FilterRow<T extends string>({ label, value, options, count, countInTip, onChange }: { label: string; value: T; options: Option<T>[]; count?: (v: T) => number; countInTip?: boolean; onChange: (v: T | 'any') => void }) {
   return (
-    <div className="filter-row" role="radiogroup" aria-label={label}>
+    <div className="filter-row" role="group" aria-label={label}>
       <span className="filter-label">{label}</span>
-      <span className="chips">
-        {options.map(([v, text, tip]) => (
-          <button key={v} role="radio" aria-checked={v === value} title={tip} className={`chip ${v === value ? 'on' : ''}`} onClick={() => onChange(v)}>
-            {text}
-            {count && v !== 'any' && <i>{count(v)}</i>}
-          </button>
-        ))}
+      <span className="chips one-line">
+        {options.map(([v, text, tip]) => {
+          const n = count?.(v);
+          const title = [tip, countInTip && n !== undefined ? `${n} matches` : null, v === value ? 'Click again to show every match' : null].filter(Boolean).join(' · ');
+          return (
+            <button key={v} aria-pressed={v === value} title={title} className={`chip ${v === value ? 'on' : ''}`} onClick={() => onChange(v === value ? 'any' : v)}>
+              {text}
+              {n !== undefined && !countInTip && <i>{n}</i>}
+            </button>
+          );
+        })}
       </span>
     </div>
   );
@@ -76,59 +80,59 @@ export function ReplaySide(p: ReplayProps) {
     <>
       <section className={custom ? 'grow' : ''}>
         <h2 className="with-actions">
-          <span>Day</span>
+          <span>Matches</span>
           <span className="count day-count">
             {custom ? `${selected.length} of ${matches.length} shown` : `${selected.length} match${selected.length === 1 ? '' : 'es'} together`}
           </span>
         </h2>
-        <span className="chips" role="radiogroup" aria-label="Day">
-          {['all', ...p.days].map((d) => (
+        <div className="filter-row" role="group" aria-label="Day">
+          <span className="filter-label" title="Day of the match (all in February 2026)">Feb</span>
+          <span className="chips one-line">
+            {p.days.map((d) => (
+              <button
+                key={d}
+                aria-pressed={view.day === d}
+                className={`chip ${view.day === d ? 'on' : ''}`}
+                title={`${formatDay(d)} only${d === '2026-02-14' ? ' (partial day: the export stops mid-day)' : ''}${view.day === d ? ' · Click again for every day' : ''}`}
+                onClick={() => update({ day: view.day === d ? 'all' : d })}
+              >
+                {Number(d.slice(8))}
+              </button>
+            ))}
+          </span>
+        </div>
+        <div className="filter-row" role="group" aria-label="How many matches">
+          <span className="filter-label">Show</span>
+          <span className="chips one-line">
+            {([10, 100] as const).map((n) => (
+              <button
+                key={n}
+                aria-pressed={!custom && view.recent === n}
+                className={`chip ${!custom && view.recent === n ? 'on' : ''}`}
+                title={`${view.random ? `${n} matches drawn at random` : `The last ${n} matches`} of the day(s), replayed together${!custom && view.recent === n ? ' · Click again for every match' : ''}`}
+                onClick={() => update({ matches: ALL, recent: !custom && view.recent === n ? 0 : n })}
+              >
+                {n}
+              </button>
+            ))}
             <button
-              key={d}
-              role="radio"
-              aria-checked={view.day === d}
-              className={`chip ${view.day === d ? 'on' : ''}`}
-              title={d === 'all' ? 'Every day' : `${formatDay(d)} only${d === '2026-02-14' ? ' (partial day: the export stops mid-day)' : ''}`}
-              onClick={() => update({ day: d })}
+              aria-pressed={custom}
+              className={`chip ${custom ? 'on' : ''}`}
+              title={custom ? 'Click again for every match' : 'Pick the matches yourself, from the list'}
+              onClick={() => update(custom ? { matches: ALL } : { recent: 0, matches: selected.slice(0, 1).map((m) => m.id) })}
             >
-              {d === 'all' ? 'All days' : formatDay(d)}
+              Custom
             </button>
-          ))}
-        </span>
-        <div className="chips how-many" role="radiogroup" aria-label="How many matches">
-          <button role="radio" aria-checked={!custom && !view.recent} className={`chip ${!custom && !view.recent ? 'on' : ''}`} title="Every match of the day(s), replayed together" onClick={() => update({ matches: ALL, recent: 0 })}>
-            All
-          </button>
-          {([10, 100] as const).map((n) => (
-            <button
-              key={n}
-              role="radio"
-              aria-checked={!custom && view.recent === n}
-              className={`chip ${!custom && view.recent === n ? 'on' : ''}`}
-              title={view.random ? `${n} matches drawn at random from the day(s), replayed together` : `The last ${n} matches of the day(s) (by day: the time of day is not logged)`}
-              onClick={() => update({ matches: ALL, recent: n })}
-            >
-              {view.random ? `${n} random` : `Last ${n}`}
-            </button>
-          ))}
-          <button
-            role="radio"
-            aria-checked={custom}
-            className={`chip ${custom ? 'on' : ''}`}
-            title="Pick the matches yourself, from the list"
-            onClick={() => !custom && update({ recent: 0, matches: selected.slice(0, 1).map((m) => m.id) })}
-          >
-            Custom
-          </button>
-          <label className="random-box" title="Draw the 10 or 100 matches at random instead of taking the last ones">
-            <input type="checkbox" checked={view.random} onChange={(e) => update({ random: e.target.checked })} />
-            Random
-          </label>
-          {view.random && !custom && view.recent > 0 && (
-            <button className="redraw" onClick={() => update({ seed: view.seed + 1 })} title="Draw other matches">
-              ↻
-            </button>
-          )}
+            <label className="random-box" title="10 or 100: drawn at random (ticked) or the last ones (unticked)">
+              <input type="checkbox" checked={view.random} onChange={(e) => update({ random: e.target.checked })} />
+              Random
+            </label>
+            {view.random && !custom && view.recent > 0 && (
+              <button className="redraw" onClick={() => update({ seed: view.seed + 1 })} title="Draw other matches">
+                ↻
+              </button>
+            )}
+          </span>
         </div>
         {custom && (
           <>
@@ -166,15 +170,9 @@ export function ReplaySide(p: ReplayProps) {
           </span>
         </h2>
         <FilterRow label="Game" value={view.game} options={GAME} count={(v) => countWith({ game: v })} onChange={(v) => update({ game: v })} />
-        <FilterRow label="Ended" value={view.ended} options={ENDED} count={(v) => countWith({ ended: v })} onChange={(v) => update({ ended: v })} />
+        <FilterRow label="Ended" value={view.ended} options={ENDED} count={(v) => countWith({ ended: v })} countInTip onChange={(v) => update({ ended: v })} />
         <FilterRow label="Length" value={view.length} options={LENGTH} onChange={(v) => update({ length: v })} />
       </section>
-      {selected.length > 1 && (
-        <section>
-          <h2>Match colors</h2>
-          <Choice label="Match colors" options={[['each', 'One per match'], ['mono', 'One color']]} value={view.mono ? 'mono' : 'each'} onChange={(c) => update({ mono: c === 'mono' })} />
-        </section>
-      )}
     </>
   );
 }

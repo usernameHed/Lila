@@ -504,3 +504,15 @@ button.map-tile:not(.on) .map-thumb { opacity: 0.75; }
 .redraw { padding: 1px 7px; border-radius: 7px; border: 1px solid var(--line); background: transparent; color: var(--text); cursor: pointer; font-size: 12px; }
 .redraw:hover { border-color: var(--accent); }
 .story, .replayed ul { overflow-x: hidden; }
+.chips.one-line { flex-wrap: nowrap; min-width: 0; }
+.filter-row .chips.one-line { overflow: hidden; }
+.how-many { display: none; }
+.replayed h3 { display: flex; align-items: center; }
+.colors-switch { margin-left: auto; display: inline-flex; gap: 2px; text-transform: none; letter-spacing: 0; }
+.colors-switch button { padding: 1px 6px; border-radius: 5px; border: 1px solid transparent; background: none; color: var(--muted); font-size: 10.5px; cursor: pointer; }
+.colors-switch button.on { color: var(--text); border-color: var(--accent); background: rgba(229,72,77,0.12); }
+.filter-row .chip { padding: 3px 5px; font-size: 11px; gap: 3px; }
+.filter-row .filter-label { width: 34px; }
+.colors-switch button { white-space: nowrap; }
+.replayed .r-bots { margin-left: auto; font-size: 10.5px; color: #f4a261; white-space: nowrap; }
+.card-note { margin: 8px 0 0; padding: 6px 8px; border-radius: 6px; background: rgba(244,162,97,0.1); border: 1px solid rgba(244,162,97,0.35); font-size: 12px; color: var(--text); }

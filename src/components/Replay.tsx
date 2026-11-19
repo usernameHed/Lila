@@ -136,7 +136,7 @@ interface StageProps {
   view3d: boolean;
   exaggeration: number;
   terrain: boolean;
-  onView: (patch: { view3d?: boolean; exaggeration?: number; terrain?: boolean }) => void;
+  onView: (patch: { view3d?: boolean; exaggeration?: number; terrain?: boolean; mono?: boolean }) => void;
   /** Replay only this match (from the details card). */
   onOnlyMatch: (id: string) => void;
   iconScale: number;
@@ -426,6 +426,16 @@ export function ReplayStage(props: StageProps) {
           <section className="replayed" aria-label="Matches on the map">
             <h3>
               On the map <span>{summaries.length}</span>
+              {summaries.length > 1 && !many && (
+                <span className="colors-switch" role="group" aria-label="Match colors">
+                  <button className={!mono ? 'on' : ''} aria-pressed={!mono} onClick={() => onView({ mono: false })} title="One color per match">
+                    Colors
+                  </button>
+                  <button className={mono ? 'on' : ''} aria-pressed={mono} onClick={() => onView({ mono: true })} title="One color for every match">
+                    One color
+                  </button>
+                </span>
+              )}
             </h3>
             <ul>
               {summaries.map((m, i) => {
@@ -447,6 +457,11 @@ export function ReplayStage(props: StageProps) {
                         {ENDED_ICON[end] && <LegendIcon k={ENDED_ICON[end]!} size={13} />}
                         {ENDED_SHORT[end]}
                       </span>
+                      {m.bots > 0 && (
+                        <span className="r-bots" title={`${m.bots} bots recorded in this match too (dashed orange paths)`}>
+                          +{m.bots} bots
+                        </span>
+                      )}
                     </button>
                   </li>
                 );
@@ -469,6 +484,10 @@ export function ReplayStage(props: StageProps) {
               setPinned(null);
             }}
             onOnlyThisMatch={summaries.length > 1 ? () => onOnlyMatch(focus.match) : undefined}
+            note={(() => {
+              const bots = focusMatch?.players.filter((x) => x.bot).length ?? 0;
+              return bots && !story.bot ? `${bots} bots were recorded in this match too: click a dashed orange path for a bot's own card.` : undefined;
+            })()}
             onFocusOther={(player) => {
               setPinned(null);
               setFocus({ match: focus.match, player });
