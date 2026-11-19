@@ -19,17 +19,17 @@ export const MATCH_COLORS = ['#4cc9f0', '#80ed99', '#ff70a6', '#c77dff', '#fffff
 /** Above this many matches, one color for all players and no loot markers: the map stays readable. */
 export const MANY_MATCHES = MATCH_COLORS.length;
 
-/** Map icons (src/lib/icons.ts): a crosshair for a kill, a skull over crossed bones for a player's death, a dead monster for a bot's. */
-export type MarkerShape = 'crosshair' | 'skullBones' | 'skull' | 'monster' | 'diamond' | 'storm';
+/** Map icons (src/lib/icons.ts): a robot spider for a bot a player killed, a crosshair for a kill, a skull over crossed bones for a player's death, a dead monster for a bot's. */
+export type MarkerShape = 'spider' | 'crosshair' | 'skullBones' | 'skull' | 'monster' | 'diamond' | 'storm';
 
 export const EVENT_STYLE: Record<EventType, { label: string; color: string; shape: MarkerShape; size: number }> = {
-  killBot: { label: 'Player killed a bot', color: '#ff4d6d', shape: 'crosshair', size: 6 },
-  killPlayer: { label: 'Player killed a player', color: '#ff0a54', shape: 'crosshair', size: 8 },
-  diedToBot: { label: 'Player killed by a bot', color: '#f1f1f1', shape: 'skullBones', size: 7 },
-  diedToPlayer: { label: 'Player killed by a player', color: '#ff0a54', shape: 'skullBones', size: 8 },
-  storm: { label: 'Player died to the storm', color: '#b388ff', shape: 'storm', size: 8 },
-  loot: { label: 'Player looted an item', color: '#ffd166', shape: 'diamond', size: 5 },
-  botKill: { label: 'Bot killed someone', color: '#f4a261', shape: 'crosshair', size: 4.5 },
+  killBot: { label: 'Bot killed', color: '#ff4d6d', shape: 'spider', size: 6.5 },
+  killPlayer: { label: 'Player killed', color: '#ff0a54', shape: 'crosshair', size: 8 },
+  diedToBot: { label: 'Death by bot', color: '#f1f1f1', shape: 'skullBones', size: 7 },
+  diedToPlayer: { label: 'Death by player', color: '#ff0a54', shape: 'skullBones', size: 8 },
+  storm: { label: 'Death by storm', color: '#b388ff', shape: 'storm', size: 8 },
+  loot: { label: 'Item looted', color: '#ffd166', shape: 'diamond', size: 5 },
+  botKill: { label: "Bot's kill", color: '#f4a261', shape: 'crosshair', size: 4.5 },
   botDeath: { label: 'Bot death', color: '#f4a261', shape: 'monster', size: 5 },
 };
 
@@ -74,7 +74,7 @@ export const EXPLAIN: Record<string, string> = {
   // Legend
   humanPath: 'Where the player walked. One line per player, drawn up to the current time of the replay.',
   botPath: 'Where a bot walked (dashed). Bots are only recorded in 52 of the 796 matches.',
-  killBot: 'A player killed a bot here. The cross is where the player stood when shooting, not where the bot fell.',
+  killBot: 'A player killed a bot here. The spider is where the player stood when shooting, not where the bot fell.',
   killPlayer: 'A player killed another player here (where the shooter stood). Only 3 in the whole data.',
   diedToBot: 'A player was killed by a bot here: where the player fell.',
   diedToPlayer: 'A player was killed by another player here: where the player fell. Only 3 in the whole data.',

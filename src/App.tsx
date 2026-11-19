@@ -11,7 +11,7 @@ import { loadIndex } from './lib/data';
 import { BUILTIN_ID, listUploads, restoreSource } from './lib/sources';
 import { Icon } from './components/Icon';
 import { Loader } from './components/Loader';
-import { MapThumb } from './components/MapBadge';
+import { MapTile, MapTiles } from './components/MapBadge';
 import { InstallOffer } from './components/InstallOffer';
 import { minimap } from './components/MapCanvas';
 import { record, redo, start, undo, type History } from './lib/history';
@@ -90,13 +90,11 @@ export function App() {
     return () => window.removeEventListener('hashchange', onHash);
   }, [hist.present, setView]);
 
+  // The map and day's matches, then the filters on top.
+  const pool = useMemo(() => (index?.matches ?? []).filter((m) => m.map === view.map && (view.day === 'all' || m.day === view.day)), [index, view.map, view.day]);
   const matches = useMemo(
-    () =>
-      applyFilter(
-        (index?.matches ?? []).filter((m) => m.map === view.map && (view.day === 'all' || m.day === view.day)),
-        { players: view.players, others: view.others, ended: view.ended, length: view.length, sort: view.sort },
-      ),
-    [index, view.map, view.day, view.players, view.others, view.ended, view.length, view.sort],
+    () => applyFilter(pool, { players: view.players, others: view.others, ended: view.ended, length: view.length, sort: view.sort }),
+    [pool, view.players, view.others, view.ended, view.length, view.sort],
   );
   const days = useMemo(() => (view.day === 'all' ? (index?.days ?? []) : [view.day]), [index, view.day]);
 
@@ -165,32 +163,34 @@ export function App() {
             </button>
             <section>
               <h2>Map</h2>
-              <div className="segmented">
+              <MapTiles>
                 {(Object.keys(MAP_LABEL) as MapId[]).map((id) => (
-                  <button key={id} className={`with-thumb ${id === view.map ? 'on' : ''}`} onClick={() => update({ map: id })}>
-                    <MapThumb map={id} />
-                    <span className="grow-label">{MAP_LABEL[id]}</span>
-                    <span className="count">{index?.matches.filter((m) => m.map === id).length ?? ''}</span>
-                  </button>
+                  <MapTile key={id} map={id} count={index?.matches.filter((m) => m.map === id).length} on={id === view.map} onPick={() => update({ map: id })} />
                 ))}
-              </div>
+              </MapTiles>
             </section>
             <section>
               <h2>Day</h2>
-              <select value={view.day} onChange={(e) => update({ day: e.target.value })}>
-                <option value="all">All 5 days</option>
-                {index?.days.map((d) => (
-                  <option key={d} value={d}>
-                    {formatDay(d)}
-                    {d === '2026-02-14' ? ' (partial day)' : ''}
-                  </option>
+              <span className="chips" role="radiogroup" aria-label="Day">
+                {['all', ...(index?.days ?? [])].map((d) => (
+                  <button
+                    key={d}
+                    role="radio"
+                    aria-checked={view.day === d}
+                    className={`chip ${view.day === d ? 'on' : ''}`}
+                    title={d === '2026-02-14' ? 'Partial day: the export stops mid-day' : undefined}
+                    onClick={() => update({ day: d })}
+                  >
+                    {d === 'all' ? 'All days' : formatDay(d)}
+                  </button>
                 ))}
-              </select>
+              </span>
             </section>
             <ReplaySide
               view={view}
               update={update}
               matches={matches}
+              pool={pool}
               selected={selected}
               onOnlyMatch={(id) => update({ matches: [id] })}
               onToggleMatch={(id) => update({ matches: toggleMatch(selectedIds, id) })}

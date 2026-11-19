@@ -6,7 +6,7 @@ import { loadBuiltinIndex } from '../lib/data';
 import { BUILTIN_ID, deleteUpload, describe, listUploads, saveUpload, selectSource, type SourceInfo } from '../lib/sources';
 import { useSourceId } from './useSourceId';
 import { formatDay } from '../lib/style';
-import { MapBadge } from './MapBadge';
+import { MapTile, MapTiles } from './MapBadge';
 import type { LoadMessage } from '../workers/loadData';
 
 interface Job {
@@ -42,18 +42,20 @@ async function filesOf(dt: DataTransfer): Promise<{ path: string; file: File }[]
   return out;
 }
 
-/** What a dataset holds, in short: its maps (labels with their picture), matches and days. */
+/** What a dataset holds, in short: its maps (tiles, as in the map picker), matches and days. */
 function Stats({ s }: { s: SourceInfo }) {
   const days = s.days.length ? `${formatDay(s.days[0])}${s.days.length > 1 ? ` to ${formatDay(s.days[s.days.length - 1])}` : ''}` : '';
   return (
-    <div className="ds-stats">
-      {s.maps.map((m) => (
-        <MapBadge key={m} map={m} />
-      ))}
-      <span>
+    <>
+      <MapTiles>
+        {s.maps.map((m) => (
+          <MapTile key={m} map={m} count={s.mapMatches?.[m]} />
+        ))}
+      </MapTiles>
+      <p className="ds-stats">
         <b>{s.matches.toLocaleString('en')}</b> matches · {days}
-      </span>
-    </div>
+      </p>
+    </>
   );
 }
 

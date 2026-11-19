@@ -22,6 +22,9 @@ export function drawMarker(ctx: CanvasRenderingContext2D, shape: MarkerShape, co
     case 'crosshair':
       crosshair(ctx, color, r);
       break;
+    case 'spider':
+      spider(ctx, color, r);
+      break;
     case 'monster':
       monster(ctx, color, r);
       break;
@@ -174,4 +177,58 @@ function monster(ctx: CanvasRenderingContext2D, color: string, r: number) {
   ctx.lineTo(r * 0.42, r * 0.42);
   ctx.lineWidth = Math.max(1, r * 0.13);
   ctx.stroke();
+}
+
+/**
+ * A cyber robot spider: a round metal body with a red eye visor, and four jointed legs on each side. Where a
+ * player killed a bot.
+ */
+function spider(ctx: CanvasRenderingContext2D, color: string, r: number) {
+  const legs = () => {
+    ctx.beginPath();
+    for (const side of [-1, 1])
+      for (const [ay, ky, fy] of [[-0.35, -0.95, -1.05], [-0.1, -0.45, -0.25], [0.12, 0.2, 0.55], [0.32, 0.75, 1.1]]) {
+        ctx.moveTo(side * r * 0.35, ay * r); // hip
+        ctx.lineTo(side * r * 0.85, ky * r); // knee
+        ctx.lineTo(side * r * 1.15, fy * r); // foot
+      }
+  };
+  const w = Math.max(1.2, r * 0.17);
+  legs();
+  ctx.lineWidth = w + 2.4;
+  ctx.strokeStyle = OUTLINE;
+  ctx.stroke();
+  legs();
+  ctx.lineWidth = w;
+  ctx.strokeStyle = color;
+  ctx.stroke();
+  // body: head plate and abdomen
+  ctx.beginPath();
+  ctx.ellipse(0, r * 0.22, r * 0.5, r * 0.55, 0, 0, Math.PI * 2);
+  ctx.moveTo(r * 0.4, -r * 0.38);
+  ctx.ellipse(0, -r * 0.38, r * 0.4, r * 0.3, 0, 0, Math.PI * 2);
+  ctx.fillStyle = color;
+  ctx.fill();
+  ctx.lineWidth = 1.6;
+  ctx.strokeStyle = OUTLINE;
+  ctx.stroke();
+  // visor: a dark band with two glowing eyes
+  ctx.beginPath();
+  ctx.roundRect(-r * 0.3, -r * 0.48, r * 0.6, r * 0.2, r * 0.08);
+  ctx.fillStyle = '#111';
+  ctx.fill();
+  ctx.fillStyle = '#fff';
+  ctx.beginPath();
+  ctx.arc(-r * 0.13, -r * 0.38, Math.max(0.7, r * 0.06), 0, Math.PI * 2);
+  ctx.arc(r * 0.13, -r * 0.38, Math.max(0.7, r * 0.06), 0, Math.PI * 2);
+  ctx.fill();
+  // a plate seam on the abdomen
+  if (r > 5) {
+    ctx.beginPath();
+    ctx.moveTo(-r * 0.3, r * 0.22);
+    ctx.lineTo(r * 0.3, r * 0.22);
+    ctx.lineWidth = 1;
+    ctx.strokeStyle = 'rgba(0,0,0,0.55)';
+    ctx.stroke();
+  }
 }

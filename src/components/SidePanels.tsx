@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { heatOf, legendOf } from '../lib/links';
+import { applyFilter } from '../lib/matchFilter';
 import { EXPLAIN } from '../lib/style';
 // The panels around the map: left (which matches, legend), right (heatmap), and the Overview's table of contents.
 // App owns the state; these only show it.
@@ -23,63 +24,77 @@ interface ReplayProps {
   view: View;
   update: Update;
   matches: MatchSummary[];
+  /** The map and day's matches before the filters: chips count from it. */
+  pool: MatchSummary[];
   selected: MatchSummary[];
   onOnlyMatch: (id: string) => void;
   onToggleMatch: (id: string) => void;
   onSetMany: (ids: string[], on: boolean) => void;
 }
 
+type Option<T> = [T, string];
+const ENDED: Option<View['ended']>[] = [['any', 'Any'], ['survived', 'Survived'], ['bot', 'Bot'], ['storm', 'Storm'], ['player', 'Player']];
+const LENGTH: Option<View['length']>[] = [['any', 'Any'], ['short', '<5 min'], ['mid', '5-10'], ['long', '>10']];
+const SORT: Option<View['sort']>[] = [['day', 'Day'], ['longest', 'Longest'], ['shortest', 'Shortest'], ['kills', 'Kills'], ['loot', 'Loot']];
+
+/** One filter as a row of chips: one click picks it, each chip says how many matches it would leave. */
+function FilterRow<T extends string>({ label, value, options, count, onChange }: { label: string; value: T; options: Option<T>[]; count?: (v: T) => number; onChange: (v: T) => void }) {
+  return (
+    <div className="filter-row" role="radiogroup" aria-label={label}>
+      <span className="filter-label">{label}</span>
+      <span className="chips">
+        {options.map(([v, text]) => (
+          <button key={v} role="radio" aria-checked={v === value} className={`chip ${v === value ? 'on' : ''}`} onClick={() => onChange(v)}>
+            {text}
+            {count && v !== 'any' && <i>{count(v)}</i>}
+          </button>
+        ))}
+      </span>
+    </div>
+  );
+}
+
 export function ReplaySide(p: ReplayProps) {
-  const { view, update, matches, selected } = p;
+  const { view, update, matches, selected, pool } = p;
+  const base = { players: view.players, others: view.others, ended: view.ended, length: view.length, sort: view.sort };
+  /** How many matches there would be with this one filter changed (the others kept). */
+  const countWith = (patch: Partial<typeof base>) => applyFilter(pool, { ...base, ...patch }).length;
+  const filtered = view.ended !== 'any' || view.length !== 'any' || view.others !== 'any' || view.players !== 'all';
   return (
     <>
       <section>
-        <h2>Matches</h2>
-        <div className="filters">
-          <label>
-            Ended
-            <select value={view.ended} onChange={(e) => update({ ended: e.target.value as View['ended'] })}>
-              <option value="any">Any way</option>
-              <option value="survived">Survived</option>
-              <option value="bot">Killed by a bot</option>
-              <option value="storm">Died to the storm</option>
-              <option value="player">Killed by a player</option>
-            </select>
-          </label>
-          <label>
-            Length
-            <select value={view.length} onChange={(e) => update({ length: e.target.value as View['length'] })}>
-              <option value="any">Any</option>
-              <option value="short">Under 5 min</option>
-              <option value="mid">5 to 10 min</option>
-              <option value="long">Over 10 min</option>
-            </select>
-          </label>
-          <label title="Matches where bots (or a second player) were recorded too: fights can be seen from both sides">
-            Others recorded
-            <select value={view.others} onChange={(e) => update({ others: e.target.value as View['others'] })}>
-              <option value="any">Any</option>
-              <option value="recorded">Recorded</option>
-            </select>
-          </label>
-          <label>
-            Players
-            <select value={view.players} onChange={(e) => update({ players: e.target.value as View['players'] })}>
-              <option value="all">All</option>
-              <option value="once">Played only once</option>
-            </select>
-          </label>
-          <label className="wide">
-            Order
-            <select value={view.sort} onChange={(e) => update({ sort: e.target.value as View['sort'] })}>
-              <option value="day">By day</option>
-              <option value="longest">Longest first</option>
-              <option value="shortest">Shortest first</option>
-              <option value="kills">Most kills first</option>
-              <option value="loot">Most loot first</option>
-            </select>
-          </label>
+        <h2 className="with-actions">
+          <span>Filters</span>
+          {filtered && (
+            <span className="actions">
+              <button onClick={() => update({ ended: 'any', length: 'any', others: 'any', players: 'all' })}>Reset</button>
+            </span>
+          )}
+        </h2>
+        <FilterRow label="Ended" value={view.ended} options={ENDED} count={(v) => countWith({ ended: v })} onChange={(v) => update({ ended: v })} />
+        <FilterRow label="Length" value={view.length} options={LENGTH} onChange={(v) => update({ length: v })} />
+        <div className="filter-row">
+          <span className="filter-label">Only</span>
+          <span className="chips">
+            <button
+              className={`chip ${view.others === 'recorded' ? 'on' : ''}`}
+              aria-pressed={view.others === 'recorded'}
+              title="Matches where bots (or a second player) were recorded too: fights can be seen from both sides"
+              onClick={() => update({ others: view.others === 'recorded' ? 'any' : 'recorded' })}
+            >
+              ⇄ Both sides <i>{countWith({ others: 'recorded' })}</i>
+            </button>
+            <button
+              className={`chip ${view.players === 'once' ? 'on' : ''}`}
+              aria-pressed={view.players === 'once'}
+              title="Matches of players who never played again"
+              onClick={() => update({ players: view.players === 'once' ? 'all' : 'once' })}
+            >
+              Played once <i>{countWith({ players: 'once' })}</i>
+            </button>
+          </span>
         </div>
+        <FilterRow label="Sort" value={view.sort} options={SORT} onChange={(v) => update({ sort: v })} />
       </section>
       <section className="grow">
         <h2 className="with-actions">

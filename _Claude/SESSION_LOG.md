@@ -15,6 +15,13 @@ about 300 lines, move the oldest entries word for word to `SESSION_HISTORY.md` (
 
 ---
 
+## 2026-11-19 (desktop session): legend, names, filters, map tiles, path hover
+
+- Ugo: legend = tick box + icon always shown + name; short names ("Bot killed" with a robot spider icon, "Death by
+  bot", "Item looted"...), icons in the player card; filters as chips with counts (day, ended, length, only, sort,
+  Reset); `MapTile` (picture 52 px, name, count) in the picker and on the Data page; 2D path hover highlight (under
+  the icons). Checked at 1366x768 (no scroll) and phone width.
+
 ## 2026-11-19 (desktop session): grouping removed, Overview rewritten
 
 - Ugo's rule from now on: only remove or improve existing features. Removed icon grouping (`cluster.ts`, slider,

@@ -1,4 +1,5 @@
 import { formatDuration } from '../lib/style';
+import { LegendIcon } from './Legend';
 import type { Story, StoryEvent } from '../lib/story';
 import type { MatchEvent } from '../lib/types';
 
@@ -67,6 +68,7 @@ export function PlayerCard({ story: s, title, active, onPoint, onSeek, onClose, 
           <li key={i} className={e.ref === active ? 'active' : ''} ref={e.ref === active ? (el) => el?.scrollIntoView({ block: 'nearest' }) : undefined}>
             <button onClick={() => onSeek(e)} onMouseEnter={() => onPoint(e.ref)} onMouseLeave={() => onPoint(null)}>
               <span className="time">{formatDuration(e.t)}</span>
+              <LegendIcon k={e.type} size={16} />
               {e.label}
             </button>
           </li>

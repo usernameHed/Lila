@@ -6,16 +6,17 @@ import type { EventType } from '../lib/types';
 /** Every row of the legend, in order: the two path kinds, every event type, the killer-to-victim lines. */
 export const LEGEND_KEYS: LegendKey[] = ['humanPath', 'botPath', ...(Object.keys(EVENT_STYLE) as EventType[]), 'fights'];
 
-function Icon({ k }: { k: LegendKey }) {
+/** The icon of a legend kind, drawn exactly as on the map (also used in the player card). */
+export function LegendIcon({ k, size = 18 }: { k: LegendKey; size?: number }) {
   const ref = useRef<HTMLCanvasElement>(null);
   useEffect(() => {
     const el = ref.current;
     const ctx = el?.getContext('2d');
     if (!el || !ctx) return;
     const dpr = window.devicePixelRatio || 1;
-    el.width = 18 * dpr;
-    el.height = 18 * dpr;
-    ctx.scale(dpr, dpr);
+    el.width = size * dpr;
+    el.height = size * dpr;
+    ctx.scale((dpr * size) / 18, (dpr * size) / 18);
     if (k === 'humanPath' || k === 'botPath') {
       ctx.strokeStyle = k === 'humanPath' ? PATH_COLOR.human : PATH_COLOR.bot;
       ctx.lineWidth = k === 'humanPath' ? 3 : 2;
@@ -33,8 +34,8 @@ function Icon({ k }: { k: LegendKey }) {
     }
     const s = EVENT_STYLE[k];
     drawMarker(ctx, s.shape, s.color, 9, 9, Math.min(6, s.size));
-  }, [k]);
-  return <canvas ref={ref} style={{ width: 18, height: 18 }} aria-hidden />;
+  }, [k, size]);
+  return <canvas ref={ref} style={{ width: size, height: size }} aria-hidden />;
 }
 
 export const legendLabel = (k: LegendKey) =>
@@ -85,8 +86,9 @@ export function Legend({ counts, hidden, active, onToggle, onAll, onHover, linke
               }}
             >
               <button className="legend-row" onClick={() => onToggle(k)} aria-pressed={on}>
-                <span className="legend-box" style={{ borderColor: color(k) }}>
-                  {on && <Icon k={k} />}
+                <span className={`tick-box ${on ? 'on' : ''}`} style={on ? { background: color(k), borderColor: color(k) } : { borderColor: color(k) }} aria-hidden />
+                <span className="legend-icon">
+                  <LegendIcon k={k} />
                 </span>
                 <span className="legend-label">{legendLabel(k)}</span>
                 {!isPath && <span className="count">{counts[k] ?? 0}</span>}

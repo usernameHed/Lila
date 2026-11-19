@@ -37,6 +37,14 @@ export interface Story {
 
 const DEATHS: EventType[] = ['diedToBot', 'diedToPlayer', 'storm', 'botDeath'];
 
+
+/** How a journey ended, in a sentence ("Ended: killed by a bot"), by the kind of its last death event. */
+const END_TEXT: Partial<Record<string, string>> = {
+  diedToBot: 'killed by a bot',
+  diedToPlayer: 'killed by a player',
+  storm: 'died to the storm',
+  botDeath: 'died',
+};
 export function playerStory(match: Match, index: number, uvUnits: number, mapScale: number): Story {
   const p = match.players[index];
   const toM = (d: number) => (d / uvUnits) * mapScale;
@@ -67,7 +75,7 @@ export function playerStory(match: Match, index: number, uvUnits: number, mapSca
     meters,
     heightMin: Math.min(...hs) / 10,
     heightMax: Math.max(...hs) / 10,
-    end: death ? (death.type === 'botDeath' ? 'died' : death.label.replace(/^(Player|Bot) /, '')) : p.bot ? 'Still alive when its log ends' : 'Survived (no death logged)',
+    end: death ? END_TEXT[death.type] ?? 'died' : p.bot ? 'Still alive when its log ends' : 'Survived (no death logged)',
     opponents: [...new Set(fights.map((f) => f.other))],
     pvpMissing,
   };

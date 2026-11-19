@@ -280,8 +280,16 @@ export function ReplayStage(props: StageProps) {
     ({ u, v, tolerance }: MapPick) => pickAt(pickEvent(shown, t, u, v, tolerance, hiddenSet), pickPlayer(shown, t, u, v, tolerance)),
     [shown, t, hiddenSet, pickAt],
   );
+  // Under the mouse: an event first; else a path, which is highlighted (click it for the player's card).
+  const [hoverPath, setHoverPath] = useState<Focus | null>(null);
   const onHoverMap = useCallback(
-    (p: MapPick | null) => setPointed(p ? pickEvent(shown, t, p.u, p.v, p.tolerance, hiddenSet) : null),
+    (p: MapPick | null) => {
+      const ev = p ? pickEvent(shown, t, p.u, p.v, p.tolerance, hiddenSet) : null;
+      setPointed(ev);
+      const path = p && !ev ? pickPlayer(shown, t, p.u, p.v, p.tolerance) : null;
+      const hide = path && hiddenSet.has(shown.find((m) => m.id === path.match)?.players[path.player]?.bot ? 'botPath' : 'humanPath');
+      setHoverPath((old) => (hide || !path ? null : old && old.match === path.match && old.player === path.player ? old : path));
+    },
     [shown, t, hiddenSet],
   );
   const pointAt = useCallback((e: MatchEvent | null) => {
@@ -297,11 +305,11 @@ export function ReplayStage(props: StageProps) {
       if (shown.length)
         drawMatches(ctx, shown, uvUnits, size, t, play.playing, {
           mono, hidden: hiddenSet, hover: shownHover, phase, activeEvent: shownActive?.event ?? null, iconScale,
-          dim, pathWidth, pathAlpha,
+          dim, pathWidth, pathAlpha, hoverPath: focus && hoverPath && focus.match === hoverPath.match && focus.player === hoverPath.player ? null : hoverPath,
         });
       if (focusMatch && focus) drawFocus(ctx, focusMatch, focus.player, uvUnits, size, t, active?.event ?? null, phase, story?.opponents ?? []);
     },
-    [shown, t, uvUnits, play.playing, mono, hiddenSet, shownHover, phase, under, focusMatch, focus, active, shownActive, story, iconScale, dim, pathWidth, pathAlpha],
+    [shown, t, uvUnits, play.playing, mono, hiddenSet, shownHover, phase, under, focusMatch, focus, active, shownActive, story, iconScale, dim, pathWidth, pathAlpha, hoverPath],
   );
 
   if (!summaries.length) return <div className="empty">No match for these filters.</div>;
@@ -363,7 +371,7 @@ export function ReplayStage(props: StageProps) {
           </Suspense>
           </ErrorBoundary>
         ) : (
-          <MapCanvas map={summaries[0].map} draw={draw} dim={0} uvUnits={uvUnits} onPick={onPick} onHover={onHoverMap} pointer={!!pointed} />
+          <MapCanvas map={summaries[0].map} draw={draw} dim={0} uvUnits={uvUnits} onPick={onPick} onHover={onHoverMap} pointer={!!pointed || !!hoverPath} />
         )}
         {story && focus && (
           <PlayerCard

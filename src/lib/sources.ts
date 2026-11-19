@@ -13,6 +13,8 @@ export interface SourceInfo {
   players: number;
   days: string[];
   maps: string[];
+  /** Matches per map (older saved datasets may not have it). */
+  mapMatches?: Record<string, number>;
 }
 
 export const BUILTIN_ID = 'builtin';
@@ -104,5 +106,6 @@ export function describe(id: string, name: string, kind: SourceInfo['kind'], d: 
     players: d.index.totals.humans,
     days: d.index.days,
     maps: [...new Set(d.index.matches.map((m) => m.map))],
+    mapMatches: d.index.matches.reduce<Record<string, number>>((a, m) => ((a[m.map] = (a[m.map] ?? 0) + 1), a), {}),
   };
 }

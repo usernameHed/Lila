@@ -33,6 +33,8 @@ export interface ReplayOptions {
   phase?: number; // animation clock (ms) for the pulse
   /** 0 -> 1, eased: how far the rest has faded back because something is hovered (never fully hidden). */
   dim?: number;
+  /** The path under the mouse: highlighted, under the icons. */
+  hoverPath?: { match: string; player: number } | null;
   pathWidth?: number; // path thickness factor (1 = default)
   pathAlpha?: number; // path opacity factor (1 = default)
 }
@@ -58,6 +60,9 @@ export function drawMatches(ctx: CanvasRenderingContext2D, matches: Match[], uvU
     }),
   );
 
+  const hp = o.hoverPath;
+  const hm = hp ? matches.find((m) => m.id === hp.match) : undefined;
+  if (hp && hm) drawPathHover(ctx, hm, hp.player, uvUnits, size, t);
   // Events after every path, so no marker is hidden under another match's lines.
   // Past events, plus the future ones of the hovered kind and the pointed-at event (drawn faded).
   const events = matches.flatMap((m) => m.events).filter((e) => !hidden.has(e[1]));
@@ -289,6 +294,35 @@ export function heatCanvas(pixels: Uint8ClampedArray<ArrayBuffer>, n: number): H
   off.height = n;
   off.getContext('2d')?.putImageData(new ImageData(pixels, n, n), 0, 0);
   return off;
+}
+
+/** The path under the mouse: drawn again on top, thicker and brighter, on a dark edge (the map is not dimmed). */
+export function drawPathHover(ctx: CanvasRenderingContext2D, match: Match, index: number, uvUnits: number, size: number, t: number) {
+  const p = match.players[index];
+  if (!p) return;
+  const n = samplesUntil(p.path, t);
+  if (n < 1) return;
+  ctx.save();
+  ctx.beginPath();
+  for (let i = 0; i < n; i++) {
+    const { x, y } = uvToPixel(p.path[i * 3 + 1], p.path[i * 3 + 2], uvUnits, size);
+    if (i === 0) ctx.moveTo(x, y);
+    else ctx.lineTo(x, y);
+  }
+  const head = positionAt(p.path, t);
+  if (head) {
+    const { x, y } = uvToPixel(head.u, head.v, uvUnits, size);
+    ctx.lineTo(x, y);
+  }
+  ctx.lineJoin = 'round';
+  ctx.lineCap = 'round';
+  ctx.lineWidth = 7;
+  ctx.strokeStyle = 'rgba(0,0,0,0.7)';
+  ctx.stroke();
+  ctx.lineWidth = 3.5;
+  ctx.strokeStyle = p.bot ? PATH_COLOR.bot : '#ffffff';
+  ctx.stroke();
+  ctx.restore();
 }
 
 /**
