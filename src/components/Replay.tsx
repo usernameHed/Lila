@@ -142,9 +142,12 @@ interface StageProps {
   iconScale: number;
   pathWidth: number;
   pathAlpha: number;
+  /** Shown over the empty map when no match is replayed. */
+  emptyHint: string;
 }
 
 const Map3D = lazy(() => import('./Map3D'));
+const noDraw = () => undefined;
 
 /** The map's estimated terrain, loaded only when the 3D view needs it. */
 function useTerrain(map: MapConfig['id'] | null): Terrain | null {
@@ -211,7 +214,7 @@ function useLast<T>(value: T | null, fading: boolean): T | null {
 
 /** Every selected match on its map, all starting together at 0:00, with one playback. */
 export function ReplayStage(props: StageProps) {
-  const { summaries, uvUnits, mono, hidden, hover, onPointedKind, under, mapConfig, view3d, exaggeration, terrain, onView, onOnlyMatch, iconScale, pathWidth, pathAlpha } = props;
+  const { summaries, uvUnits, mono, hidden, hover, onPointedKind, under, mapConfig, view3d, exaggeration, terrain, onView, onOnlyMatch, iconScale, pathWidth, pathAlpha, emptyHint } = props;
   const [loaded, setLoaded] = useState<Match[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -317,7 +320,13 @@ export function ReplayStage(props: StageProps) {
     [shown, t, uvUnits, play.playing, mono, hiddenSet, shownHover, phase, under, focusMatch, focus, active, shownActive, story, iconScale, dim, pathWidth, pathAlpha, hoverPath],
   );
 
-  if (!summaries.length) return <div className="empty">No match for these filters.</div>;
+  if (!summaries.length)
+    return (
+      <div className="stage-main">
+        <MapCanvas map={mapConfig.id} draw={noDraw} dim={0} uvUnits={uvUnits} />
+        <div className="stage-hint">{emptyHint}</div>
+      </div>
+    );
 
   const many = summaries.length > MANY_MATCHES;
   const seek = (time: number) => {

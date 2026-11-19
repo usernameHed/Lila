@@ -8,8 +8,8 @@ export interface View {
   mode: Mode;
   map: MapId;
   day: string; // 'all' or YYYY-MM-DD
-  /** Matches replayed together. ALL = every match of the current map and day (kept short in the URL). */
-  matches: string[] | typeof ALL;
+  /** Matches replayed together. ALL = every match of the current map and day; NONE = every match unticked. */
+  matches: string[] | typeof ALL | typeof NONE;
   /** Heatmap kinds shown together, at least one. */
   layers: HeatLayer[];
   /** Kills and deaths: against bots, players or both. */
@@ -43,6 +43,7 @@ export interface View {
 }
 
 export const ALL = 'all';
+export const NONE = 'none';
 
 export const DEFAULT_VIEW: View = { mode: 'overview', map: 'AmbroseValley', day: 'all', matches: [], layers: ['traffic'], kills: 'both', deaths: 'both', mono: false, heatMono: false, ended: 'any', length: 'any', sort: 'day', hidden: [], heatUnder: false, replayOn: true, iconScale: 1, pathWidth: 1.5, pathAlpha: 1.3, view3d: false, exaggeration: 4, terrain: true };
 
@@ -98,8 +99,9 @@ export function toggleLayer(current: HeatLayer[], layer: HeatLayer): HeatLayer[]
   return current.includes(layer) ? current.filter((l) => l !== layer) : LAYERS.filter((l) => l === layer || current.includes(l));
 }
 
-function parseMatches(raw: string | null): string[] | typeof ALL {
+function parseMatches(raw: string | null): View['matches'] {
   if (raw === ALL) return ALL;
+  if (raw === NONE) return NONE;
   const ids = (raw ?? '').split(',').filter((id) => /^[\w-]{1,64}$/.test(id));
   return [...new Set(ids)];
 }
@@ -109,7 +111,8 @@ export function viewHash(v: View): string {
   const q = new URLSearchParams({ mode: v.mode, map: v.map });
   if (v.mode !== 'replay') return `#${q}`;
   if (v.day !== 'all') q.set('day', v.day);
-  if (v.matches.length) q.set('match', v.matches === ALL ? ALL : v.matches.join(','));
+  if (v.matches === ALL || v.matches === NONE) q.set('match', v.matches);
+  else if (v.matches.length) q.set('match', v.matches.join(','));
   if (v.mono) q.set('mono', '1');
   if (v.ended !== 'any') q.set('end', v.ended);
   if (v.length !== 'any') q.set('len', v.length);
@@ -134,26 +137,28 @@ export function viewHash(v: View): string {
 
 /**
  * The matches to replay, as summaries of the current list: every one for ALL, else the chosen ones still in the
- * list (in the order chosen, which sets their colors), else the first match so the map is never empty.
+ * list (in the order chosen, which sets their colors), else the first match (a link with no choice yet). NONE: none.
  */
 export function resolveSelection<T extends { id: string }>(chosen: View['matches'], list: T[]): T[] {
   if (chosen === ALL) return list;
+  if (chosen === NONE) return [];
   const byId = new Map(list.map((m) => [m.id, m]));
   const picked = chosen.map((id) => byId.get(id)).filter((m): m is T => !!m);
   return picked.length ? picked : list.slice(0, 1);
 }
 
-/** Tick or untick one match; the last ticked one cannot be removed (the map would go empty). */
-export function toggleMatch(current: string[], id: string): string[] {
+/** Tick or untick one match; unticking the last one leaves none (NONE). */
+export function toggleMatch(current: string[], id: string): string[] | typeof NONE {
   if (!current.includes(id)) return [...current, id];
-  return current.length > 1 ? current.filter((x) => x !== id) : current;
+  const next = current.filter((x) => x !== id);
+  return next.length ? next : NONE;
 }
 
 /** Legend row clicked: show or hide that kind. */
 export const legendToggle = (hidden: string[], k: string): string[] => (hidden.includes(k) ? hidden.filter((x) => x !== k) : [...hidden, k]);
 
-/** Tick or untick several matches at once (a whole day); never down to nothing. */
-export function setMany(current: string[], ids: string[], on: boolean): string[] {
+/** Tick or untick several matches at once (a whole day); unticking all leaves none (NONE). */
+export function setMany(current: string[], ids: string[], on: boolean): string[] | typeof NONE {
   const next = on ? [...current, ...ids.filter((id) => !current.includes(id))] : current.filter((id) => !ids.includes(id));
-  return next.length ? next : current.slice(0, 1);
+  return next.length ? next : NONE;
 }

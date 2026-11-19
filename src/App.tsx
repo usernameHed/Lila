@@ -213,6 +213,7 @@ export function App() {
             iconScale={view.iconScale}
             pathWidth={view.pathWidth}
             pathAlpha={view.pathAlpha}
+            emptyHint={matches.length ? 'Tick a match in the list to replay it.' : 'No match for these filters.'}
           />
         )}
       </main>

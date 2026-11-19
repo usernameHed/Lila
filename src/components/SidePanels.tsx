@@ -7,7 +7,7 @@ import { EXPLAIN, HEAT_LAYERS, MONO_RGB, formatDay, rgbCss } from '../lib/style'
 // App owns the state; these only show it.
 import type { LegendKey } from '../lib/draw';
 import type { HeatData, MatchSummary } from '../lib/types';
-import { ALL, legendToggle, type View } from '../lib/view';
+import { ALL, NONE, legendToggle, type View } from '../lib/view';
 import { Choice } from './Choice';
 import { LEGEND_KEYS, LegendIcon, legendColor, legendLabel } from './Legend';
 import { OVERVIEW_SECTIONS } from './Overview';
@@ -103,7 +103,7 @@ export function ReplaySide(p: ReplayProps) {
               <button onClick={() => update({ matches: matches.map((m) => m.id) })} disabled={selected.length === matches.length}>
                 Select all
               </button>
-              <button onClick={() => update({ matches: selected.slice(0, 1).map((m) => m.id) })} disabled={selected.length < 2}>
+              <button onClick={() => update({ matches: NONE })} disabled={!selected.length}>
                 Clear
               </button>
             </div>

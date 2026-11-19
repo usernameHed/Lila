@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { ALL, DEFAULT_VIEW, legendToggle, parseView, resolveSelection, setMany, toggleLayer, toggleMatch, viewHash, type View } from './view';
+import { ALL, DEFAULT_VIEW, NONE, legendToggle, parseView, resolveSelection, setMany, toggleLayer, toggleMatch, viewHash, type View } from './view';
 
 describe('view in the URL', () => {
   it('round-trips a view', () => {
@@ -30,7 +30,9 @@ describe('match selection', () => {
   it('toggles, never down to nothing', () => {
     expect(toggleMatch(['a'], 'b')).toEqual(['a', 'b']);
     expect(toggleMatch(['a', 'b'], 'a')).toEqual(['b']);
-    expect(toggleMatch(['a'], 'a')).toEqual(['a']);
+    expect(toggleMatch(['a'], 'a')).toBe(NONE);
+    expect(resolveSelection(NONE, list)).toEqual([]);
+    expect(parseView(viewHash({ ...DEFAULT_VIEW, mode: 'replay', matches: NONE })).matches).toBe(NONE);
   });
 });
 
@@ -66,6 +68,6 @@ describe('setMany', () => {
   it('ticks or unticks a whole day, never down to nothing', () => {
     expect(setMany(['a'], ['b', 'c'], true)).toEqual(['a', 'b', 'c']);
     expect(setMany(['a', 'b', 'c'], ['b', 'c'], false)).toEqual(['a']);
-    expect(setMany(['b'], ['b'], false)).toEqual(['b']);
+    expect(setMany(['b'], ['b'], false)).toBe(NONE);
   });
 });
