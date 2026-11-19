@@ -15,6 +15,11 @@ about 300 lines, move the oldest entries word for word to `SESSION_HISTORY.md` (
 
 ---
 
+## 2026-11-19 (desktop session): Overview, simpler still
+
+- Ugo: title removed, the artifact note moved into the TL;DR, main data as a plain list, Try it as a vertical list of
+  links, "What to do about it" removed (proposals stay in PRODUCT.md / INSIGHTS.md).
+
 ## 2026-11-19 (desktop session): legend, names, filters, map tiles, path hover
 
 - Ugo: legend = tick box + icon always shown + name; short names ("Bot killed" with a robot spider icon, "Death by

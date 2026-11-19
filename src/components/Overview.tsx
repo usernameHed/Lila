@@ -1,5 +1,5 @@
-// The landing page: why the tool is built the way it is, a few preset views to try, what the data says in one line,
-// what to do about it, what to log next, and the build notes. Links open the live views.
+// The landing page: why the tool is built the way it is, the main data, a few preset views to try, what the data says
+// in one line, what to log next, and the build notes. Links open the live views.
 import { InstallButton } from './InstallOffer';
 import type { Index } from '../lib/types';
 
@@ -8,41 +8,20 @@ const REPO = 'https://github.com/usernameHed/Lila';
 export const OVERVIEW_SECTIONS: [string, string][] = [
   ['try', 'Try it'],
   ['findings', 'What the data says'],
-  ['proposals', 'What to do about it'],
   ['next', 'What to log next'],
   ['notes', 'Notes on the structure'],
 ];
-
-function Stat({ value, label }: { value: string; label: string }) {
-  return (
-    <div className="stat">
-      <span className="stat-value">{value}</span>
-      <span className="stat-label">{label}</span>
-    </div>
-  );
-}
 
 export function Overview({ index }: { index: Index | null }) {
   const t = index?.totals;
   return (
     <div className="overview">
-      <p className="ov-note">
-        I chose to make this a tool that is easy to use in the browser, hosted on my own website for now, rather than an
-        artifact: it lets me manage the code and the data better.
-      </p>
-
       <header className="ov-hero">
         <p className="eyebrow">LILA BLACK · Player journey visualizer</p>
-        <h1>See where players move, fight, loot and die, on the map.</h1>
-        <div className="stats">
-          <Stat value={index ? String(index.matches.length) : '…'} label="matches" />
-          <Stat value={t ? String(t.humans) : '…'} label="players" />
-          <Stat value={t ? t.rows.toLocaleString('en') : '…'} label="events" />
-          <Stat value="3" label="maps" />
-          <Stat value="5" label="days (Feb 10-14)" />
-        </div>
         <p className="lede">
-          <b>TL;DR:</b> I built this tool to be usable straight away, in the simplest way possible. For that, people usually
+          <b>TL;DR:</b> I chose to make this a tool that is easy to use in the browser, hosted on my own website for now,
+          rather than an artifact: it lets me manage the code and the data better. I built it to be usable straight away,
+          in the simplest way possible. For that, people usually
           forget the basics, the things that make a tool robust and usable:
         </p>
         <ul className="basics-list">
@@ -57,29 +36,33 @@ export function Overview({ index }: { index: Index | null }) {
           <li>Optimistic UI while things load in the background.</li>
           <li>Responsive UI, on a phone as on a PC.</li>
         </ul>
+        <p className="lede">Main data:</p>
+        <ul className="basics-list">
+          <li>{index ? index.matches.length.toLocaleString('en') : '…'} matches</li>
+          <li>{t ? t.humans.toLocaleString('en') : '…'} players</li>
+          <li>{t ? t.rows.toLocaleString('en') : '…'} events</li>
+          <li>3 maps</li>
+          <li>5 days (Feb 10-14)</li>
+        </ul>
       </header>
 
       <section id="try">
         <h2>Try it</h2>
         <p>Here are 4 examples of preset settings for the data currently loaded:</p>
-        <div className="cards">
-          <a className="card" href="#mode=replay&map=AmbroseValley">
-            <strong>Watch a match</strong>
-            <span>Play, scrub, see every kill, death and loot.</span>
-          </a>
-          <a className="card" href="#mode=replay&map=AmbroseValley&match=all">
-            <strong>All 566 matches at once</strong>
-            <span>Every player on one clock.</span>
-          </a>
-          <a className="card" href="#mode=replay&map=AmbroseValley&under=1&layer=traffic,kills&hide=humanPath,botPath">
-            <strong>Kill zones over traffic</strong>
-            <span>Stacked heatmaps, right panel.</span>
-          </a>
-          <a className="card" href="#mode=replay&map=Lockdown&view=3d&under=1&layer=traffic&match=all">
-            <strong>3D, with terrain</strong>
-            <span>Real heights, estimated ground.</span>
-          </a>
-        </div>
+        <ul className="basics-list">
+          <li>
+            <a href="#mode=replay&map=AmbroseValley">Watch a match</a>: play, scrub, see every kill, death and loot.
+          </li>
+          <li>
+            <a href="#mode=replay&map=AmbroseValley&match=all">All 566 matches at once</a>: every player on one clock.
+          </li>
+          <li>
+            <a href="#mode=replay&map=AmbroseValley&under=1&layer=traffic,kills&hide=humanPath,botPath">Kill zones over traffic</a>: stacked heatmaps, right panel.
+          </li>
+          <li>
+            <a href="#mode=replay&map=Lockdown&view=3d&under=1&layer=traffic&match=all">3D, with terrain</a>: real heights, estimated ground.
+          </li>
+        </ul>
       </section>
 
       <section id="findings">
@@ -89,22 +72,6 @@ export function Overview({ index }: { index: Index | null }) {
           storm only kills after minute 10.9 and takes the fullest bags; Ambrose Valley's center holds half the deaths for
           no better loot than the south. Details and charts in <a href={`${REPO}/blob/main/INSIGHTS.md`} target="_blank" rel="noreferrer">INSIGHTS.md</a>.
         </p>
-      </section>
-
-      <section id="proposals">
-        <h2>What to do about it</h2>
-        <table className="ov-table">
-          <thead>
-            <tr><th>#</th><th>Proposal</th><th>Test</th><th>Metrics that should move</th></tr>
-          </thead>
-          <tbody>
-            <tr><td>1</td><td><b>First-match bots</b>: fewer or softer bots near spawn for a player's first 3 matches; extraction shown from minute 0</td><td>A/B on new players</td><td>First-match survival, matches per player, next-day return</td></tr>
-            <tr><td>2</td><td><b>Extraction before the storm</b>: an "extract now" cue at minute 10; extraction points reachable from where victims stood</td><td>Before / after</td><td>Storm deaths per match, extraction rate of 10+ minute runs</td></tr>
-            <tr><td>3</td><td><b>Make risk pay</b> on Ambrose Valley: more valuable loot in the center, or bot pressure moved south</td><td>Before / after</td><td>Loot and deaths per minute by region</td></tr>
-            <tr><td>4</td><td><b>Decide what matchmaking is for</b>: more humans per match so PvP spaces live, or design the maps for PvE</td><td>Product decision</td><td>PvP encounters per match, queue time</td></tr>
-          </tbody>
-        </table>
-        <p className="muted small">A 5-day, partial sample: these are correlations to test, not proof.</p>
       </section>
 
       <section id="next">
