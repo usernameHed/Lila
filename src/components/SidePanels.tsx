@@ -63,7 +63,10 @@ export function ReplaySide(p: ReplayProps) {
   const base = { ended: view.ended, length: view.length, sort: view.sort };
   /** How many matches there would be with this one filter changed (the others kept). */
   const countWith = (patch: Partial<typeof base>) => applyFilter(pool, { ...base, ...patch }).length;
-  const filtered = view.ended !== 'any' || view.length !== 'any';
+  const dayPicked = !custom && view.day !== 'all';
+  const filtered = view.ended !== 'any' || view.length !== 'any' || dayPicked;
+  /** Back to every match: any outcome, any length, all days (matches picked in Custom are kept). */
+  const clearAll = () => update({ ended: 'any', length: 'any', ...(dayPicked ? { day: 'all' } : {}) });
   return (
     <>
       <section className={custom ? 'grow' : ''}>
@@ -125,11 +128,11 @@ export function ReplaySide(p: ReplayProps) {
       <section>
         <h2 className="with-actions">
           <span title="Each match is one player's run: pick runs by how they went">Filters · player runs</span>
-          {filtered && (
-            <span className="actions">
-              <button onClick={() => update({ ended: 'any', length: 'any' })}>Reset</button>
-            </span>
-          )}
+          <span className="actions">
+            <button onClick={clearAll} disabled={!filtered} title="Any outcome, any length, all days">
+              Clear all filters
+            </button>
+          </span>
         </h2>
         <FilterRow label="Ended" value={view.ended} options={ENDED} count={(v) => countWith({ ended: v })} onChange={(v) => update({ ended: v })} />
         <FilterRow label="Length" value={view.length} options={LENGTH} onChange={(v) => update({ length: v })} />

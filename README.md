@@ -25,7 +25,7 @@ On a 16:9 screen (1366x768 to 1920x1080) everything fits without scrolling:
 - **Match filters**, as one-click chips that show how many matches each would leave: how the player's run ended
   (survived, killed by a bot, by a player, by the storm), length (under 5, 5-10, over 10 min). In Custom, matches are
   grouped by day (fold a day, tick it to select all its matches), one line per match (duration, how it ended, kills,
-  loot; ⇄ when bots were recorded too). Picking a match plays it from 0:00.
+  loot; ⇄ when bots were recorded too). Picking a match plays it from 0:00. "Clear all filters" goes back to every match.
 - **Layers** (one list for icons and heatmaps): each kind of data is one row, with two switches. **Icons** draws it
   on the replay (path lines, or an icon per event), **Heat** draws it as a heatmap of the whole selection: the
   same events seen two ways, in one place ("Item looted" = gems and the loot heat; "Bot killed" = icons and where
