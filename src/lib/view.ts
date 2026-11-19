@@ -1,5 +1,5 @@
 // The view (what is on screen) lives in the URL hash, so a Level Designer can share exactly what they see.
-import type { Ended, Length, SortBy } from './matchFilter';
+import type { Ended, Game, Length, SortBy } from './matchFilter';
 import type { HeatLayer, MapId, Who } from './types';
 
 export type Mode = 'overview' | 'replay' | 'data';
@@ -12,6 +12,8 @@ export interface View {
   matches: string[] | typeof ALL | typeof NONE;
   /** With ALL: only the last N matches of the data (latest days first in line), 0 = every one. */
   recent: 0 | 10 | 100;
+  /** Players picked on the map or in the "On the map" list (highlighted; the last one's card is open). */
+  picked: { match: string; player: number }[];
   /** Heatmap kinds shown together, at least one. */
   layers: HeatLayer[];
   /** Kills and deaths: against bots, players or both. */
@@ -19,11 +21,10 @@ export interface View {
   deaths: Who;
   /** Replayed matches: one color for all instead of one per match. */
   mono: boolean;
-  /** Heatmap: one color for all kinds instead of one per kind. */
-  heatMono: boolean;
   /** Match list filters and order (see matchFilter.ts). */
   ended: Ended;
   length: Length;
+  game: Game;
   sort: SortBy;
   /** Legend rows turned off: event types, 'fights' (killer-to-victim lines), 'humanPath', 'botPath'. */
   hidden: string[];
@@ -47,7 +48,7 @@ export interface View {
 export const ALL = 'all';
 export const NONE = 'none';
 
-export const DEFAULT_VIEW: View = { mode: 'overview', map: 'AmbroseValley', day: 'all', matches: [], recent: 0, layers: ['traffic'], kills: 'both', deaths: 'both', mono: false, heatMono: false, ended: 'any', length: 'any', sort: 'day', hidden: [], heatUnder: false, replayOn: true, iconScale: 1, pathWidth: 1.5, pathAlpha: 1.3, view3d: false, exaggeration: 4, terrain: true };
+export const DEFAULT_VIEW: View = { mode: 'overview', map: 'AmbroseValley', day: 'all', matches: [], recent: 0, picked: [], layers: ['traffic'], kills: 'both', deaths: 'both', mono: false, ended: 'any', length: 'any', game: 'any', sort: 'day', hidden: [], heatUnder: false, replayOn: true, iconScale: 1, pathWidth: 1.5, pathAlpha: 1.3, view3d: false, exaggeration: 4, terrain: true };
 
 const MAPS: MapId[] = ['AmbroseValley', 'GrandRift', 'Lockdown'];
 const LAYERS: HeatLayer[] = ['traffic', 'loot', 'power', 'raised', 'fire', 'kills', 'deaths', 'storm']; // drawing order
@@ -67,14 +68,15 @@ export function parseView(hash: string): View {
     day: day && /^\d{4}-\d{2}-\d{2}$/.test(day) ? day : 'all',
     matches: parseMatches(q.get('match')),
     recent: q.get('last') === '10' ? 10 : q.get('last') === '100' ? 100 : 0,
+    picked: parsePicked(q.get('pick')),
     layers: parseLayers(q.get('layer')),
     kills: pick('kills', WHO, 'both'),
     deaths: pick('deaths', WHO, 'both'),
     mono: q.get('mono') === '1',
-    heatMono: q.get('hmono') === '1' || (legacyHeat && q.get('mono') === '1'),
     // Old links: "players=pvp" was the player-vs-player filter, now "ended: killed by a player".
     ended: q.get('players') === 'pvp' ? 'player' : pick<Ended>('end', ['any', 'survived', 'bot', 'storm', 'player'], 'any'),
     length: pick<Length>('len', ['any', 'short', 'mid', 'long'], 'any'),
+    game: pick<Game>('game', ['any', 'bots', 'pvp'], 'any'),
     sort: pick<SortBy>('sort', ['day', 'longest', 'shortest', 'kills', 'loot'], 'day'),
     hidden: legacyHeat ? ['humanPath', 'botPath'] : (q.get('hide') ?? '').split(',').filter((k) => /^[a-zA-Z]{2,20}$/.test(k)),
     heatUnder: legacyHeat || q.get('under') === '1',
@@ -102,6 +104,14 @@ export function toggleLayer(current: HeatLayer[], layer: HeatLayer): HeatLayer[]
   return current.includes(layer) ? current.filter((l) => l !== layer) : LAYERS.filter((l) => l === layer || current.includes(l));
 }
 
+function parsePicked(raw: string | null): View['picked'] {
+  return (raw ?? '')
+    .split(',')
+    .map((s) => /^([\w-]{1,64})\.(\d{1,3})$/.exec(s))
+    .filter((m): m is RegExpExecArray => !!m)
+    .map((m) => ({ match: m[1], player: Number(m[2]) }));
+}
+
 function parseMatches(raw: string | null): View['matches'] {
   if (raw === ALL) return ALL;
   if (raw === NONE) return NONE;
@@ -117,9 +127,11 @@ export function viewHash(v: View): string {
   if (v.matches === ALL || v.matches === NONE) q.set('match', v.matches);
   else if (v.matches.length) q.set('match', v.matches.join(','));
   if (v.matches === ALL && v.recent) q.set('last', String(v.recent));
+  if (v.picked.length) q.set('pick', v.picked.map((p) => `${p.match}.${p.player}`).join(','));
   if (v.mono) q.set('mono', '1');
   if (v.ended !== 'any') q.set('end', v.ended);
   if (v.length !== 'any') q.set('len', v.length);
+  if (v.game !== 'any') q.set('game', v.game);
   if (v.sort !== 'day') q.set('sort', v.sort);
   if (v.hidden.length) q.set('hide', v.hidden.join(','));
   if (!v.replayOn) q.set('replay', '0');
@@ -134,7 +146,6 @@ export function viewHash(v: View): string {
     q.set('layer', v.layers.join(','));
     if (v.kills !== 'both' && v.layers.includes('kills')) q.set('kills', v.kills);
     if (v.deaths !== 'both' && v.layers.includes('deaths')) q.set('deaths', v.deaths);
-    if (v.heatMono) q.set('hmono', '1');
   }
   return `#${q}`;
 }

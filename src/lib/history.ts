@@ -14,10 +14,13 @@ const LIMIT = 100;
 
 export const start = <T>(present: T): History<T> => ({ past: [], present, future: [], lastKey: null, lastAt: 0 });
 
-/** A new state. `key` names what changed: the same key within MERGE_MS replaces the last step instead of adding one. */
-export function record<T>(h: History<T>, next: T, key: string, now: number): History<T> {
+/**
+ * A new state. `key` names what changed: the same key within MERGE_MS replaces the last step instead of adding one.
+ * `null`: never merged (clicks that pick something: each one is its own step).
+ */
+export function record<T>(h: History<T>, next: T, key: string | null, now: number): History<T> {
   if (Object.is(next, h.present)) return h;
-  const merge = key === h.lastKey && now - h.lastAt < MERGE_MS && h.past.length > 0;
+  const merge = key !== null && key === h.lastKey && now - h.lastAt < MERGE_MS && h.past.length > 0;
   return {
     past: merge ? h.past : [...h.past, h.present].slice(-LIMIT),
     present: next,

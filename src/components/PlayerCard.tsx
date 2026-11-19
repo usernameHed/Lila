@@ -63,7 +63,7 @@ export function PlayerCard({ story: s, title, active, onPoint, onSeek, onClose, 
         </>
       )}
       <h4>Events ({s.events.length})</h4>
-      <ul className="story">
+      <ul className="story events">
         {s.events.map((e, i) => (
           <li key={i} className={e.ref === active ? 'active' : ''} ref={e.ref === active ? (el) => el?.scrollIntoView({ block: 'nearest' }) : undefined}>
             <button onClick={() => onSeek(e)} onMouseEnter={() => onPoint(e.ref)} onMouseLeave={() => onPoint(null)}>
@@ -80,7 +80,6 @@ export function PlayerCard({ story: s, title, active, onPoint, onSeek, onClose, 
           Replay only this match
         </button>
       )}
-      <p className="muted small">Click an event to jump there. Dashed: where this player goes next.</p>
     </aside>
   );
 }

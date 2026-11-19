@@ -67,9 +67,6 @@ export function heatRgb(layer: HeatLayer, who?: Exclude<Who, 'both'>): [number, 
   return HEAT_LAYERS[layer].rgb;
 }
 
-/** One-color mode, for heatmaps and for replays of several matches. */
-export const MONO_RGB: [number, number, number] = [76, 201, 240];
-
 export const WHO_LABEL: Record<Who, string> = { bots: 'Bots', players: 'Players', both: 'Both' };
 
 export const rgbCss = ([r, g, b]: [number, number, number], a = 1) => `rgba(${r},${g},${b},${a})`;

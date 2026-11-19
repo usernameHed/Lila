@@ -81,13 +81,6 @@ export function normalize(values: Float32Array): Float32Array {
   return out;
 }
 
-/** One-color mode: every kind scaled to its own range, then the strongest per cell (no kind drowns another). */
-export function strongest(layers: Float32Array[]): Float32Array {
-  const out = new Float32Array(layers[0]?.length ?? 0);
-  for (const l of layers) for (let i = 0; i < l.length; i++) out[i] = Math.max(out[i], l[i]);
-  return out;
-}
-
 const BANDS = 4;
 export const BAND_SCALE = 8; // bands are computed at 8x the grid (1024 px), so their edges stay smooth on screen
 

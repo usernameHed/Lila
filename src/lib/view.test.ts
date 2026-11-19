@@ -3,7 +3,7 @@ import { ALL, DEFAULT_VIEW, NONE, legendToggle, parseView, resolveSelection, set
 
 describe('view in the URL', () => {
   it('round-trips a view', () => {
-    const v: View = { ...DEFAULT_VIEW, mode: 'replay', map: 'Lockdown', day: '2026-02-12', layers: ['kills', 'storm'], kills: 'bots', heatUnder: true, heatMono: true, mono: true };
+    const v: View = { ...DEFAULT_VIEW, mode: 'replay', map: 'Lockdown', day: '2026-02-12', layers: ['kills', 'storm'], kills: 'bots', heatUnder: true, mono: true };
     expect(parseView(viewHash(v))).toEqual(v);
     const r: View = { ...DEFAULT_VIEW, mode: 'replay', matches: ['abc-123', 'def-456'], ended: 'storm', length: 'long', sort: 'kills', hidden: ['loot', 'fights', 'botPath'], heatUnder: true, replayOn: false, iconScale: 1.4, layers: [], view3d: true, exaggeration: 6, terrain: false };
     expect(parseView(viewHash(r))).toEqual(r);
@@ -25,6 +25,8 @@ describe('match selection', () => {
     expect(resolveSelection(ALL, list)).toEqual(list);
     expect(resolveSelection(ALL, list, 10).map((m) => m.id)).toEqual(list.slice(-10).map((m) => m.id));
     expect(parseView(viewHash({ ...DEFAULT_VIEW, mode: 'replay', matches: ALL, recent: 100 })).recent).toBe(100);
+    const picked = [{ match: 'abc-1', player: 0 }, { match: 'def-2', player: 3 }];
+    expect(parseView(viewHash({ ...DEFAULT_VIEW, mode: 'replay', picked })).picked).toEqual(picked);
     expect(resolveSelection(['c', 'x', 'a'], list).map((m) => m.id)).toEqual(['c', 'a']);
     expect(resolveSelection(['x'], list).map((m) => m.id)).toEqual(['a']);
     expect(resolveSelection([], [])).toEqual([]);

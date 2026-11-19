@@ -331,14 +331,16 @@ export function drawPathHover(ctx: CanvasRenderingContext2D, match: Match, index
  */
 export function drawFocus(
   ctx: CanvasRenderingContext2D, match: Match, index: number, uvUnits: number, size: number, t: number,
-  active: MatchEvent | null = null, phase = 0, opponents: number[] = [],
+  active: MatchEvent | null = null, phase = 0, opponents: number[] = [], dimMap = true,
 ) {
   const p = match.players[index];
   if (!p) return;
   const px = (u: number, v: number) => uvToPixel(u, v, uvUnits, size);
   ctx.save();
-  ctx.fillStyle = 'rgba(8, 9, 12, 0.55)';
-  ctx.fillRect(0, 0, size, size);
+  if (dimMap) {
+    ctx.fillStyle = 'rgba(8, 9, 12, 0.55)';
+    ctx.fillRect(0, 0, size, size);
+  }
   // Everyone this player fought: their path so far, bold, in their own color, so both sides of a fight show.
   for (const o of opponents) {
     const q = match.players[o];

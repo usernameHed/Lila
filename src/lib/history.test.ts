@@ -31,4 +31,11 @@ describe('undo / redo', () => {
     expect(h.future).toEqual([]);
     expect(redo(h).present).toBe(5);
   });
+
+  it('never merges steps recorded without a key (each pick is its own step)', () => {
+    let h = start(0);
+    h = record(h, 1, null, 0);
+    h = record(h, 2, null, 10);
+    expect(h.past).toEqual([0, 1]);
+  });
 });

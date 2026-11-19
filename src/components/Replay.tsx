@@ -144,6 +144,9 @@ interface StageProps {
   pathAlpha: number;
   /** Shown over the empty map when no match is replayed. */
   emptyHint: string;
+  /** Players picked (view state: undo / redo, links). */
+  picked: Focus[];
+  onPicked: (p: Focus[]) => void;
 }
 
 const Map3D = lazy(() => import('./Map3D'));
@@ -214,7 +217,7 @@ function useLast<T>(value: T | null, fading: boolean): T | null {
 
 /** Every selected match on its map, all starting together at 0:00, with one playback. */
 export function ReplayStage(props: StageProps) {
-  const { summaries, uvUnits, mono, hidden, hover, onPointedKind, under, mapConfig, view3d, exaggeration, terrain, onView, onOnlyMatch, iconScale, pathWidth, pathAlpha, emptyHint } = props;
+  const { summaries, uvUnits, mono, hidden, hover, onPointedKind, under, mapConfig, view3d, exaggeration, terrain, onView, onOnlyMatch, iconScale, pathWidth, pathAlpha, emptyHint, picked, onPicked } = props;
   const [loaded, setLoaded] = useState<Match[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -248,11 +251,13 @@ export function ReplayStage(props: StageProps) {
 
   // The player clicked (highlighted, with a details card), the event clicked (pinned), and the event under the
   // mouse anywhere: map, timeline or card. All three are linked: what is pointed at pulses everywhere it shows.
-  const [focus, setFocus] = useState<Focus | null>(null);
+  // The players picked are part of the view (undo / redo, links): the last one's card is open.
+  const picks = useMemo(() => picked.filter((f) => shown.some((m) => m.id === f.match)), [picked, shown]);
+  const focus = picks.length ? picks[picks.length - 1] : null;
+  const setFocus = useCallback((f: Focus | null) => onPicked(f ? [f] : []), [onPicked]);
   const [pinned, setPinned] = useState<PointedEvent | null>(null);
   const [pointed, setPointed] = useState<PointedEvent | null>(null);
   useEffect(() => {
-    setFocus(null);
     setPinned(null);
     setPointed(null);
   }, [key]);
@@ -282,7 +287,7 @@ export function ReplayStage(props: StageProps) {
         setFocus(player);
       }
     },
-    [],
+    [setFocus],
   );
   const onPick = useCallback(
     ({ u, v, tolerance }: MapPick) => pickAt(pickEvent(shown, t, u, v, tolerance, hiddenSet), pickPlayer(shown, t, u, v, tolerance)),
@@ -296,12 +301,23 @@ export function ReplayStage(props: StageProps) {
     const i = m ? m.players.findIndex((p) => !p.bot) : -1;
     return m ? { match: id, player: Math.max(0, i) } : null;
   };
-  /** A match clicked in the "On the map" list: its player's card opens. */
-  const openMatch = (id: string) => {
+  /**
+   * A match clicked in the "On the map" list: it alone is picked (its player's card opens), or unpicked if it was the
+   * only one. Ctrl / Cmd adds or removes it; Shift picks every match from the last picked one to this one.
+   */
+  const openMatch = (id: string, e: React.MouseEvent) => {
     const f = humanOf(id);
     if (!f) return;
     setPinned(null);
-    setFocus(f);
+    const has = picks.some((p) => p.match === id);
+    if (e.shiftKey && picks.length) {
+      const ids = summaries.map((m) => m.id);
+      const a = ids.indexOf(picks[picks.length - 1].match);
+      const b = ids.indexOf(id);
+      const range = ids.slice(Math.min(a, b), Math.max(a, b) + 1).map(humanOf).filter((x): x is Focus => !!x);
+      onPicked([...picks.filter((p) => !range.some((r) => r.match === p.match)), ...(a <= b ? range : range.reverse())]);
+    } else if (e.ctrlKey || e.metaKey) onPicked(has ? picks.filter((p) => p.match !== id) : [...picks, f]);
+    else onPicked(has && picks.length === 1 ? [] : [f]);
   };
   const onHoverMap = useCallback(
     (p: MapPick | null) => {
@@ -328,9 +344,14 @@ export function ReplayStage(props: StageProps) {
           mono, hidden: hiddenSet, hover: shownHover, phase, activeEvent: shownActive?.event ?? null, iconScale,
           dim, pathWidth, pathAlpha, hoverPath: focus && hoverPath && focus.match === hoverPath.match && focus.player === hoverPath.player ? null : hoverPath,
         });
-      if (focusMatch && focus) drawFocus(ctx, focusMatch, focus.player, uvUnits, size, t, active?.event ?? null, phase, story?.opponents ?? []);
+      // Every picked player bold over a dimmed map; the last one (its card is open) with the players it fought.
+      picks.forEach((p, i) => {
+        const m = shown.find((x) => x.id === p.match);
+        const last = i === picks.length - 1;
+        if (m) drawFocus(ctx, m, p.player, uvUnits, size, t, last ? active?.event ?? null : null, phase, last ? story?.opponents ?? [] : [], i === 0);
+      });
     },
-    [shown, t, uvUnits, play.playing, mono, hiddenSet, shownHover, phase, under, focusMatch, focus, active, shownActive, story, iconScale, dim, pathWidth, pathAlpha, hoverPath],
+    [shown, t, uvUnits, play.playing, mono, hiddenSet, shownHover, phase, under, focusMatch, focus, active, shownActive, story, iconScale, dim, pathWidth, pathAlpha, hoverPath, picks],
   );
 
   if (!summaries.length)
@@ -413,11 +434,11 @@ export function ReplayStage(props: StageProps) {
                 return (
                   <li key={m.id}>
                     <button
-                      className={focus?.match === m.id ? 'on' : ''}
-                      onClick={() => openMatch(m.id)}
+                      className={picks.some((p) => p.match === m.id) ? 'on' : ''}
+                      onClick={(e) => openMatch(m.id, e)}
                       onMouseEnter={() => setHoverPath(humanOf(m.id))}
                       onMouseLeave={() => setHoverPath(null)}
-                      title="Open this player's card"
+                      title="Click: this match's player and card · Ctrl / Cmd: add or remove · Shift: a range"
                     >
                       <span className="dot" style={{ background: color }} />
                       <span className="r-day">{formatDay(m.day)}</span>

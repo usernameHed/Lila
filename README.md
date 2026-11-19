@@ -17,14 +17,16 @@ data details we had to get right, how it is built, and what the game should log 
 live views. It doubles as the walkthrough of the features below.
 
 **Match replay**, in the order a designer works: filters on the left, the matches running on the map (an "On the
-  map" list in its top-left corner: click one for its player's card), the layers on the right.
+  map" list in its top-left corner: click one for its player's card, Ctrl / Cmd adds or removes, Shift picks a
+  range; the list and the card share the height, the card's events scroll), the layers on the right.
 On a 16:9 screen (1366x768 to 1920x1080) everything fits without scrolling:
 - **Replay** one match or many on one clock, at 10x / 30x / 60x; Space plays and pauses; grabbing the timeline
   pauses. The timeline has a tick per fight and death, and a band where the storm kills (from minute 10.9).
 - **Day**: one chip per day (or All days) replays every match of that day together; **Last 10** / **Last 100**
   replay the latest matches of the data (by day: the time of day is not logged); **Custom** opens the match list
   to pick matches one by one.
-- **Match filters**, as one-click chips that show how many matches each would leave: how the player's run ended
+- **Match filters**, as one-click chips that show how many matches each would leave: game (bots recorded too, or
+  a fight against another player), how the player's run ended
   (survived, killed by a bot, by a player, by the storm), length (under 5, 5-10, over 10 min). In Custom, matches are
   grouped by day (fold a day, tick it to select all its matches), one line per match (duration, how it ended, kills,
   loot; ⇄ when bots were recorded too). Picking a match plays it from 0:00 (if the previous replay had ended, paused, it shows the new one whole). "Clear all filters" goes back to every match.
@@ -34,7 +36,7 @@ On a 16:9 screen (1366x768 to 1920x1080) everything fits without scrolling:
   players stand when killing bots). Column headers turn a whole column on or off. Heat only, under "Analysis":
   power positions (kills per minute spent) and raised kills (from 3 m above the ground). Hover a row: it explains
   itself, its markers pulse on the map and their ticks light up on the timeline. Each heatmap takes the color of its row's icons (traffic in the path blue, loot in the gem yellow, kills and
-  deaths in their side's color). Heat per kind or merged; sliders for icon size, path width and path opacity (up to
+  deaths in their side's color). Sliders for icon size, path width and path opacity (up to
   x7.5, for the many-match view). Heatmaps are toon bands with vector outlines, sharp at any zoom.
   Icons: a robot spider where a player killed a bot, a crosshair for other kills, a skull over crossed bones where
   a player died, a dead monster for a bot's death, a diamond for loot and the storm.
@@ -55,7 +57,8 @@ On a 16:9 screen (1366x768 to 1920x1080) everything fits without scrolling:
   runs on it. It is read and processed in the browser (a Web Worker running the same pipeline as `pipeline/build.py`,
   ported to `src/lib/build.ts` and checked value for value against it), kept in this browser, and shown when ready;
   the left panel always says which data is on screen, one click to change it.
-- **Undo / redo** for every setting (arrows in the header, Cmd/Ctrl+Z, Shift+Cmd/Ctrl+Z); dragging a slider is one step.
+- **Undo / redo** for every setting and every pick (matches, players), with the arrows in the header, Cmd/Ctrl+Z,
+  Shift+Cmd/Ctrl+Z; dragging a slider is one step, each pick is its own step. Picked players are in the link too.
 - **Works offline** after the first visit: a service worker keeps every file (app, maps, data, about 10 MB) in the
   browser; a new version downloads only the files that changed. A loading screen while files arrive, and a Reload
   screen instead of a blank page if a piece fails.

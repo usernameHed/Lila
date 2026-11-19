@@ -4,14 +4,21 @@ import type { MatchSummary } from './types';
 export type Ended = 'any' | 'survived' | 'bot' | 'storm' | 'player';
 export type Length = 'any' | 'short' | 'mid' | 'long';
 export type SortBy = 'day' | 'longest' | 'shortest' | 'kills' | 'loot';
+/** Who else is in the game: bots recorded too (their paths are in the data), or a player fought. */
+export type Game = 'any' | 'bots' | 'pvp';
 
 export interface MatchFilter {
   ended: Ended;
   length: Length;
+  game: Game;
   sort: SortBy;
 }
 
-export const NO_FILTER: MatchFilter = { ended: 'any', length: 'any', sort: 'day' };
+export const NO_FILTER: MatchFilter = { ended: 'any', length: 'any', game: 'any', sort: 'day' };
+
+/** Bots recorded in the match (52 of 796), or a fight with another player (a kill or a death). */
+export const gameOf = (m: MatchSummary, g: Exclude<Game, 'any'>): boolean =>
+  g === 'bots' ? m.bots > 0 : !!(m.events.killPlayer || m.events.diedToPlayer);
 
 /** How the human's match ended. No death logged = survived (extraction is not logged). */
 export function endedOf(m: MatchSummary): Exclude<Ended, 'any'> {
@@ -33,7 +40,8 @@ export function applyFilter(list: MatchSummary[], f: MatchFilter): MatchSummary[
   const kept = list.filter(
     (m) =>
       (f.ended === 'any' || endedOf(m) === f.ended) &&
-      (f.length === 'any' || lengthOf(m) === f.length),
+      (f.length === 'any' || lengthOf(m) === f.length) &&
+      (f.game === 'any' || gameOf(m, f.game)),
   );
   const by: Record<SortBy, ((a: MatchSummary, b: MatchSummary) => number) | null> = {
     day: null,

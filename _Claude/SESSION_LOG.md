@@ -15,6 +15,13 @@ about 300 lines, move the oldest entries word for word to `SESSION_HISTORY.md` (
 
 ---
 
+## 2026-11-19 (desktop session): game filter, undoable picks, multi-select, card layout
+
+- Game filter (Bots recorded / Vs player, `game` in matchFilter, URL `game`). Picked players now in the view (`picked`,
+  URL `pick=match.player,...`): undo / redo covers them, each pick its own step (history key null = never merged).
+  "On the map" list: click / Ctrl / Shift; all picks drawn bold, last one's card open. List and card share the height,
+  events scroll, button stays. Card hint removed. "Heat per kind / Merged" removed (`heatMono`, `strongest` gone).
+
 ## 2026-11-19 (desktop session): "On the map" list, autoplay rule, no Try it
 
 - Ugo's flow: filters left -> matches running in the map -> layers right. Done: "On the map" list over the map's left

@@ -31,7 +31,12 @@ export function App() {
   const [hist, setHist] = useState<History<View>>(() => start(parseView(window.location.hash)));
   const view = hist.present;
   const update = useCallback(
-    (patch: Partial<View>) => setHist((h) => record(h, { ...h.present, ...patch }, Object.keys(patch).sort().join(','), Date.now())),
+    (patch: Partial<View>) =>
+      setHist((h) => {
+        const key = Object.keys(patch).sort().join(',');
+        // Picking matches or players: every click is its own undo step (sliders and the like merge).
+        return record(h, { ...h.present, ...patch }, /\b(picked|matches)\b/.test(key) ? null : key, Date.now());
+      }),
     [],
   );
   const setView = useCallback((v: View) => setHist((h) => record(h, v, 'link', Date.now())), []);
@@ -94,8 +99,8 @@ export function App() {
   // The map and day's matches, then the filters on top.
   const pool = useMemo(() => (index?.matches ?? []).filter((m) => m.map === view.map && (view.day === 'all' || m.day === view.day)), [index, view.map, view.day]);
   const matches = useMemo(
-    () => applyFilter(pool, { ended: view.ended, length: view.length, sort: 'day' }), // sorting is off for now
-    [pool, view.ended, view.length],
+    () => applyFilter(pool, { ended: view.ended, length: view.length, game: view.game, sort: 'day' }), // sorting is off for now
+    [pool, view.ended, view.length, view.game],
   );
   const days = useMemo(() => (view.day === 'all' ? (index?.days ?? []) : [view.day]), [index, view.day]);
 
@@ -120,7 +125,7 @@ export function App() {
   const drawnHidden = useMemo(() => (view.replayOn ? hidden : [...LEGEND_KEYS]), [view.replayOn, hidden]);
 
   const heat = useHeat(view.map);
-  const underDraw = useHeatDraw(view.heatUnder ? heat : null, days, { layers: view.layers, kills: view.kills, deaths: view.deaths, mono: view.heatMono }, index?.uvUnits ?? 10_000);
+  const underDraw = useHeatDraw(view.heatUnder ? heat : null, days, { layers: view.layers, kills: view.kills, deaths: view.deaths }, index?.uvUnits ?? 10_000);
 
   if (error) return <div className="fatal">Could not load the data: {error}</div>;
 
@@ -220,6 +225,8 @@ export function App() {
             iconScale={view.iconScale}
             pathWidth={view.pathWidth}
             pathAlpha={view.pathAlpha}
+            picked={view.picked}
+            onPicked={(picked) => update({ picked })}
             emptyHint={matches.length ? 'Tick a match in the list to replay it.' : 'No match for these filters.'}
           />
         )}

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { BAND_SCALE, bandOf, blur, colorAt, normalize, powerGrid, render, scaleTop, strongest, sumDays, upscale } from './heat';
+import { BAND_SCALE, bandOf, blur, colorAt, normalize, powerGrid, render, scaleTop, sumDays, upscale } from './heat';
 
 describe('heatmap', () => {
   it('sums only the chosen days', () => {
@@ -39,13 +39,10 @@ describe('heatmap', () => {
 });
 
 describe('one color and toon bands', () => {
-  it('normalizes each kind to 0-1 and keeps the strongest per cell', () => {
+  it('normalizes each kind to 0-1', () => {
     const a = normalize(new Float32Array([0, 4, 100]));
     expect(a[0]).toBe(0);
     expect(a[2]).toBe(1);
-    expect(Array.from(strongest([new Float32Array([0.2, 0.9]), new Float32Array([0.5, 0.1])]))).toEqual([
-      expect.closeTo(0.5), expect.closeTo(0.9),
-    ]);
   });
 
   it('cuts intensity into 4 flat bands, nothing under the floor', () => {

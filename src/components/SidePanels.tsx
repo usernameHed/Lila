@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { LAYER_ROWS, allHeat, heatOn, toggleHeat, type LayerRow } from '../lib/layers';
 import { applyFilter } from '../lib/matchFilter';
-import { EXPLAIN, HEAT_LAYERS, MONO_RGB, formatDay, heatRgb, rgbCss } from '../lib/style';
+import { EXPLAIN, HEAT_LAYERS, formatDay, heatRgb, rgbCss } from '../lib/style';
 // The panels around the map: left (which matches), right (the layers: icons and heatmaps), and the Overview's
 // table of contents.
 // App owns the state; these only show it.
@@ -37,6 +37,11 @@ const ENDED: Option<View['ended']>[] = [
   ['player', <><LegendIcon k="diedToPlayer" size={12} /> Player</>, 'Killed by a player'],
   ['storm', <><LegendIcon k="storm" size={12} /> Storm</>, 'Died to the storm'],
 ];
+const GAME: Option<View['game']>[] = [
+  ['any', 'Any'],
+  ['bots', <><LegendIcon k="botPath" size={12} /> Bots recorded</>, 'Matches where the bots were recorded too: their paths, kills and deaths are on the map'],
+  ['pvp', <><LegendIcon k="killPlayer" size={12} /> Vs player</>, 'Matches where the player killed or was killed by another player'],
+];
 const LENGTH: Option<View['length']>[] = [['any', 'Any'], ['short', '<5 min'], ['mid', '5-10'], ['long', '>10']];
 
 /** One filter as a row of chips: one click picks it, each chip says how many matches it would leave. */
@@ -60,13 +65,13 @@ export function ReplaySide(p: ReplayProps) {
   const { view, update, matches, selected, pool } = p;
   /** Custom: matches picked one by one in the list. Otherwise every (filtered) match of the chosen day plays. */
   const custom = view.matches !== ALL;
-  const base = { ended: view.ended, length: view.length, sort: view.sort };
+  const base = { ended: view.ended, length: view.length, game: view.game, sort: view.sort };
   /** How many matches there would be with this one filter changed (the others kept). */
   const countWith = (patch: Partial<typeof base>) => applyFilter(pool, { ...base, ...patch }).length;
   const dayPicked = !custom && (view.day !== 'all' || view.recent > 0);
-  const filtered = view.ended !== 'any' || view.length !== 'any' || dayPicked;
+  const filtered = view.ended !== 'any' || view.length !== 'any' || view.game !== 'any' || dayPicked;
   /** Back to every match: any outcome, any length, all days (matches picked in Custom are kept). */
-  const clearAll = () => update({ ended: 'any', length: 'any', ...(dayPicked ? { day: 'all', recent: 0 } : {}) });
+  const clearAll = () => update({ ended: 'any', length: 'any', game: 'any', ...(dayPicked ? { day: 'all', recent: 0 } : {}) });
   return (
     <>
       <section className={custom ? 'grow' : ''}>
@@ -141,11 +146,12 @@ export function ReplaySide(p: ReplayProps) {
         <h2 className="with-actions">
           <span title="Each match is one player's run: pick runs by how they went">Filters · player runs</span>
           <span className="actions">
-            <button onClick={clearAll} disabled={!filtered} title="Any outcome, any length, all days">
+            <button onClick={clearAll} disabled={!filtered} title="Any game, any outcome, any length, all days">
               Clear all filters
             </button>
           </span>
         </h2>
+        <FilterRow label="Game" value={view.game} options={GAME} count={(v) => countWith({ game: v })} onChange={(v) => update({ game: v })} />
         <FilterRow label="Ended" value={view.ended} options={ENDED} count={(v) => countWith({ ended: v })} onChange={(v) => update({ ended: v })} />
         <FilterRow label="Length" value={view.length} options={LENGTH} onChange={(v) => update({ length: v })} />
       </section>
@@ -175,7 +181,7 @@ function LayerLine({ row, p, showTip }: { row: LayerRow; p: RightProps; showTip:
   const k = row.icons;
   const iconsOn = !!k && view.replayOn && !view.hidden.includes(k);
   const heatIsOn = heatOn(view, row);
-  const rowRgb = row.heat ? (view.heatMono ? MONO_RGB : heatRgb(row.heat.layer, row.heat.who)) : null;
+  const rowRgb = row.heat ? heatRgb(row.heat.layer, row.heat.who) : null;
   const label = k ? legendLabel(k) : row.heat ? HEAT_LAYERS[row.heat.layer].label : row.id;
   const count = k ? (k === 'humanPath' || k === 'botPath' ? null : p.counts[k] ?? 0) : null;
   const toggleIcons = () => k && update({ replayOn: true, hidden: view.replayOn ? legendToggle(view.hidden, k) : LEGEND_KEYS.filter((x) => x !== k) });
@@ -251,7 +257,6 @@ export function RightPanel(p: RightProps) {
           ))}
         </ul>
         <div className="layer-settings">
-          <Choice label="Heatmap colors" options={[['each', 'Heat per kind'], ['mono', 'Merged']]} value={view.heatMono ? 'mono' : 'each'} onChange={(c) => update({ heatMono: c === 'mono' })} />
           <label className="icon-size" title="Size of the icons on the map">
             Icon size
             <input type="range" min={0.6} max={4} step={0.1} value={view.iconScale} onChange={(e) => update({ iconScale: Number(e.target.value) })} />

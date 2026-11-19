@@ -22,6 +22,8 @@ describe('match filters', () => {
     expect(ids({})).toEqual(['a', 'b', 'c']);
     expect(ids({ ended: 'bot' })).toEqual(['c']);
     expect(ids({ length: 'long' })).toEqual(['b']);
+    expect(ids({ game: 'bots' })).toEqual(['b']);
+    expect(ids({ game: 'pvp' })).toEqual([]);
   });
 
   it('sorts by length, kills or loot', () => {

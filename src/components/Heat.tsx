@@ -3,8 +3,8 @@ import { loadHeat } from '../lib/data';
 import { uvToPixel } from '../lib/coords';
 import { drawFightLine, drawHeat, heatCanvas } from '../lib/draw';
 import { contourPath } from '../lib/contours';
-import { bandEdges, blur, edgeColor, normalize, powerGrid, render, strongest, sumDays } from '../lib/heat';
-import { HEAT_LAYERS, MONO_RGB, heatRgb } from '../lib/style';
+import { bandEdges, blur, edgeColor, normalize, powerGrid, render, sumDays } from '../lib/heat';
+import { HEAT_LAYERS, heatRgb } from '../lib/style';
 import type { HeatData, HeatLayer, MapId, Who } from '../lib/types';
 import { useSourceId } from './useSourceId';
 
@@ -49,7 +49,6 @@ export interface HeatOptions {
   layers: HeatLayer[];
   kills: Who;
   deaths: Who;
-  mono: boolean;
 }
 
 /**
@@ -80,8 +79,8 @@ export function useHeatDraw(heat: HeatData | null, days: string[], o: HeatOption
       const fill = render(k, heat.grid, rgb);
       return { canvas: heatCanvas(fill.pixels, fill.size), edges: bandEdges(k, heat.grid).map(contourPath), stroke: edgeColor(rgb) };
     };
-    return o.mono ? (grids.length ? [make(strongest(grids), MONO_RGB)] : []) : grids.map((k, i) => make(k, heatRgb(kinds[i].l, kinds[i].who)));
-  }, [heat, days, o.layers, o.kills, o.deaths, o.mono]);
+    return grids.map((k, i) => make(k, heatRgb(kinds[i].l, kinds[i].who)));
+  }, [heat, days, o.layers, o.kills, o.deaths]);
 
   const fights = useMemo(() => (heat && o.layers.includes('fire') ? fightsOf(heat, days) : []), [heat, days, o.layers]);
 
