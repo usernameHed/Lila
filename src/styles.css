@@ -492,3 +492,9 @@ button.map-tile:not(.on) .map-thumb { opacity: 0.75; }
 .stage-left .player-card > .story.events { flex: 1 1 auto; min-height: 60px; overflow-y: auto; }
 .stage-left .player-card > .go-btn { margin-top: 8px; }
 .stage-left.has-card { height: calc(100% - 20px); }
+/* The left column spans the map's height (top and bottom pinned: no percentage height to resolve). The list takes
+   at most the upper half, the picked player's card at most the lower half; each scrolls inside its half. */
+.stage-left, .stage-left.has-card { top: 10px; bottom: 10px; height: auto; max-height: none; }
+.stage-left .replayed, .stage-left.has-card .replayed { flex: 0 1 auto; max-height: calc(50% - 4px); }
+.stage-left .player-card, .stage-left.has-card .player-card { flex: 0 1 auto; max-height: calc(50% - 4px); min-height: 0; }
+@media (max-width: 760px) { .stage-left, .stage-left.has-card { bottom: auto; height: 60%; } }
