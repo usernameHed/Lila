@@ -15,6 +15,11 @@ about 300 lines, move the oldest entries word for word to `SESSION_HISTORY.md` (
 
 ---
 
+## 2026-11-19 (desktop session): "Bot killed" icon, take three
+
+- Ugo: change the "Bot killed" icon. Showed 4 drawn options; he picked a white crosshair over a robot head
+  (`botTarget` in icons.ts, replaces the player bust). Checked on the map and in the Elements list.
+
 ## 2026-11-19 (desktop session): elements and heatmaps apart again, select all
 
 - Ugo: separate heatmap from elements again, drop the line of fire, storm and player-kill heatmaps. Done: "Elements"

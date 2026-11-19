@@ -25,8 +25,8 @@ export function drawMarker(ctx: CanvasRenderingContext2D, shape: MarkerShape, co
     case 'spider':
       spider(ctx, color, r);
       break;
-    case 'shooter':
-      shooter(ctx, color, r);
+    case 'botTarget':
+      botTarget(ctx, color, r);
       break;
     case 'monster':
       monster(ctx, color, r);
@@ -237,42 +237,49 @@ function spider(ctx: CanvasRenderingContext2D, color: string, r: number) {
 }
 
 /**
- * A player who killed a bot: the player's bust (head and shoulders), with a small crossed-out bot head at the
- * bottom right. The icon sits where the player stood when shooting, so it shows the player, not the bot.
+ * A player who killed a bot: a white crosshair over a robot head (antenna, two eyes). The icon sits where the
+ * player stood when shooting.
  */
-function shooter(ctx: CanvasRenderingContext2D, color: string, r: number) {
-  // Bust: shoulders, then head, filled in the kind's color on a dark outline.
+function botTarget(ctx: CanvasRenderingContext2D, color: string, r: number) {
+  // Robot head: antenna, then a rounded square face with two eyes.
+  const h = r * 0.8;
   ctx.beginPath();
-  ctx.moveTo(-r * 0.95, r * 0.95);
-  ctx.quadraticCurveTo(-r * 0.95, r * 0.1, -r * 0.2, r * 0.05);
-  ctx.lineTo(r * 0.2, r * 0.05);
-  ctx.quadraticCurveTo(r * 0.95, r * 0.1, r * 0.95, r * 0.95);
-  ctx.closePath();
-  ctx.moveTo(r * 0.42, -r * 0.42);
-  ctx.arc(0, -r * 0.42, r * 0.42, 0, Math.PI * 2);
-  ctx.fillStyle = color;
-  ctx.fill();
-  ctx.lineWidth = Math.max(1.4, r * 0.18);
+  ctx.moveTo(0, -h * 0.55);
+  ctx.lineTo(0, -h * 0.95);
+  ctx.lineWidth = Math.max(1.4, h * 0.16);
   ctx.strokeStyle = OUTLINE;
   ctx.stroke();
-  // The bot it killed: a small square head with an X, on a dark badge.
-  const b = r * 0.42;
-  const cx = r * 0.72;
-  const cy = r * 0.62;
   ctx.beginPath();
-  ctx.roundRect(cx - b, cy - b, b * 2, b * 2, b * 0.4);
-  ctx.fillStyle = '#111';
+  ctx.arc(0, -h * 0.98, h * 0.16, 0, Math.PI * 2);
+  ctx.fillStyle = color;
   ctx.fill();
-  ctx.lineWidth = Math.max(1, r * 0.1);
-  ctx.strokeStyle = '#f4a261';
+  ctx.lineWidth = 1.4;
   ctx.stroke();
   ctx.beginPath();
-  const x = b * 0.5;
-  ctx.moveTo(cx - x, cy - x);
-  ctx.lineTo(cx + x, cy + x);
-  ctx.moveTo(cx + x, cy - x);
-  ctx.lineTo(cx - x, cy + x);
-  ctx.lineWidth = Math.max(1, r * 0.13);
-  ctx.strokeStyle = '#f4a261';
+  ctx.roundRect(-h * 0.8, -h * 0.55, h * 1.6, h * 1.3, h * 0.3);
+  ctx.fill();
+  ctx.lineWidth = Math.max(1.4, h * 0.16);
+  ctx.stroke();
+  ctx.fillStyle = '#111';
+  ctx.beginPath();
+  ctx.arc(-r * 0.27, 0, r * 0.13, 0, Math.PI * 2);
+  ctx.arc(r * 0.27, 0, r * 0.13, 0, Math.PI * 2);
+  ctx.fill();
+  // Crosshair: a ring and four ticks, white on a dark outline.
+  const sight = () => {
+    ctx.beginPath();
+    ctx.arc(0, 0, r * 0.95, 0, Math.PI * 2);
+    for (const [a, b] of [[0, -1], [0, 1], [-1, 0], [1, 0]]) {
+      ctx.moveTo(a * r * 0.7, b * r * 0.7);
+      ctx.lineTo(a * r * 1.2, b * r * 1.2);
+    }
+  };
+  sight();
+  ctx.lineWidth = Math.max(2, r * 0.24);
+  ctx.strokeStyle = OUTLINE;
+  ctx.stroke();
+  sight();
+  ctx.lineWidth = Math.max(1, r * 0.11);
+  ctx.strokeStyle = '#fff';
   ctx.stroke();
 }
