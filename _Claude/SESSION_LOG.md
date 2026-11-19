@@ -15,6 +15,13 @@ about 300 lines, move the oldest entries word for word to `SESSION_HISTORY.md` (
 
 ---
 
+## 2026-11-19 (desktop session): elements and heatmaps apart again, select all
+
+- Ugo: separate heatmap from elements again, drop the line of fire, storm and player-kill heatmaps. Done: "Elements"
+  and "Heatmap" cards (one row model, `heatLabel` per row in layers.ts; view LAYERS without fire / storm; kills heat =
+  bots only). "On the map" header box selects / unselects every match; Cmd / Ctrl + A selects all (no text selection
+  in panels: user-select none).
+
 ## 2026-11-19 (desktop session): "2 players" filter
 
 - Ugo: a filter for matches with 2 players (only 2, Ambrose 12 Feb). Game = No bots / Bots / 2 players (`multi`,

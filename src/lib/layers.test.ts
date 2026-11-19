@@ -20,13 +20,13 @@ describe('one layer list for icons and heatmaps', () => {
     const bots = { ...off, ...toggleHeat(off, row('killBot')) } as typeof off;
     expect(bots.layers).toEqual(['kills']);
     expect(bots.kills).toBe('bots');
-    expect(heatOn(bots, row('killPlayer'))).toBe(false);
-    const both = { ...bots, ...toggleHeat(bots, row('killPlayer')) } as typeof off;
-    expect(both.kills).toBe('both');
-    const players = { ...both, ...toggleHeat(both, row('killBot')) } as typeof off;
-    expect(players.kills).toBe('players');
-    expect(players.layers).toEqual(['kills']);
-    const none = { ...players, ...toggleHeat(players, row('killPlayer')) } as typeof off;
+    expect(row('killPlayer').heat).toBeNull(); // no heatmap for the 3 player kills
+    const deaths = { ...off, ...toggleHeat(off, row('diedToBot')) } as typeof off;
+    const both = { ...deaths, ...toggleHeat(deaths, row('diedToPlayer')) } as typeof off;
+    expect(both.deaths).toBe('both');
+    const players = { ...both, ...toggleHeat(both, row('diedToBot')) } as typeof off;
+    expect(players.deaths).toBe('players');
+    const none = { ...players, ...toggleHeat(players, row('diedToPlayer')) } as typeof off;
     expect(none.layers).toEqual([]);
     expect(none.heatUnder).toBe(false);
   });

@@ -18,7 +18,8 @@ live views. It doubles as the walkthrough of the features below.
 
 **Match replay**, in the order a designer works: map, day and layers on the left, the matches running on the map (an "On the
   map" list under the filters, with "+1 player" / "+N bots" when more than the player was recorded and the match colors switch:
-  click one for its player's card (on the right of the map) and only that match stays on the map; one meaning for the list:
+  click one for its player's card (on the right of the map) and only that match stays on the map; one meaning for the list (a box in its header, or Cmd / Ctrl + A,
+  selects every match):
   ticked = selected = shown on the map (all ticked by default; any filter change ticks them all again); a click ticks
   that match alone with its player's card (again: every match), the tick box or Ctrl / Cmd adds or removes one, Shift
   ticks a range; under a selected match, its players and bots are ticked too and can be hidden one by one; a picked
@@ -36,14 +37,11 @@ On a 16:9 screen (1366x768 to 1920x1080) everything fits without scrolling:
   grouped by day (fold a day, tick it to select all its matches), one line per match (duration, how it ended, kills,
   loot; ⇄ when bots were recorded too). Picking a match plays it from 0:00 (if the previous replay had ended, paused, it shows the new one whole). In the
   card, "Replay this match" picks it and plays it from 0:00, keeping the list. "Clear all filters" goes back to every match.
-- **Layers** (one list for icons and heatmaps): each kind of data is one row, with two switches. **Icons** draws it
-  on the replay (path lines, or an icon per event), **Heat** draws it as a heatmap of the whole selection: the
-  same events seen two ways, in one place ("Item looted" = gems and the loot heat; "Bot killed" = icons and where
-  players stand when killing bots). Column headers turn a whole column on or off. Heat only, under "Analysis":
-  power positions (kills per minute spent) and raised kills (from 3 m above the ground). Hover a row: it explains
-  itself, its markers pulse on the map and their ticks light up on the timeline. Each heatmap takes the color of its row's icons (traffic in the path blue, loot in the gem yellow, kills and
-  deaths in their side's color). Sliders for icon size, path width and path opacity (up to
-  x7.5, for the many-match view). Heatmaps are toon bands with vector outlines, sharp at any zoom.
+- **Elements and Heatmap** (two cards at the bottom of the left panel): Elements draws each kind on the replay
+  (path lines, or an icon per event: tick box, icon, name, count); Heatmap draws the whole selection as heat: traffic,
+  loot, bot kills, deaths by bot, deaths by player, power positions (kills per minute spent), raised kills (from 3 m
+  above the ground). Each heatmap takes the color of its icons. Hover a row: it explains itself, its markers pulse
+  on the map and their ticks light up on the timeline. Sliders for icon size, path width and path opacity.
   Icons: a robot spider where a player killed a bot, a crosshair for other kills, a skull over crossed bones where
   a player died, a dead monster for a bot's death, a diamond for loot and the storm.
   Hovering a path in 2D highlights it; click it for the player's card (each event with its icon).

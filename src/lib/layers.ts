@@ -1,5 +1,5 @@
-// One list for everything drawn on the map. Each row is one kind of data, which can be shown as icons (or path
-// lines) on the replay, as a heatmap, or both: the same events seen two ways, switched in one place.
+// What can be drawn on the map: each kind of data as icons (or path lines) on the replay, and, for some, a heatmap
+// of the whole selection. Two lists in the panel (elements, heatmaps), one row model.
 import type { LegendKey } from './draw';
 import type { HeatLayer, Who } from './types';
 import { ALL_LAYERS, toggleLayer, type View } from './view';
@@ -10,24 +10,28 @@ export interface LayerRow {
   icons: LegendKey | null;
   /** The heatmap it draws; kills and deaths are split by the other side (`who`). */
   heat: { layer: HeatLayer; who?: Exclude<Who, 'both'> } | null;
-  /** Heat-only rows computed from the others, listed apart. */
+  /** The row's name in the heatmap list. */
+  heatLabel?: string;
+  /** Explanation key (EXPLAIN) of its heatmap. */
+  heatTip?: string;
+  /** Heat-only rows computed from the others. */
   analysis?: true;
 }
 
 export const LAYER_ROWS: LayerRow[] = [
-  { id: 'humanPath', icons: 'humanPath', heat: { layer: 'traffic' } },
+  { id: 'humanPath', icons: 'humanPath', heat: { layer: 'traffic' }, heatLabel: 'Traffic', heatTip: 'traffic' },
   { id: 'botPath', icons: 'botPath', heat: null },
-  { id: 'loot', icons: 'loot', heat: { layer: 'loot' } },
-  { id: 'killBot', icons: 'killBot', heat: { layer: 'kills', who: 'bots' } },
-  { id: 'killPlayer', icons: 'killPlayer', heat: { layer: 'kills', who: 'players' } },
-  { id: 'diedToBot', icons: 'diedToBot', heat: { layer: 'deaths', who: 'bots' } },
-  { id: 'diedToPlayer', icons: 'diedToPlayer', heat: { layer: 'deaths', who: 'players' } },
-  { id: 'storm', icons: 'storm', heat: { layer: 'storm' } },
-  { id: 'fights', icons: 'fights', heat: { layer: 'fire' } },
+  { id: 'loot', icons: 'loot', heat: { layer: 'loot' }, heatLabel: 'Loot', heatTip: 'heatLoot' },
+  { id: 'killBot', icons: 'killBot', heat: { layer: 'kills', who: 'bots' }, heatLabel: 'Bot kills', heatTip: 'kills' },
+  { id: 'killPlayer', icons: 'killPlayer', heat: null },
+  { id: 'diedToBot', icons: 'diedToBot', heat: { layer: 'deaths', who: 'bots' }, heatLabel: 'Deaths by bot', heatTip: 'deaths' },
+  { id: 'diedToPlayer', icons: 'diedToPlayer', heat: { layer: 'deaths', who: 'players' }, heatLabel: 'Deaths by player', heatTip: 'deaths' },
+  { id: 'storm', icons: 'storm', heat: null },
+  { id: 'fights', icons: 'fights', heat: null },
   { id: 'botKill', icons: 'botKill', heat: null },
   { id: 'botDeath', icons: 'botDeath', heat: null },
-  { id: 'power', icons: null, heat: { layer: 'power' }, analysis: true },
-  { id: 'raised', icons: null, heat: { layer: 'raised' }, analysis: true },
+  { id: 'power', icons: null, heat: { layer: 'power' }, heatLabel: 'Power positions', heatTip: 'power', analysis: true },
+  { id: 'raised', icons: null, heat: { layer: 'raised' }, heatLabel: 'Raised kills', heatTip: 'raised', analysis: true },
 ];
 
 type HeatState = Pick<View, 'layers' | 'kills' | 'deaths' | 'heatUnder'>;
@@ -70,6 +74,6 @@ export function toggleHeat(v: HeatState, row: LayerRow): Partial<View> {
   return { ...patch, layers, heatUnder: layers.length > 0 };
 }
 
-/** Every heatmap on (both sides of kills and deaths), or none. */
+/** Every heatmap on (kills of bots, deaths of both kinds), or none. */
 export const allHeat = (on: boolean): Partial<View> =>
-  on ? { layers: [...ALL_LAYERS], kills: 'both', deaths: 'both', heatUnder: true } : { layers: [], heatUnder: false };
+  on ? { layers: [...ALL_LAYERS], kills: 'bots', deaths: 'both', heatUnder: true } : { layers: [], heatUnder: false };

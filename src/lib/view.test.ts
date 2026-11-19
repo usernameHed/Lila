@@ -3,7 +3,7 @@ import { ALL, DEFAULT_VIEW, NONE, legendToggle, parseView, resolveSelection, set
 
 describe('view in the URL', () => {
   it('round-trips a view', () => {
-    const v: View = { ...DEFAULT_VIEW, mode: 'replay', map: 'Lockdown', day: '2026-02-12', layers: ['kills', 'storm'], kills: 'bots', heatUnder: true, mono: true };
+    const v: View = { ...DEFAULT_VIEW, mode: 'replay', map: 'Lockdown', day: '2026-02-12', layers: ['loot', 'kills'], kills: 'bots', heatUnder: true, mono: true };
     expect(parseView(viewHash(v))).toEqual(v);
     const r: View = { ...DEFAULT_VIEW, mode: 'replay', matches: ['abc-123', 'def-456'], ended: 'storm', length: 'long', sort: 'kills', hidden: ['loot', 'fights', 'botPath'], heatUnder: true, replayOn: false, iconScale: 1.4, layers: [], view3d: true, exaggeration: 6, terrain: false };
     expect(parseView(viewHash(r))).toEqual(r);
@@ -54,11 +54,11 @@ describe('old links', () => {
 
 describe('heatmap kinds', () => {
   it('opens old Heatmaps links in the replay, heatmap on, paths hidden, drawing order kept', () => {
-    const v = parseView('#mode=heat&map=Lockdown&layer=storm,traffic,lava');
+    const v = parseView('#mode=heat&map=Lockdown&layer=deaths,traffic,lava,storm');
     expect(v.mode).toBe('replay');
     expect(v.heatUnder).toBe(true);
     expect(v.hidden).toEqual(['humanPath', 'botPath']);
-    expect(v.layers).toEqual(['traffic', 'storm']);
+    expect(v.layers).toEqual(['traffic', 'deaths']); // unknown and removed kinds (storm, line of fire) dropped
   });
   it('toggles kinds in drawing order, down to none', () => {
     expect(toggleLayer(['kills'], 'traffic')).toEqual(['traffic', 'kills']);

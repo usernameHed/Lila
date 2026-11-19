@@ -60,7 +60,7 @@ export const NONE = 'none';
 export const DEFAULT_VIEW: View = { mode: 'overview', map: 'AmbroseValley', day: 'all', matches: [], recent: 0, random: true, seed: 0, picked: [], offMap: [], onlyMap: [], offPlayers: [], layers: ['traffic'], kills: 'both', deaths: 'both', mono: false, ended: 'any', length: 'any', game: 'any', sort: 'day', hidden: [], heatUnder: false, replayOn: true, iconScale: 1, pathWidth: 1.5, pathAlpha: 1.3, view3d: false, exaggeration: 4, terrain: true };
 
 const MAPS: MapId[] = ['AmbroseValley', 'GrandRift', 'Lockdown'];
-const LAYERS: HeatLayer[] = ['traffic', 'loot', 'power', 'raised', 'fire', 'kills', 'deaths', 'storm']; // drawing order
+const LAYERS: HeatLayer[] = ['traffic', 'loot', 'power', 'raised', 'kills', 'deaths']; // drawing order (no line-of-fire or storm heatmap)
 const WHO: Who[] = ['both', 'bots', 'players'];
 
 /** Read a view from a hash like "#mode=heat&map=Lockdown&layer=kills". Unknown values fall back to defaults. */

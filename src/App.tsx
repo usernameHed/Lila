@@ -131,7 +131,7 @@ export function App() {
   const drawnHidden = useMemo(() => (view.replayOn ? hidden : [...LEGEND_KEYS]), [view.replayOn, hidden]);
 
   const heat = useHeat(view.map);
-  const underDraw = useHeatDraw(view.heatUnder ? heat : null, days, { layers: view.layers, kills: view.kills, deaths: view.deaths }, index?.uvUnits ?? 10_000);
+  const underDraw = useHeatDraw(view.heatUnder ? heat : null, days, { layers: view.layers, kills: 'bots', deaths: view.deaths }, index?.uvUnits ?? 10_000);
 
   if (error) return <div className="fatal">Could not load the data: {error}</div>;
 

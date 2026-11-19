@@ -547,3 +547,7 @@ button.map-tile:not(.on) .map-thumb { opacity: 0.75; }
 .pick-box { width: 13px; height: 13px; border-color: #5a606b; cursor: pointer; }
 .pick-box.on { background: var(--accent); border-color: var(--accent); }
 .pick-box:hover { border-color: var(--text); }
+/* Lists and panels are clicked, not read as text: no text selection on drag or Ctrl+A */
+.side, .stage-left, .stage-right .player-card header, .stage-tools, .playback { user-select: none; -webkit-user-select: none; }
+.pick-box.some { border-color: var(--accent); background: linear-gradient(var(--accent), var(--accent)) center / 7px 2px no-repeat; }
+.replayed h3 .pick-box { margin-right: 6px; }

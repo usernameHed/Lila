@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { LAYER_ROWS, allHeat, heatOn, toggleHeat, type LayerRow } from '../lib/layers';
 import { applyFilter } from '../lib/matchFilter';
-import { EXPLAIN, HEAT_LAYERS, formatDay, heatRgb, rgbCss } from '../lib/style';
+import { EXPLAIN, formatDay, heatRgb, rgbCss } from '../lib/style';
 // The panels around the map: left (which matches), right (the layers: icons and heatmaps), and the Overview's
 // table of contents.
 // App owns the state; these only show it.
@@ -205,46 +205,55 @@ interface RightProps {
   onHover: (k: LegendKey | null) => void;
 }
 
-/** One row: what it is, how many, and two switches: icons on the replay, heatmap of the selection. */
-function LayerLine({ row, p, showTip }: { row: LayerRow; p: RightProps; showTip: (key: string | null, el?: HTMLElement) => void }) {
+type Tip = (key: string | null, el?: HTMLElement) => void;
+
+/** An element row: tick box (shown or not), its icon as on the map, its name, how many. */
+function ElementLine({ k, p, showTip }: { k: LegendKey; p: RightProps; showTip: Tip }) {
   const { view, update } = p;
-  const k = row.icons;
-  const iconsOn = !!k && view.replayOn && !view.hidden.includes(k);
-  const heatIsOn = heatOn(view, row);
-  const rowRgb = row.heat ? heatRgb(row.heat.layer, row.heat.who) : null;
-  const label = k ? legendLabel(k) : row.heat ? HEAT_LAYERS[row.heat.layer].label : row.id;
-  const count = k ? (k === 'humanPath' || k === 'botPath' ? null : p.counts[k] ?? 0) : null;
-  const toggleIcons = () => k && update({ replayOn: true, hidden: view.replayOn ? legendToggle(view.hidden, k) : LEGEND_KEYS.filter((x) => x !== k) });
-  const toggleHeatRow = () => update(toggleHeat(view, row));
+  const on = view.replayOn && !view.hidden.includes(k);
+  const count = k === 'humanPath' || k === 'botPath' ? null : p.counts[k] ?? 0;
+  const toggle = () => update({ replayOn: true, hidden: view.replayOn ? legendToggle(view.hidden, k) : LEGEND_KEYS.filter((x) => x !== k) });
   return (
     <li
-      className={`layer-line ${iconsOn || heatIsOn ? '' : 'off'} ${count === 0 ? 'none' : ''} ${k && p.pointedKind === k ? 'pulse' : ''}`}
+      className={`layer-line ${on ? '' : 'off'} ${count === 0 ? 'none' : ''} ${p.pointedKind === k ? 'pulse' : ''}`}
       onMouseEnter={(e) => {
-        if (k && iconsOn) p.onHover(k);
-        showTip(row.id, e.currentTarget);
+        if (on) p.onHover(k);
+        showTip(k, e.currentTarget);
       }}
       onMouseLeave={() => {
         p.onHover(null);
         showTip(null);
       }}
     >
-      <button className="layer-label" onClick={k ? toggleIcons : toggleHeatRow}>
-        <span className="legend-icon">{k ? <LegendIcon k={k} /> : <span className="heat-dot" style={{ background: rowRgb ? rgbCss(rowRgb) : undefined }} />}</span>
-        <span className="legend-label">{label}</span>
+      <button className="layer-label" onClick={toggle} aria-pressed={on}>
+        <span className={`tick-box ${on ? 'on' : ''}`} style={on ? { background: legendColor(k), borderColor: legendColor(k) } : { borderColor: legendColor(k) }} aria-hidden />
+        <span className="legend-icon">
+          <LegendIcon k={k} />
+        </span>
+        <span className="legend-label">{legendLabel(k)}</span>
         {count !== null && <span className="count">{count}</span>}
       </button>
-      <span className="layer-switches">
-        {k ? (
-          <button className={`tick-box ${iconsOn ? 'on' : ''}`} style={iconsOn ? { background: legendColor(k), borderColor: legendColor(k) } : { borderColor: legendColor(k) }} onClick={toggleIcons} aria-pressed={iconsOn} aria-label={`${label}: icons on the replay`} data-tip="Icons on the replay" />
-        ) : (
-          <span className="tick-none" />
-        )}
-        {row.heat && rowRgb ? (
-          <button className={`tick-box heat ${heatIsOn ? 'on' : ''}`} style={heatIsOn ? { background: rgbCss(rowRgb), borderColor: rgbCss(rowRgb) } : { borderColor: rgbCss(rowRgb, 0.8) }} onClick={toggleHeatRow} aria-pressed={heatIsOn} aria-label={`${label}: heatmap`} data-tip={`Heatmap: ${HEAT_LAYERS[row.heat.layer].hint}`} />
-        ) : (
-          <span className="tick-none" data-tip="No heatmap for this kind" />
-        )}
-      </span>
+    </li>
+  );
+}
+
+/** A heatmap row: tick box in the heatmap's color (the color of its icons), its name. */
+function HeatLine({ row, p, showTip }: { row: LayerRow; p: RightProps; showTip: Tip }) {
+  const { view, update } = p;
+  if (!row.heat) return null;
+  const on = heatOn(view, row);
+  const rgb = heatRgb(row.heat.layer, row.heat.who);
+  return (
+    <li
+      className={`layer-line ${on ? '' : 'off'}`}
+      onMouseEnter={(e) => showTip(row.heatTip ?? null, e.currentTarget)}
+      onMouseLeave={() => showTip(null)}
+    >
+      <button className="layer-label" onClick={() => update(toggleHeat(view, row))} aria-pressed={on}>
+        <span className={`tick-box ${on ? 'on' : ''}`} style={on ? { background: rgbCss(rgb), borderColor: rgbCss(rgb) } : { borderColor: rgbCss(rgb, 0.8) }} aria-hidden />
+        <span className="heat-dot" style={{ background: rgbCss(rgb) }} />
+        <span className="legend-label">{row.heatLabel}</span>
+      </button>
     </li>
   );
 }
@@ -263,27 +272,15 @@ export function RightPanel(p: RightProps) {
   return (
     <aside className="right-panel">
       <section className="panel-card">
-        <header>
-          <h2>Layers</h2>
+        <header className="with-actions">
+          <h2>Elements</h2>
+          <span className="actions">
+            <button onClick={() => update(anyIcons ? { hidden: [...LEGEND_KEYS] } : { replayOn: true, hidden: [] })}>{anyIcons ? 'None' : 'All'}</button>
+          </span>
         </header>
-        <div className="layer-head">
-          <span />
-          <button onClick={() => update(anyIcons ? { hidden: [...LEGEND_KEYS] } : { replayOn: true, hidden: [] })} data-tip={anyIcons ? 'Hide every icon and path' : 'Show every icon and path'}>
-            Icons
-          </button>
-          <button onClick={() => update(allHeat(!anyHeat))} data-tip={anyHeat ? 'Hide every heatmap' : 'Show every heatmap'}>
-            Heat
-          </button>
-        </div>
         <ul className="legend layer-list">
-          {LAYER_ROWS.filter((r) => !r.analysis).map((r) => (
-            <LayerLine key={r.id} row={r} p={p} showTip={showTip} />
-          ))}
-        </ul>
-        <p className="layer-group">Analysis, heat only</p>
-        <ul className="legend layer-list">
-          {LAYER_ROWS.filter((r) => r.analysis).map((r) => (
-            <LayerLine key={r.id} row={r} p={p} showTip={showTip} />
+          {LEGEND_KEYS.map((k) => (
+            <ElementLine key={k} k={k} p={p} showTip={showTip} />
           ))}
         </ul>
         <div className="layer-settings">
@@ -303,6 +300,19 @@ export function RightPanel(p: RightProps) {
             <span>x{view.pathAlpha.toFixed(1)}</span>
           </label>
         </div>
+      </section>
+      <section className="panel-card">
+        <header className="with-actions">
+          <h2>Heatmap</h2>
+          <span className="actions">
+            <button onClick={() => update(allHeat(!anyHeat))}>{anyHeat ? 'None' : 'All'}</button>
+          </span>
+        </header>
+        <ul className="legend layer-list">
+          {LAYER_ROWS.filter((r) => r.heat).map((r) => (
+            <HeatLine key={r.id} row={r} p={p} showTip={showTip} />
+          ))}
+        </ul>
       </section>
       {tip && (
         <div className="row-tip" role="tooltip" style={{ left: tip.rect.right + 12, top: tip.rect.top + tip.rect.height / 2 }}>

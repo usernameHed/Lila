@@ -283,6 +283,19 @@ export function ReplayStage(props: StageProps) {
   const shownHover = useLast(hover, fading);
   const shownActive = useLast(active, fading);
   const phase = usePulse(!!hover || !!active);
+  // Ctrl / Cmd + A in the replay: tick every match (not the browser's text selection), outside text fields.
+  const selectAllRef = useRef<() => void>(() => undefined);
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (!(e.ctrlKey || e.metaKey) || e.key.toLowerCase() !== 'a') return;
+      const el = e.target as HTMLElement | null;
+      if (el && (el.isContentEditable || /^(INPUT|TEXTAREA|SELECT)$/.test(el.tagName))) return;
+      e.preventDefault();
+      selectAllRef.current();
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, []);
 
   const focusMatch = focus ? shown.find((m) => m.id === focus.match) : undefined;
   const story = useMemo(
@@ -336,6 +349,9 @@ export function ReplayStage(props: StageProps) {
     // A match unticked while its card is open: the card closes with it.
     onSelect({ ...lists, ...(was && picks.some((p) => p.match === id) ? { picked: picks.filter((p) => p.match !== id) } : {}) });
   };
+  /** Every match ticked (shown), or none. */
+  const selectAll = (on: boolean) => onSelect(on ? { onlyMap: [], offMap: [], picked: [] } : { onlyMap: ['-'], offMap: [], picked: [] });
+  selectAllRef.current = () => selectAll(true);
   const openMatch = (id: string, e: React.MouseEvent) => {
     const f = humanOf(id);
     if (!f) return;
@@ -494,6 +510,14 @@ export function ReplayStage(props: StageProps) {
           <section className="replayed" aria-label="Matches on the map">
             {props.filters}
             <h3>
+              <span
+                className={`tick-box pick-box ${ids.every(isTicked) ? 'on' : ids.some(isTicked) ? 'some' : ''}`}
+                role="checkbox"
+                aria-checked={ids.every(isTicked) ? true : ids.some(isTicked) ? 'mixed' : false}
+                aria-label="Select or unselect every match"
+                data-tip="Select or unselect every match (Ctrl / Cmd + A selects all)"
+                onClick={() => selectAll(!ids.every(isTicked))}
+              />
               On the map <span>{summaries.length}</span>
               {summaries.length > 1 && !many && (
                 <span className="colors-switch" role="group" aria-label="Match colors">
