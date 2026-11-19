@@ -20,7 +20,8 @@ about 300 lines, move the oldest entries word for word to `SESSION_HISTORY.md` (
 - Ugo: separate heatmap from elements again, drop the line of fire, storm and player-kill heatmaps. Done: "Elements"
   and "Heatmap" cards (one row model, `heatLabel` per row in layers.ts; view LAYERS without fire / storm; kills heat =
   bots only). "On the map" header box selects / unselects every match; Cmd / Ctrl + A selects all (no text selection
-  in panels: user-select none).
+  in panels: user-select none). Each heat row has its own tooltip. "Bot killed" icon: the player's bust with a
+  crossed-out bot head (`shooter`), since it marks where the player stood, not where the bot fell.
 
 ## 2026-11-19 (desktop session): "2 players" filter
 
