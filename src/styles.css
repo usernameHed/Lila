@@ -235,7 +235,7 @@ select {
 /* Legend rows: one click toggles; pointed-at kind pulses */
 .legend li { display: block; }
 .legend .legend-label { flex: 1; }
-@keyframes row-pulse { 50% { background: rgba(255,255,255,0.12); transform: translateX(3px); } }
+@keyframes row-pulse { 50% { background: rgba(255,255,255,0.12); box-shadow: inset 3px 0 0 rgba(255,255,255,0.7); } }
 .story li.active button { background: #2f3540; animation: row-pulse 0.9s ease-in-out infinite; }
 
 /* Matches grouped by day */
@@ -503,3 +503,4 @@ button.map-tile:not(.on) .map-thumb { opacity: 0.75; }
 .random-box input { accent-color: var(--accent); margin: 0; }
 .redraw { padding: 1px 7px; border-radius: 7px; border: 1px solid var(--line); background: transparent; color: var(--text); cursor: pointer; font-size: 12px; }
 .redraw:hover { border-color: var(--accent); }
+.story, .replayed ul { overflow-x: hidden; }
