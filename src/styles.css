@@ -536,3 +536,10 @@ button.map-tile:not(.on) .map-thumb { opacity: 0.75; }
 .stage-left .replayed, .stage-left.has-card .replayed { flex: 0 1 auto; }
 .stage-hint { left: 340px; transform: none; }
 @media (max-width: 760px) { .stage-hint { left: 10px; top: auto; bottom: 10px; } }
+
+/* The layers sit at the bottom of the left panel (the picked player's card took the right of the map) */
+.side .right-panel { padding: 0; background: none; border: 0; overflow: visible; flex: none; }
+@media (min-width: 981px) { .side { overflow-y: auto; } .side section.grow { min-height: 220px; } }
+.zoom-btns { display: inline-flex; gap: 3px; }
+.zoom-btns button { width: 26px; height: 24px; border-radius: 6px; border: 1px solid var(--line); background: #1d2026; color: var(--text); font-size: 15px; line-height: 1; cursor: pointer; }
+.zoom-btns button:hover { border-color: var(--accent); }

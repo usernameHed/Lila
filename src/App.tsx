@@ -132,7 +132,7 @@ export function App() {
   const replay = view.mode === 'replay';
   const sourceName = source === BUILTIN_ID ? "LILA's sample, Feb 10-14" : uploadName ?? 'Your dataset';
   return (
-    <div className={`app ${replay ? 'with-right' : ''}`}>
+    <div className="app">
       <aside className="side">
         <header className="brand">
           <div>
@@ -186,6 +186,7 @@ export function App() {
             />
           </>
         )}
+        {replay && <RightPanel view={view} update={update} heat={heat} days={days} counts={counts} pointedKind={pointedKind} onHover={setHover} />}
         {view.mode === 'overview' && <OverviewSide />}
         {view.mode === 'data' && (
           <section>
@@ -232,9 +233,6 @@ export function App() {
         )}
       </main>
 
-      {replay && (
-        <RightPanel view={view} update={update} heat={heat} days={days} counts={counts} pointedKind={pointedKind} onHover={setHover} />
-      )}
       <InstallOffer />
     </div>
   );

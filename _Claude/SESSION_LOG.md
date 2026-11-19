@@ -15,6 +15,12 @@ about 300 lines, move the oldest entries word for word to `SESSION_HISTORY.md` (
 
 ---
 
+## 2026-11-19 (desktop session): layers on the left, zoom by 2D / 3D, picked match alone
+
+- Layers panel moved to the bottom of the left sidebar (no right column; tooltips open to the right). Zoom + / - next
+  to 2D / 3D (`zoomRef` on MapCanvas). Picking hides every other match (`visible` in ReplayStage: map, 3D, picking,
+  timeline). Bot picked + click on its match = back to the player; second click unpicks.
+
 ## 2026-11-19 (desktop session): filters over the map, card on the right, bots in the list
 
 - "All" chip back in every row and the days. Game / Ended / Length (`MatchFilters`) now at the top of the "On the map"

@@ -249,13 +249,15 @@ export function ReplayStage(props: StageProps) {
   const play = usePlayback(duration, current ? key : null);
   const t = current ? play.t : Infinity;
   const hiddenSet = useMemo(() => new Set<LegendKey>(hidden), [hidden]);
-  const events = useMemo(() => (current ?? []).flatMap((m) => m.events), [current]);
 
   // The player clicked (highlighted, with a details card), the event clicked (pinned), and the event under the
   // mouse anywhere: map, timeline or card. All three are linked: what is pointed at pulses everywhere it shows.
   // The players picked are part of the view (undo / redo, links): the last one's card is open.
   const picks = useMemo(() => picked.filter((f) => shown.some((m) => m.id === f.match)), [picked, shown]);
   const focus = picks.length ? picks[picks.length - 1] : null;
+  // With something picked, only the picked matches show (map, 3D, timeline); the others are hidden, not dimmed.
+  const visible = useMemo(() => (picks.length ? shown.filter((m) => picks.some((p) => p.match === m.id)) : shown), [picks, shown]);
+  const events = useMemo(() => (current ? visible : []).flatMap((m) => m.events), [current, visible]);
   const setFocus = useCallback((f: Focus | null) => onPicked(f ? [f] : []), [onPicked]);
   const [pinned, setPinned] = useState<PointedEvent | null>(null);
   const [pointed, setPointed] = useState<PointedEvent | null>(null);
@@ -292,11 +294,12 @@ export function ReplayStage(props: StageProps) {
     [setFocus],
   );
   const onPick = useCallback(
-    ({ u, v, tolerance }: MapPick) => pickAt(pickEvent(shown, t, u, v, tolerance, hiddenSet), pickPlayer(shown, t, u, v, tolerance)),
-    [shown, t, hiddenSet, pickAt],
+    ({ u, v, tolerance }: MapPick) => pickAt(pickEvent(visible, t, u, v, tolerance, hiddenSet), pickPlayer(visible, t, u, v, tolerance)),
+    [visible, t, hiddenSet, pickAt],
   );
   // Under the mouse: an event first; else a path, which is highlighted (click it for the player's card).
   const [hoverPath, setHoverPath] = useState<Focus | null>(null);
+  const zoomRef = useRef<((k: number) => void) | null>(null);
   /** The recorded human of a match (each match is one player's run). */
   const humanOf = (id: string): Focus | null => {
     const m = shown.find((x) => x.id === id);
@@ -319,7 +322,9 @@ export function ReplayStage(props: StageProps) {
       const range = ids.slice(Math.min(a, b), Math.max(a, b) + 1).map(humanOf).filter((x): x is Focus => !!x);
       onPicked([...picks.filter((p) => !range.some((r) => r.match === p.match)), ...(a <= b ? range : range.reverse())]);
     } else if (e.ctrlKey || e.metaKey) onPicked(has ? picks.filter((p) => p.match !== id) : [...picks, f]);
-    else onPicked(has && picks.length === 1 ? [] : [f]);
+    // A plain click: this match's player alone. If only that player was picked, unpick it; if one of its bots was
+    // picked, the first click goes back to the player (a second click unpicks).
+    else onPicked(picks.length === 1 && picks[0].match === id && picks[0].player === f.player ? [] : [f]);
   };
   /** The bots recorded in a match: id, index, and when they died (null: alive when the log ends). */
   const botsOf = (id: string) => {
@@ -340,13 +345,13 @@ export function ReplayStage(props: StageProps) {
   };
   const onHoverMap = useCallback(
     (p: MapPick | null) => {
-      const ev = p ? pickEvent(shown, t, p.u, p.v, p.tolerance, hiddenSet) : null;
+      const ev = p ? pickEvent(visible, t, p.u, p.v, p.tolerance, hiddenSet) : null;
       setPointed(ev);
-      const path = p && !ev ? pickPlayer(shown, t, p.u, p.v, p.tolerance) : null;
+      const path = p && !ev ? pickPlayer(visible, t, p.u, p.v, p.tolerance) : null;
       const hide = path && hiddenSet.has(shown.find((m) => m.id === path.match)?.players[path.player]?.bot ? 'botPath' : 'humanPath');
       setHoverPath((old) => (hide || !path ? null : old && old.match === path.match && old.player === path.player ? old : path));
     },
-    [shown, t, hiddenSet],
+    [visible, t, hiddenSet],
   );
   const pointAt = useCallback((e: MatchEvent | null) => {
     if (!e) return setPointed(null);
@@ -359,7 +364,7 @@ export function ReplayStage(props: StageProps) {
     (ctx: CanvasRenderingContext2D, size: number) => {
       under?.(ctx, size);
       if (shown.length)
-        drawMatches(ctx, shown, uvUnits, size, t, play.playing, {
+        drawMatches(ctx, visible, uvUnits, size, t, play.playing, {
           mono, hidden: hiddenSet, hover: shownHover, phase, activeEvent: shownActive?.event ?? null, iconScale,
           dim, pathWidth, pathAlpha, hoverPath: focus && hoverPath && focus.match === hoverPath.match && focus.player === hoverPath.player ? null : hoverPath,
         });
@@ -367,10 +372,10 @@ export function ReplayStage(props: StageProps) {
       picks.forEach((p, i) => {
         const m = shown.find((x) => x.id === p.match);
         const last = i === picks.length - 1;
-        if (m) drawFocus(ctx, m, p.player, uvUnits, size, t, last ? active?.event ?? null : null, phase, last ? story?.opponents ?? [] : [], i === 0);
+        if (m) drawFocus(ctx, m, p.player, uvUnits, size, t, last ? active?.event ?? null : null, phase, last ? story?.opponents ?? [] : [], false);
       });
     },
-    [shown, t, uvUnits, play.playing, mono, hiddenSet, shownHover, phase, under, focusMatch, focus, active, shownActive, story, iconScale, dim, pathWidth, pathAlpha, hoverPath, picks],
+    [visible, t, uvUnits, play.playing, mono, hiddenSet, shownHover, phase, under, focusMatch, focus, active, shownActive, story, iconScale, dim, pathWidth, pathAlpha, hoverPath, picks],
   );
 
   if (!summaries.length)
@@ -395,6 +400,12 @@ export function ReplayStage(props: StageProps) {
     <>
       <div className="stage-tools">
         <Choice label="View" options={[['2d', '2D'], ['3d', '3D']]} value={view3d ? '3d' : '2d'} onChange={(v) => onView({ view3d: v === '3d' })} />
+        {!view3d && (
+          <span className="zoom-btns">
+            <button onClick={() => zoomRef.current?.(1.5)} aria-label="Zoom in" title="Zoom in (or scroll, or pinch)">+</button>
+            <button onClick={() => zoomRef.current?.(1 / 1.5)} aria-label="Zoom out" title="Zoom out">−</button>
+          </span>
+        )}
         {view3d && (
           <Choice label="Ground" options={[['terrain', 'Terrain'], ['flat', 'Flat']]} value={terrain ? 'terrain' : 'flat'} onChange={(g) => onView({ terrain: g === 'terrain' })} />
         )}
@@ -418,7 +429,7 @@ export function ReplayStage(props: StageProps) {
           <Suspense fallback={<Loader label="Loading the 3D view" />}>
             <Map3D
               map={mapConfig}
-              matches={shown}
+              matches={visible}
               uvUnits={uvUnits}
               t={t}
               hidden={hiddenSet}
@@ -443,7 +454,7 @@ export function ReplayStage(props: StageProps) {
           </Suspense>
           </ErrorBoundary>
         ) : (
-          <MapCanvas map={summaries[0].map} draw={draw} dim={0} uvUnits={uvUnits} onPick={onPick} onHover={onHoverMap} pointer={!!pointed || !!hoverPath} inset={312} />
+          <MapCanvas map={summaries[0].map} draw={draw} dim={0} uvUnits={uvUnits} onPick={onPick} onHover={onHoverMap} pointer={!!pointed || !!hoverPath} inset={312} zoomRef={zoomRef} />
         )}
         <div className="stage-left">
         {summaries.length > 0 && (

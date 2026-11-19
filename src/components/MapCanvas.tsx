@@ -28,6 +28,8 @@ interface Props {
   pointer?: boolean;
   /** Width (px) covered by a panel on the left of the map: the map opens shifted right by part of it. */
   inset?: number;
+  /** Filled with this map's zoom (factor around the middle), for + and - buttons drawn elsewhere. */
+  zoomRef?: { current: ((k: number) => void) | null };
 }
 
 /** Minimap pictures, loaded and decoded once per visit: switching back to a map is instant. */
@@ -65,7 +67,7 @@ interface Cam {
  * right of the square map is used when zooming). Scroll zooms around the cursor (up to 8x), drag pans,
  * double-click resets. The overlay is drawn at the zoomed size, so markers and lines keep their size on screen.
  */
-export function MapCanvas({ map, draw, dim = 0, uvUnits = 10_000, onPick, onHover, pointer, inset = 0 }: Props) {
+export function MapCanvas({ map, draw, dim = 0, uvUnits = 10_000, onPick, onHover, pointer, inset = 0, zoomRef }: Props) {
   const box = useRef<HTMLDivElement>(null);
   const canvas = useRef<HTMLCanvasElement>(null);
   const [view, setView] = useState({ w: 0, h: 0 });
@@ -243,6 +245,7 @@ export function MapCanvas({ map, draw, dim = 0, uvUnits = 10_000, onPick, onHove
       return clamp({ s, x: view.w / 2 - (view.w / 2 - c.x) * f, y: view.h / 2 - (view.h / 2 - c.y) * f });
     });
 
+  if (zoomRef) zoomRef.current = zoomBy;
   const zoomed = cam && Math.abs(cam.s - base) > 1;
   return (
     <div className="map-box" ref={box}>
@@ -266,10 +269,6 @@ export function MapCanvas({ map, draw, dim = 0, uvUnits = 10_000, onPick, onHove
           </div>
         </div>
       )}
-      <div className="map-zoom">
-        <button onClick={() => zoomBy(1.5)} aria-label="Zoom in" title="Zoom in (or scroll, or pinch)">+</button>
-        <button onClick={() => zoomBy(1 / 1.5)} aria-label="Zoom out" title="Zoom out">−</button>
-      </div>
       {zoomed && cam && (
         <button className="map-reset" onClick={() => setCam(fit(view.w, view.h))}>
           {(cam.s / base).toFixed(1)}x · Reset view

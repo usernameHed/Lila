@@ -254,7 +254,7 @@ function LayerLine({ row, p, showTip }: { row: LayerRow; p: RightProps; showTip:
  */
 export function RightPanel(p: RightProps) {
   const { view, update } = p;
-  // Explanation shown next to the hovered row, to the left of the panel (over the map).
+  // Explanation shown next to the hovered row, to the right of the panel (over the map).
   const [tip, setTip] = useState<{ text: string; rect: DOMRect } | null>(null);
   const showTip = (key: string | null, el?: HTMLElement) => setTip(key && el && EXPLAIN[key] ? { text: EXPLAIN[key], rect: el.getBoundingClientRect() } : null);
   const anyIcons = view.replayOn && view.hidden.length < LEGEND_KEYS.length;
@@ -304,7 +304,7 @@ export function RightPanel(p: RightProps) {
         </div>
       </section>
       {tip && (
-        <div className="row-tip" role="tooltip" style={{ right: window.innerWidth - tip.rect.left + 12, top: tip.rect.top + tip.rect.height / 2 }}>
+        <div className="row-tip" role="tooltip" style={{ left: tip.rect.right + 12, top: tip.rect.top + tip.rect.height / 2 }}>
           {tip.text}
         </div>
       )}

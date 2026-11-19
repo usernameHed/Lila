@@ -16,9 +16,10 @@ The site opens on an **Overview**: what the tool is for, the four findings with 
 data details we had to get right, how it is built, and what the game should log next, each with links into the
 live views. It doubles as the walkthrough of the features below.
 
-**Match replay**, in the order a designer works: filters on the left, the matches running on the map (an "On the
+**Match replay**, in the order a designer works: map, day and layers on the left, the matches running on the map (an "On the
   map" list under the filters, with "+N bots" when the bots were recorded and the match colors switch:
-  click one for its player's card (on the right of the map), a picked match lists its bots to pick too, Ctrl / Cmd adds or removes, Shift picks a
+  click one for its player's card (on the right of the map) and only that match stays on the map; a picked
+  match lists its bots to pick too (a bot picked: one click on its match goes back to the player, a second unpicks), Ctrl / Cmd adds or removes, Shift picks a
   range; the list and the card each span the map's height, the card's events scroll), the layers on the right.
 On a 16:9 screen (1366x768 to 1920x1080) everything fits without scrolling:
 - **Replay** one match or many on one clock, at 10x / 30x / 60x; Space plays and pauses; grabbing the timeline
@@ -49,7 +50,7 @@ On a 16:9 screen (1366x768 to 1920x1080) everything fits without scrolling:
   and it pulses in all of them and in the layer list. Click a player or an event for its card (how it ended,
   distance, height range, fights, every event; click one to jump there). Everyone that player fought is
   highlighted with them, and each fight links to the other side.
-- **2D**: the map fills the stage, opens just past its dark border; scroll, pinch or + / - to zoom (8x) into the side
+- **2D**: the map fills the stage, opens just past its dark border; scroll, pinch or the + / - next to 2D / 3D to zoom (8x) into the side
   space, drag to pan, double-click to reset. Each map has a small picture in the map list and on the Data page.
 - **3D**: an estimated terrain (from where players walked), paths, events and the heatmap at their real height;
   drag to orbit, middle or right drag to move, scroll to zoom, height x1 to x8; hover and click work as in 2D.
