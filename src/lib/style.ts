@@ -106,6 +106,9 @@ export const EXPLAIN: Record<string, string> = {
   raised: 'Kills made from 3 m or more above the ground around them: rooftops, towers, ledges. Overwatch and sniping spots.',
   fire: 'The same arrows as "Killer to victim" in the legend: who shot whom, from where. 42 fights only: most kills do not record the victim.',
   kills: 'Where players stand when they kill. Bots / Players / Both: who the victim was.',
+  heatKillsBot: 'Where players stand when they kill a bot. Brighter = more bot kills from there: the spots that win fights against bots.',
+  heatDeathsBot: 'Where players are killed by bots. Brighter = more deaths there: where bots are most dangerous.',
+  heatDeathsPlayer: 'Where players are killed by other players. Only 3 in this data: each shows as a small spot.',
   deaths: 'Where players die to bots or to other players (the storm has its own row). Bots / Players / Both: who killed them.',
   heatStorm: 'Where the storm catches players.',
 };
