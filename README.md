@@ -20,7 +20,9 @@ live views. It doubles as the walkthrough of the features below.
 On a 16:9 screen (1366x768 to 1920x1080) everything fits without scrolling:
 - **Replay** one match or many on one clock, at 10x / 30x / 60x; Space plays and pauses; grabbing the timeline
   pauses. The timeline has a tick per fight and death, and a band where the storm kills (from minute 10.9).
-- **Match filters**, as one-click chips that show how many matches each would leave: day, how it ended (survived, bot, storm, player), length (under 5, 5-10, over 10 min), others
+- **Day**: one chip per day (or All days) replays every match of that day together; **Custom** opens the match list
+  to pick matches one by one.
+- **Match filters**, as one-click chips that show how many matches each would leave: how it ended (survived, bot, storm, player), length (under 5, 5-10, over 10 min), others
   recorded (bots or a second player logged too: fights from both sides, marked ⇄), players who played only once;
   order by day, longest, shortest, most kills, most loot. By day, matches are grouped: fold a day, tick it to select
   all its matches; one line per match (duration, how it ended, kills ✕, loot ◆).

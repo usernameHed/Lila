@@ -16,7 +16,7 @@ import { InstallOffer } from './components/InstallOffer';
 import { minimap } from './components/MapCanvas';
 import { record, redo, start, undo, type History } from './lib/history';
 import type { LegendKey } from './lib/draw';
-import { MAP_LABEL, formatDay } from './lib/style';
+import { MAP_LABEL } from './lib/style';
 import { applyFilter } from './lib/matchFilter';
 import type { EventType, Index, MapId } from './lib/types';
 import { parseView, resolveSelection, setMany, toggleMatch, viewHash, type Mode, type View } from './lib/view';
@@ -165,28 +165,12 @@ export function App() {
                 ))}
               </MapTiles>
             </section>
-            <section>
-              <h2>Day</h2>
-              <span className="chips" role="radiogroup" aria-label="Day">
-                {['all', ...(index?.days ?? [])].map((d) => (
-                  <button
-                    key={d}
-                    role="radio"
-                    aria-checked={view.day === d}
-                    className={`chip ${view.day === d ? 'on' : ''}`}
-                    title={d === '2026-02-14' ? 'Partial day: the export stops mid-day' : undefined}
-                    onClick={() => update({ day: d })}
-                  >
-                    {d === 'all' ? 'All days' : formatDay(d)}
-                  </button>
-                ))}
-              </span>
-            </section>
             <ReplaySide
               view={view}
               update={update}
               matches={matches}
               pool={pool}
+              days={index?.days ?? []}
               selected={selected}
               onOnlyMatch={(id) => update({ matches: [id] })}
               onToggleMatch={(id) => update({ matches: toggleMatch(selectedIds, id) })}

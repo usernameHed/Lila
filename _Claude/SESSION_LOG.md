@@ -15,6 +15,12 @@ about 300 lines, move the oldest entries word for word to `SESSION_HISTORY.md` (
 
 ---
 
+## 2026-11-19 (desktop session): Day chips, Custom opens the match list
+
+- Ugo: the match list belongs in the Day filter, open only on Custom. Done: a day chip (or All days) = every
+  filtered match of that day together (`match=all`); Custom = the list (day groups, Select all = every listed id).
+  Default replay link (no `match`) = Custom with one match.
+
 ## 2026-11-19 (desktop session): legend + heatmap merged into Layers
 
 - Ugo said yes: one "Layers" card, a row per kind with Icons and Heat switches (`lib/layers.ts`, tested: kills and

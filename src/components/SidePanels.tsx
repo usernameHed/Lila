@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { LAYER_ROWS, allHeat, heatOn, toggleHeat, type LayerRow } from '../lib/layers';
 import { applyFilter } from '../lib/matchFilter';
-import { EXPLAIN, HEAT_LAYERS, MONO_RGB, rgbCss } from '../lib/style';
+import { EXPLAIN, HEAT_LAYERS, MONO_RGB, formatDay, rgbCss } from '../lib/style';
 // The panels around the map: left (which matches), right (the layers: icons and heatmaps), and the Overview's
 // table of contents.
 // App owns the state; these only show it.
@@ -21,6 +21,8 @@ interface ReplayProps {
   matches: MatchSummary[];
   /** The map and day's matches before the filters: chips count from it. */
   pool: MatchSummary[];
+  /** Every day of the data, for the Day chips. */
+  days: string[];
   selected: MatchSummary[];
   onOnlyMatch: (id: string) => void;
   onToggleMatch: (id: string) => void;
@@ -57,12 +59,70 @@ function FilterRow<T extends string>({ label, value, options, count, onChange }:
 
 export function ReplaySide(p: ReplayProps) {
   const { view, update, matches, selected, pool } = p;
+  /** Custom: matches picked one by one in the list. Otherwise every (filtered) match of the chosen day plays. */
+  const custom = view.matches !== ALL;
   const base = { players: view.players, others: view.others, ended: view.ended, length: view.length, sort: view.sort };
   /** How many matches there would be with this one filter changed (the others kept). */
   const countWith = (patch: Partial<typeof base>) => applyFilter(pool, { ...base, ...patch }).length;
   const filtered = view.ended !== 'any' || view.length !== 'any' || view.others !== 'any' || view.players !== 'all';
   return (
     <>
+      <section className={custom ? 'grow' : ''}>
+        <h2 className="with-actions">
+          <span>Day</span>
+          <span className="count day-count">
+            {custom ? `${selected.length} of ${matches.length} shown` : `${matches.length} match${matches.length === 1 ? '' : 'es'} together`}
+          </span>
+        </h2>
+        <span className="chips" role="radiogroup" aria-label="Day">
+          {['all', ...p.days].map((d) => (
+            <button
+              key={d}
+              role="radio"
+              aria-checked={!custom && view.day === d}
+              className={`chip ${!custom && view.day === d ? 'on' : ''}`}
+              title={d === 'all' ? 'Every match of every day, replayed together' : `Every match of ${formatDay(d)}, replayed together${d === '2026-02-14' ? ' (partial day: the export stops mid-day)' : ''}`}
+              onClick={() => update({ day: d, matches: ALL })}
+            >
+              {d === 'all' ? 'All days' : formatDay(d)}
+            </button>
+          ))}
+          <button
+            role="radio"
+            aria-checked={custom}
+            className={`chip ${custom ? 'on' : ''}`}
+            title="Pick the matches yourself, from the list"
+            onClick={() => !custom && update({ day: 'all', matches: selected.slice(0, 1).map((m) => m.id) })}
+          >
+            Custom
+          </button>
+        </span>
+        {custom && (
+          <>
+            <div className="custom-actions">
+              <button onClick={() => update({ matches: matches.map((m) => m.id) })} disabled={selected.length === matches.length}>
+                Select all
+              </button>
+              <button onClick={() => update({ matches: selected.slice(0, 1).map((m) => m.id) })} disabled={selected.length < 2}>
+                Clear
+              </button>
+            </div>
+            {matches.length ? (
+              <MatchList
+                matches={matches}
+                selected={selected}
+                mono={view.mono}
+                grouped={view.sort === 'day'}
+                onOnly={p.onOnlyMatch}
+                onToggle={p.onToggleMatch}
+                onSetMany={p.onSetMany}
+              />
+            ) : (
+              <p className="muted small">No match for these filters.</p>
+            )}
+          </>
+        )}
+      </section>
       <section>
         <h2 className="with-actions">
           <span title="Each match is one player's run: pick runs by how they went">Filters · player runs</span>
@@ -96,34 +156,6 @@ export function ReplaySide(p: ReplayProps) {
           </span>
         </div>
         <FilterRow label="Sort" value={view.sort} options={SORT} onChange={(v) => update({ sort: v })} />
-      </section>
-      <section className="grow">
-        <h2 className="with-actions">
-          <span className="count">
-            {matches.length} match{matches.length === 1 ? '' : 'es'} · {selected.length} shown
-          </span>
-          <span className="actions">
-            <button onClick={() => update({ matches: ALL })} disabled={selected.length === matches.length}>
-              Select all
-            </button>
-            <button onClick={() => update({ matches: selected.slice(0, 1).map((m) => m.id) })} disabled={selected.length < 2}>
-              Clear
-            </button>
-          </span>
-        </h2>
-        {matches.length ? (
-          <MatchList
-            matches={matches}
-            selected={selected}
-            mono={view.mono}
-            grouped={view.sort === 'day'}
-            onOnly={p.onOnlyMatch}
-            onToggle={p.onToggleMatch}
-            onSetMany={p.onSetMany}
-          />
-        ) : (
-          <p className="muted small">No match for these filters.</p>
-        )}
       </section>
       {selected.length > 1 && (
         <section>
