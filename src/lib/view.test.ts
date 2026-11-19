@@ -23,6 +23,8 @@ describe('match selection', () => {
   const list = [{ id: 'a' }, { id: 'b' }, { id: 'c' }];
   it('resolves all, chosen ones in chosen order, or the first', () => {
     expect(resolveSelection(ALL, list)).toEqual(list);
+    expect(resolveSelection(ALL, list, 10).map((m) => m.id)).toEqual(list.slice(-10).map((m) => m.id));
+    expect(parseView(viewHash({ ...DEFAULT_VIEW, mode: 'replay', matches: ALL, recent: 100 })).recent).toBe(100);
     expect(resolveSelection(['c', 'x', 'a'], list).map((m) => m.id)).toEqual(['c', 'a']);
     expect(resolveSelection(['x'], list).map((m) => m.id)).toEqual(['a']);
     expect(resolveSelection([], [])).toEqual([]);

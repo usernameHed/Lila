@@ -21,6 +21,7 @@ about 300 lines, move the oldest entries word for word to `SESSION_HISTORY.md` (
   Picking a match (row or "Replay only this match") plays it from 0:00 (`playNext` in usePlayback). Many-match paths
   0.5 -> 0.8 of the width; path opacity slider to x7.5. Sort chips removed for now (data order, `sort` kept in code).
   "Clear all filters" (always shown, greyed when nothing set): any outcome, any length, all days; Custom picks kept.
+  Day chips "Last 10" / "Last 100" (view `recent`, URL `last`): the last N filtered matches in data order.
 
 ## 2026-11-19 (desktop session): Day chips, Custom opens the match list
 

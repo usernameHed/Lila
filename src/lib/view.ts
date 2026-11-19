@@ -10,6 +10,8 @@ export interface View {
   day: string; // 'all' or YYYY-MM-DD
   /** Matches replayed together. ALL = every match of the current map and day; NONE = every match unticked. */
   matches: string[] | typeof ALL | typeof NONE;
+  /** With ALL: only the last N matches of the data (latest days first in line), 0 = every one. */
+  recent: 0 | 10 | 100;
   /** Heatmap kinds shown together, at least one. */
   layers: HeatLayer[];
   /** Kills and deaths: against bots, players or both. */
@@ -45,7 +47,7 @@ export interface View {
 export const ALL = 'all';
 export const NONE = 'none';
 
-export const DEFAULT_VIEW: View = { mode: 'overview', map: 'AmbroseValley', day: 'all', matches: [], layers: ['traffic'], kills: 'both', deaths: 'both', mono: false, heatMono: false, ended: 'any', length: 'any', sort: 'day', hidden: [], heatUnder: false, replayOn: true, iconScale: 1, pathWidth: 1.5, pathAlpha: 1.3, view3d: false, exaggeration: 4, terrain: true };
+export const DEFAULT_VIEW: View = { mode: 'overview', map: 'AmbroseValley', day: 'all', matches: [], recent: 0, layers: ['traffic'], kills: 'both', deaths: 'both', mono: false, heatMono: false, ended: 'any', length: 'any', sort: 'day', hidden: [], heatUnder: false, replayOn: true, iconScale: 1, pathWidth: 1.5, pathAlpha: 1.3, view3d: false, exaggeration: 4, terrain: true };
 
 const MAPS: MapId[] = ['AmbroseValley', 'GrandRift', 'Lockdown'];
 const LAYERS: HeatLayer[] = ['traffic', 'loot', 'power', 'raised', 'fire', 'kills', 'deaths', 'storm']; // drawing order
@@ -64,6 +66,7 @@ export function parseView(hash: string): View {
     map: pick('map', MAPS, DEFAULT_VIEW.map),
     day: day && /^\d{4}-\d{2}-\d{2}$/.test(day) ? day : 'all',
     matches: parseMatches(q.get('match')),
+    recent: q.get('last') === '10' ? 10 : q.get('last') === '100' ? 100 : 0,
     layers: parseLayers(q.get('layer')),
     kills: pick('kills', WHO, 'both'),
     deaths: pick('deaths', WHO, 'both'),
@@ -113,6 +116,7 @@ export function viewHash(v: View): string {
   if (v.day !== 'all') q.set('day', v.day);
   if (v.matches === ALL || v.matches === NONE) q.set('match', v.matches);
   else if (v.matches.length) q.set('match', v.matches.join(','));
+  if (v.matches === ALL && v.recent) q.set('last', String(v.recent));
   if (v.mono) q.set('mono', '1');
   if (v.ended !== 'any') q.set('end', v.ended);
   if (v.length !== 'any') q.set('len', v.length);
@@ -139,8 +143,8 @@ export function viewHash(v: View): string {
  * The matches to replay, as summaries of the current list: every one for ALL, else the chosen ones still in the
  * list (in the order chosen, which sets their colors), else the first match (a link with no choice yet). NONE: none.
  */
-export function resolveSelection<T extends { id: string }>(chosen: View['matches'], list: T[]): T[] {
-  if (chosen === ALL) return list;
+export function resolveSelection<T extends { id: string }>(chosen: View['matches'], list: T[], recent: View['recent'] = 0): T[] {
+  if (chosen === ALL) return recent ? list.slice(-recent) : list;
   if (chosen === NONE) return [];
   const byId = new Map(list.map((m) => [m.id, m]));
   const picked = chosen.map((id) => byId.get(id)).filter((m): m is T => !!m);

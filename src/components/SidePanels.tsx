@@ -63,17 +63,17 @@ export function ReplaySide(p: ReplayProps) {
   const base = { ended: view.ended, length: view.length, sort: view.sort };
   /** How many matches there would be with this one filter changed (the others kept). */
   const countWith = (patch: Partial<typeof base>) => applyFilter(pool, { ...base, ...patch }).length;
-  const dayPicked = !custom && view.day !== 'all';
+  const dayPicked = !custom && (view.day !== 'all' || view.recent > 0);
   const filtered = view.ended !== 'any' || view.length !== 'any' || dayPicked;
   /** Back to every match: any outcome, any length, all days (matches picked in Custom are kept). */
-  const clearAll = () => update({ ended: 'any', length: 'any', ...(dayPicked ? { day: 'all' } : {}) });
+  const clearAll = () => update({ ended: 'any', length: 'any', ...(dayPicked ? { day: 'all', recent: 0 } : {}) });
   return (
     <>
       <section className={custom ? 'grow' : ''}>
         <h2 className="with-actions">
           <span>Day</span>
           <span className="count day-count">
-            {custom ? `${selected.length} of ${matches.length} shown` : `${matches.length} match${matches.length === 1 ? '' : 'es'} together`}
+            {custom ? `${selected.length} of ${matches.length} shown` : `${selected.length} match${selected.length === 1 ? '' : 'es'} together`}
           </span>
         </h2>
         <span className="chips" role="radiogroup" aria-label="Day">
@@ -81,12 +81,24 @@ export function ReplaySide(p: ReplayProps) {
             <button
               key={d}
               role="radio"
-              aria-checked={!custom && view.day === d}
-              className={`chip ${!custom && view.day === d ? 'on' : ''}`}
+              aria-checked={!custom && !view.recent && view.day === d}
+              className={`chip ${!custom && !view.recent && view.day === d ? 'on' : ''}`}
               title={d === 'all' ? 'Every match of every day, replayed together' : `Every match of ${formatDay(d)}, replayed together${d === '2026-02-14' ? ' (partial day: the export stops mid-day)' : ''}`}
-              onClick={() => update({ day: d, matches: ALL })}
+              onClick={() => update({ day: d, matches: ALL, recent: 0 })}
             >
               {d === 'all' ? 'All days' : formatDay(d)}
+            </button>
+          ))}
+          {([10, 100] as const).map((n) => (
+            <button
+              key={n}
+              role="radio"
+              aria-checked={!custom && view.recent === n}
+              className={`chip ${!custom && view.recent === n ? 'on' : ''}`}
+              title={`The last ${n} matches of the data, replayed together (by day: the time of day is not logged)`}
+              onClick={() => update({ day: 'all', matches: ALL, recent: n })}
+            >
+              Last {n}
             </button>
           ))}
           <button
@@ -94,7 +106,7 @@ export function ReplaySide(p: ReplayProps) {
             aria-checked={custom}
             className={`chip ${custom ? 'on' : ''}`}
             title="Pick the matches yourself, from the list"
-            onClick={() => !custom && update({ day: 'all', matches: selected.slice(0, 1).map((m) => m.id) })}
+            onClick={() => !custom && update({ day: 'all', recent: 0, matches: selected.slice(0, 1).map((m) => m.id) })}
           >
             Custom
           </button>
