@@ -498,3 +498,8 @@ button.map-tile:not(.on) .map-thumb { opacity: 0.75; }
 .stage-left .replayed, .stage-left.has-card .replayed { flex: 0 1 auto; max-height: calc(50% - 4px); }
 .stage-left .player-card, .stage-left.has-card .player-card { flex: 0 1 auto; max-height: calc(50% - 4px); min-height: 0; }
 @media (max-width: 760px) { .stage-left, .stage-left.has-card { bottom: auto; height: 60%; } }
+.how-many { margin-top: 5px; align-items: center; }
+.random-box { display: inline-flex; align-items: center; gap: 4px; margin-left: 4px; font-size: 11.5px; color: var(--muted); cursor: pointer; }
+.random-box input { accent-color: var(--accent); margin: 0; }
+.redraw { padding: 1px 7px; border-radius: 7px; border: 1px solid var(--line); background: transparent; color: var(--text); cursor: pointer; font-size: 12px; }
+.redraw:hover { border-color: var(--accent); }

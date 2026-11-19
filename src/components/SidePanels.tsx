@@ -38,9 +38,9 @@ const ENDED: Option<View['ended']>[] = [
   ['storm', <><LegendIcon k="storm" size={12} /> Storm</>, 'Died to the storm'],
 ];
 const GAME: Option<View['game']>[] = [
-  ['any', 'Any'],
-  ['bots', <><LegendIcon k="botPath" size={12} /> Bots recorded</>, 'Matches where the bots were recorded too: their paths, kills and deaths are on the map'],
-  ['pvp', <><LegendIcon k="killPlayer" size={12} /> Vs player</>, 'Matches where the player killed or was killed by another player'],
+  ['player', <><LegendIcon k="humanPath" size={12} /> Player</>, 'Only the player was recorded in the match'],
+  ['bots', <><LegendIcon k="botPath" size={12} /> Bots</>, 'The bots were recorded too: their paths, kills and deaths are on the map'],
+  ['any', 'Both', 'Every match'],
 ];
 const LENGTH: Option<View['length']>[] = [['any', 'Any'], ['short', '<5 min'], ['mid', '5-10'], ['long', '>10']];
 
@@ -68,7 +68,7 @@ export function ReplaySide(p: ReplayProps) {
   const base = { ended: view.ended, length: view.length, game: view.game, sort: view.sort };
   /** How many matches there would be with this one filter changed (the others kept). */
   const countWith = (patch: Partial<typeof base>) => applyFilter(pool, { ...base, ...patch }).length;
-  const dayPicked = !custom && (view.day !== 'all' || view.recent > 0);
+  const dayPicked = view.day !== 'all' || (!custom && view.recent > 0);
   const filtered = view.ended !== 'any' || view.length !== 'any' || view.game !== 'any' || dayPicked;
   /** Back to every match: any outcome, any length, all days (matches picked in Custom are kept). */
   const clearAll = () => update({ ended: 'any', length: 'any', game: 'any', ...(dayPicked ? { day: 'all', recent: 0 } : {}) });
@@ -86,24 +86,29 @@ export function ReplaySide(p: ReplayProps) {
             <button
               key={d}
               role="radio"
-              aria-checked={!custom && !view.recent && view.day === d}
-              className={`chip ${!custom && !view.recent && view.day === d ? 'on' : ''}`}
-              title={d === 'all' ? 'Every match of every day, replayed together' : `Every match of ${formatDay(d)}, replayed together${d === '2026-02-14' ? ' (partial day: the export stops mid-day)' : ''}`}
-              onClick={() => update({ day: d, matches: ALL, recent: 0 })}
+              aria-checked={view.day === d}
+              className={`chip ${view.day === d ? 'on' : ''}`}
+              title={d === 'all' ? 'Every day' : `${formatDay(d)} only${d === '2026-02-14' ? ' (partial day: the export stops mid-day)' : ''}`}
+              onClick={() => update({ day: d })}
             >
               {d === 'all' ? 'All days' : formatDay(d)}
             </button>
           ))}
+        </span>
+        <div className="chips how-many" role="radiogroup" aria-label="How many matches">
+          <button role="radio" aria-checked={!custom && !view.recent} className={`chip ${!custom && !view.recent ? 'on' : ''}`} title="Every match of the day(s), replayed together" onClick={() => update({ matches: ALL, recent: 0 })}>
+            All
+          </button>
           {([10, 100] as const).map((n) => (
             <button
               key={n}
               role="radio"
               aria-checked={!custom && view.recent === n}
               className={`chip ${!custom && view.recent === n ? 'on' : ''}`}
-              title={`The last ${n} matches of the data, replayed together (by day: the time of day is not logged)`}
-              onClick={() => update({ day: 'all', matches: ALL, recent: n })}
+              title={view.random ? `${n} matches drawn at random from the day(s), replayed together` : `The last ${n} matches of the day(s) (by day: the time of day is not logged)`}
+              onClick={() => update({ matches: ALL, recent: n })}
             >
-              Last {n}
+              {view.random ? `${n} random` : `Last ${n}`}
             </button>
           ))}
           <button
@@ -111,11 +116,20 @@ export function ReplaySide(p: ReplayProps) {
             aria-checked={custom}
             className={`chip ${custom ? 'on' : ''}`}
             title="Pick the matches yourself, from the list"
-            onClick={() => !custom && update({ day: 'all', recent: 0, matches: selected.slice(0, 1).map((m) => m.id) })}
+            onClick={() => !custom && update({ recent: 0, matches: selected.slice(0, 1).map((m) => m.id) })}
           >
             Custom
           </button>
-        </span>
+          <label className="random-box" title="Draw the 10 or 100 matches at random instead of taking the last ones">
+            <input type="checkbox" checked={view.random} onChange={(e) => update({ random: e.target.checked })} />
+            Random
+          </label>
+          {view.random && !custom && view.recent > 0 && (
+            <button className="redraw" onClick={() => update({ seed: view.seed + 1 })} title="Draw other matches">
+              ↻
+            </button>
+          )}
+        </div>
         {custom && (
           <>
             <div className="custom-actions">

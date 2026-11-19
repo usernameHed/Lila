@@ -22,11 +22,11 @@ live views. It doubles as the walkthrough of the features below.
 On a 16:9 screen (1366x768 to 1920x1080) everything fits without scrolling:
 - **Replay** one match or many on one clock, at 10x / 30x / 60x; Space plays and pauses; grabbing the timeline
   pauses. The timeline has a tick per fight and death, and a band where the storm kills (from minute 10.9).
-- **Day**: one chip per day (or All days) replays every match of that day together; **Last 10** / **Last 100**
-  replay the latest matches of the data (by day: the time of day is not logged); **Custom** opens the match list
-  to pick matches one by one.
-- **Match filters**, as one-click chips that show how many matches each would leave: game (bots recorded too, or
-  a fight against another player), how the player's run ended
+- **Day**: All days or one day. Below it, how many: **All** (every match together), **10** or **100** (drawn at
+  random, ticked by default, ↻ draws again; unticked: the last 10 or 100, by day since the time of day is not
+  logged), or **Custom** (the match list, to pick matches one by one).
+- **Match filters**, as one-click chips that show how many matches each would leave: game (Player: only the player was
+  recorded; Bots: the bots were recorded too, 52 of 796 matches; Both), how the player's run ended
   (survived, killed by a bot, by a player, by the storm), length (under 5, 5-10, over 10 min). In Custom, matches are
   grouped by day (fold a day, tick it to select all its matches), one line per match (duration, how it ended, kills,
   loot; ⇄ when bots were recorded too). Picking a match plays it from 0:00 (if the previous replay had ended, paused, it shows the new one whole). "Clear all filters" goes back to every match.

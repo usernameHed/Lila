@@ -15,6 +15,12 @@ about 300 lines, move the oldest entries word for word to `SESSION_HISTORY.md` (
 
 ---
 
+## 2026-11-19 (desktop session): day rows, random draw, Game = Player / Bots / Both
+
+- Ugo asked if some matches are played by bots: no, every match has its human (794 one, 2 two); bots recorded too in
+  52. Day row = days only; row 2 = All / 10 / 100 / Custom + Random (default on, seeded `draw` in view.ts, URL `rnd`,
+  `seed`, ↻ redraws). Game filter: Player (only the player recorded) / Bots (bots recorded) / Both.
+
 ## 2026-11-19 (desktop session): game filter, undoable picks, multi-select, card layout
 
 - Game filter (Bots recorded / Vs player, `game` in matchFilter, URL `game`). Picked players now in the view (`picked`,

@@ -4,8 +4,11 @@ import type { MatchSummary } from './types';
 export type Ended = 'any' | 'survived' | 'bot' | 'storm' | 'player';
 export type Length = 'any' | 'short' | 'mid' | 'long';
 export type SortBy = 'day' | 'longest' | 'shortest' | 'kills' | 'loot';
-/** Who else is in the game: bots recorded too (their paths are in the data), or a player fought. */
-export type Game = 'any' | 'bots' | 'pvp';
+/**
+ * Who is recorded in the match. Every match has its human player; in 52 of 796 the bots were recorded too.
+ * 'player': only the player's file; 'bots': the bots' files too; 'any': both kinds.
+ */
+export type Game = 'any' | 'bots' | 'player';
 
 export interface MatchFilter {
   ended: Ended;
@@ -16,9 +19,8 @@ export interface MatchFilter {
 
 export const NO_FILTER: MatchFilter = { ended: 'any', length: 'any', game: 'any', sort: 'day' };
 
-/** Bots recorded in the match (52 of 796), or a fight with another player (a kill or a death). */
-export const gameOf = (m: MatchSummary, g: Exclude<Game, 'any'>): boolean =>
-  g === 'bots' ? m.bots > 0 : !!(m.events.killPlayer || m.events.diedToPlayer);
+/** Bots recorded in the match too, or only the player. */
+export const gameOf = (m: MatchSummary, g: Exclude<Game, 'any'>): boolean => (g === 'bots' ? m.bots > 0 : m.bots === 0);
 
 /** How the human's match ended. No death logged = survived (extraction is not logged). */
 export function endedOf(m: MatchSummary): Exclude<Ended, 'any'> {

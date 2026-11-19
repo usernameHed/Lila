@@ -10,8 +10,11 @@ export interface View {
   day: string; // 'all' or YYYY-MM-DD
   /** Matches replayed together. ALL = every match of the current map and day; NONE = every match unticked. */
   matches: string[] | typeof ALL | typeof NONE;
-  /** With ALL: only the last N matches of the data (latest days first in line), 0 = every one. */
+  /** With ALL: only N matches of the chosen day(s), 0 = every one. */
   recent: 0 | 10 | 100;
+  /** N random matches (a fixed draw, `seed`), or the last N of the data. */
+  random: boolean;
+  seed: number;
   /** Players picked on the map or in the "On the map" list (highlighted; the last one's card is open). */
   picked: { match: string; player: number }[];
   /** Heatmap kinds shown together, at least one. */
@@ -48,7 +51,7 @@ export interface View {
 export const ALL = 'all';
 export const NONE = 'none';
 
-export const DEFAULT_VIEW: View = { mode: 'overview', map: 'AmbroseValley', day: 'all', matches: [], recent: 0, picked: [], layers: ['traffic'], kills: 'both', deaths: 'both', mono: false, ended: 'any', length: 'any', game: 'any', sort: 'day', hidden: [], heatUnder: false, replayOn: true, iconScale: 1, pathWidth: 1.5, pathAlpha: 1.3, view3d: false, exaggeration: 4, terrain: true };
+export const DEFAULT_VIEW: View = { mode: 'overview', map: 'AmbroseValley', day: 'all', matches: [], recent: 0, random: true, seed: 0, picked: [], layers: ['traffic'], kills: 'both', deaths: 'both', mono: false, ended: 'any', length: 'any', game: 'any', sort: 'day', hidden: [], heatUnder: false, replayOn: true, iconScale: 1, pathWidth: 1.5, pathAlpha: 1.3, view3d: false, exaggeration: 4, terrain: true };
 
 const MAPS: MapId[] = ['AmbroseValley', 'GrandRift', 'Lockdown'];
 const LAYERS: HeatLayer[] = ['traffic', 'loot', 'power', 'raised', 'fire', 'kills', 'deaths', 'storm']; // drawing order
@@ -68,6 +71,8 @@ export function parseView(hash: string): View {
     day: day && /^\d{4}-\d{2}-\d{2}$/.test(day) ? day : 'all',
     matches: parseMatches(q.get('match')),
     recent: q.get('last') === '10' ? 10 : q.get('last') === '100' ? 100 : 0,
+    random: q.get('rnd') !== '0',
+    seed: Math.max(0, Math.min(1e6, Math.round(Number(q.get('seed')) || 0))),
     picked: parsePicked(q.get('pick')),
     layers: parseLayers(q.get('layer')),
     kills: pick('kills', WHO, 'both'),
@@ -76,7 +81,7 @@ export function parseView(hash: string): View {
     // Old links: "players=pvp" was the player-vs-player filter, now "ended: killed by a player".
     ended: q.get('players') === 'pvp' ? 'player' : pick<Ended>('end', ['any', 'survived', 'bot', 'storm', 'player'], 'any'),
     length: pick<Length>('len', ['any', 'short', 'mid', 'long'], 'any'),
-    game: pick<Game>('game', ['any', 'bots', 'pvp'], 'any'),
+    game: pick<Game>('game', ['any', 'bots', 'player'], 'any'),
     sort: pick<SortBy>('sort', ['day', 'longest', 'shortest', 'kills', 'loot'], 'day'),
     hidden: legacyHeat ? ['humanPath', 'botPath'] : (q.get('hide') ?? '').split(',').filter((k) => /^[a-zA-Z]{2,20}$/.test(k)),
     heatUnder: legacyHeat || q.get('under') === '1',
@@ -126,7 +131,11 @@ export function viewHash(v: View): string {
   if (v.day !== 'all') q.set('day', v.day);
   if (v.matches === ALL || v.matches === NONE) q.set('match', v.matches);
   else if (v.matches.length) q.set('match', v.matches.join(','));
-  if (v.matches === ALL && v.recent) q.set('last', String(v.recent));
+  if (v.matches === ALL && v.recent) {
+    q.set('last', String(v.recent));
+    if (!v.random) q.set('rnd', '0');
+    else if (v.seed) q.set('seed', String(v.seed));
+  }
   if (v.picked.length) q.set('pick', v.picked.map((p) => `${p.match}.${p.player}`).join(','));
   if (v.mono) q.set('mono', '1');
   if (v.ended !== 'any') q.set('end', v.ended);
@@ -150,12 +159,25 @@ export function viewHash(v: View): string {
   return `#${q}`;
 }
 
+/** A number for an id and a seed (FNV-1a): the same draw every time for the same seed. */
+function hash(text: string): number {
+  let h = 2166136261;
+  for (let i = 0; i < text.length; i++) h = Math.imul(h ^ text.charCodeAt(i), 16777619);
+  return h >>> 0;
+}
+
+/** N matches drawn at random but reproducibly (same seed, same draw), kept in the list's order. */
+export function draw<T extends { id: string }>(list: T[], n: number, seed: number): T[] {
+  const keep = new Set([...list].sort((a, b) => hash(`${seed}:${a.id}`) - hash(`${seed}:${b.id}`)).slice(0, n));
+  return list.filter((m) => keep.has(m));
+}
+
 /**
  * The matches to replay, as summaries of the current list: every one for ALL, else the chosen ones still in the
  * list (in the order chosen, which sets their colors), else the first match (a link with no choice yet). NONE: none.
  */
-export function resolveSelection<T extends { id: string }>(chosen: View['matches'], list: T[], recent: View['recent'] = 0): T[] {
-  if (chosen === ALL) return recent ? list.slice(-recent) : list;
+export function resolveSelection<T extends { id: string }>(chosen: View['matches'], list: T[], recent: View['recent'] = 0, random = false, seed = 0): T[] {
+  if (chosen === ALL) return !recent ? list : random ? draw(list, recent, seed) : list.slice(-recent);
   if (chosen === NONE) return [];
   const byId = new Map(list.map((m) => [m.id, m]));
   const picked = chosen.map((id) => byId.get(id)).filter((m): m is T => !!m);

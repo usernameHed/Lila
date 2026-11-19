@@ -24,6 +24,11 @@ describe('match selection', () => {
   it('resolves all, chosen ones in chosen order, or the first', () => {
     expect(resolveSelection(ALL, list)).toEqual(list);
     expect(resolveSelection(ALL, list, 10).map((m) => m.id)).toEqual(list.slice(-10).map((m) => m.id));
+    const big = Array.from({ length: 50 }, (_, i) => ({ id: `m${i}` }));
+    const a = resolveSelection(ALL, big, 10, true, 1);
+    expect(a).toHaveLength(10);
+    expect(resolveSelection(ALL, big, 10, true, 1)).toEqual(a); // same seed, same draw
+    expect(resolveSelection(ALL, big, 10, true, 2)).not.toEqual(a);
     expect(parseView(viewHash({ ...DEFAULT_VIEW, mode: 'replay', matches: ALL, recent: 100 })).recent).toBe(100);
     const picked = [{ match: 'abc-1', player: 0 }, { match: 'def-2', player: 3 }];
     expect(parseView(viewHash({ ...DEFAULT_VIEW, mode: 'replay', picked })).picked).toEqual(picked);

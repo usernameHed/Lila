@@ -104,7 +104,7 @@ export function App() {
   );
   const days = useMemo(() => (view.day === 'all' ? (index?.days ?? []) : [view.day]), [index, view.day]);
 
-  const selected = useMemo(() => resolveSelection(view.matches, matches, view.recent), [view.matches, matches, view.recent]);
+  const selected = useMemo(() => resolveSelection(view.matches, matches, view.recent, view.random, view.seed), [view.matches, matches, view.recent, view.random, view.seed]);
   const selectedIds = selected.map((m) => m.id);
   const counts = useMemo(() => {
     const out: Partial<Record<LegendKey, number>> = { fights: 0 };

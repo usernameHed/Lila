@@ -23,7 +23,7 @@ describe('match filters', () => {
     expect(ids({ ended: 'bot' })).toEqual(['c']);
     expect(ids({ length: 'long' })).toEqual(['b']);
     expect(ids({ game: 'bots' })).toEqual(['b']);
-    expect(ids({ game: 'pvp' })).toEqual([]);
+    expect(ids({ game: 'player' })).toEqual(['a', 'c']);
   });
 
   it('sorts by length, kills or loot', () => {
