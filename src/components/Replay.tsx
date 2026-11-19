@@ -90,11 +90,11 @@ export function MatchList({ matches, selected, mono, onOnly, onToggle, onSetMany
                   const on = i !== undefined;
                   return (
                     <li key={m.id} className={on ? 'on' : ''}>
-                      <label className="pick" title="Replay together with the other ticked matches">
+                      <label className="pick" data-tip="Replay together with the other ticked matches">
                         <input type="checkbox" checked={on} onChange={() => onToggle(m.id)} aria-label={`Add match ${n + 1} of ${formatDay(m.day)}`} />
                         {multi && on && <span className="dot" style={{ background: MATCH_COLORS[i] }} />}
                       </label>
-                      <button onClick={() => onOnly(m.id)} title={`${formatDay(m.day)} · ${ENDED_LONG[end]} · ${kills} kills · ${m.events.loot ?? 0} loot${m.bots ? ` · ${m.bots} bots recorded` : ''}${m.fights ? ` · ${m.fights} fight lines` : ''}`}>
+                      <button onClick={() => onOnly(m.id)} data-tip={`${formatDay(m.day)} · ${ENDED_LONG[end]} · ${kills} kills · ${m.events.loot ?? 0} loot${m.bots ? ` · ${m.bots} bots recorded` : ''}${m.fights ? ` · ${m.fights} fight lines` : ''}`}>
                         <span className="num">{grouped ? `#${n + 1}` : formatDay(m.day).replace(' Feb', '')}</span>
                         <span className="dur">{formatDuration(m.durationMs)}</span>
                         <span className={`end ${end === 'survived' ? 'ok' : 'dead'}`}>
@@ -102,10 +102,10 @@ export function MatchList({ matches, selected, mono, onOnly, onToggle, onSetMany
                           {ENDED_SHORT[end]}
                         </span>
                         <span className="m-stats">
-                          {m.bots > 0 && <span className="linked" title="Bots recorded too: fights from both sides">⇄ </span>}
-                          <span title="bots and players killed">{kills}</span>
+                          {m.bots > 0 && <span className="linked" data-tip="Bots recorded too: fights from both sides">⇄ </span>}
+                          <span data-tip="bots and players killed">{kills}</span>
                           <LegendIcon k="killBot" size={13} />
-                          <span title="items looted">{m.events.loot ?? 0}</span>
+                          <span data-tip="items looted">{m.events.loot ?? 0}</span>
                           <LegendIcon k="loot" size={13} />
                         </span>
                       </button>
@@ -408,8 +408,8 @@ export function ReplayStage(props: StageProps) {
         <Choice label="View" options={[['2d', '2D'], ['3d', '3D']]} value={view3d ? '3d' : '2d'} onChange={(v) => onView({ view3d: v === '3d' })} />
         {!view3d && (
           <span className="zoom-btns">
-            <button onClick={() => zoomRef.current?.(1.5)} aria-label="Zoom in" title="Zoom in (or scroll, or pinch)">+</button>
-            <button onClick={() => zoomRef.current?.(1 / 1.5)} aria-label="Zoom out" title="Zoom out">−</button>
+            <button onClick={() => zoomRef.current?.(1.5)} aria-label="Zoom in" data-tip="Zoom in (or scroll, or pinch)">+</button>
+            <button onClick={() => zoomRef.current?.(1 / 1.5)} aria-label="Zoom out" data-tip="Zoom out">−</button>
           </span>
         )}
         {props.history}
@@ -417,7 +417,7 @@ export function ReplayStage(props: StageProps) {
           <Choice label="Ground" options={[['terrain', 'Terrain'], ['flat', 'Flat']]} value={terrain ? 'terrain' : 'flat'} onChange={(g) => onView({ terrain: g === 'terrain' })} />
         )}
         {view3d && (
-          <label className="exaggeration" title="Stretch heights so the relief shows">
+          <label className="exaggeration" data-tip="Stretch heights so the relief shows">
             Height x{exaggeration}
             <input type="range" min={1} max={8} step={1} value={exaggeration} onChange={(e) => onView({ exaggeration: Number(e.target.value) })} />
           </label>
@@ -471,10 +471,10 @@ export function ReplayStage(props: StageProps) {
               On the map <span>{summaries.length}</span>
               {summaries.length > 1 && !many && (
                 <span className="colors-switch" role="group" aria-label="Match colors">
-                  <button className={!mono ? 'on' : ''} aria-pressed={!mono} onClick={() => onView({ mono: false })} title="One color per match">
+                  <button className={!mono ? 'on' : ''} aria-pressed={!mono} onClick={() => onView({ mono: false })} data-tip="One color per match">
                     Colors
                   </button>
-                  <button className={mono ? 'on' : ''} aria-pressed={mono} onClick={() => onView({ mono: true })} title="One color for every match">
+                  <button className={mono ? 'on' : ''} aria-pressed={mono} onClick={() => onView({ mono: true })} data-tip="One color for every match">
                     One color
                   </button>
                 </span>
@@ -491,8 +491,18 @@ export function ReplayStage(props: StageProps) {
                       onClick={(e) => openMatch(m.id, e)}
                       onMouseEnter={() => setHoverPath(humanOf(m.id))}
                       onMouseLeave={() => setHoverPath(null)}
-                      title="Click: this match's player and card · Ctrl / Cmd: add or remove · Shift: a range"
+                      data-tip="Click: this match alone · tick box (or Ctrl / Cmd): add or remove · Shift: a range"
                     >
+                      <span
+                        className={`tick-box pick-box ${picks.some((p) => p.match === m.id) ? 'on' : ''}`}
+                        role="checkbox"
+                        aria-checked={picks.some((p) => p.match === m.id)}
+                        aria-label="Add or remove this match"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          openMatch(m.id, { ...e, ctrlKey: true, metaKey: false, shiftKey: false } as React.MouseEvent);
+                        }}
+                      />
                       <span className="dot" style={{ background: color }} />
                       <span className="r-day">{formatDay(m.day)}</span>
                       <span className="r-dur">{formatDuration(m.durationMs)}</span>
@@ -501,7 +511,7 @@ export function ReplayStage(props: StageProps) {
                         {ENDED_SHORT[end]}
                       </span>
                       {(m.humans > 1 || m.bots > 0) && (
-                        <span className="r-bots" title="Also recorded in this match: pick the match to see everyone">
+                        <span className="r-bots" data-tip="Also recorded in this match: pick the match to see everyone">
                           {m.humans > 1 && <span className="r-plus-player">+{m.humans - 1} player</span>}
                           {m.bots > 0 && ` +${m.bots} bots`}
                         </span>
@@ -516,8 +526,18 @@ export function ReplayStage(props: StageProps) {
                               onClick={(e) => openBot({ match: m.id, player: b.player }, e)}
                               onMouseEnter={() => setHoverPath({ match: m.id, player: b.player })}
                               onMouseLeave={() => setHoverPath(null)}
-                              title={`Click: this ${b.bot ? 'bot' : 'player'}'s path and card · Ctrl / Cmd: add or remove`}
+                              data-tip={`Click: this ${b.bot ? 'bot' : 'player'} alone · tick box (or Ctrl / Cmd): add or remove`}
                             >
+                              <span
+                                className={`tick-box pick-box ${picks.some((p) => p.match === m.id && p.player === b.player) ? 'on' : ''}`}
+                                role="checkbox"
+                                aria-checked={picks.some((p) => p.match === m.id && p.player === b.player)}
+                                aria-label="Add or remove"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  openBot({ match: m.id, player: b.player }, { ...e, ctrlKey: true, metaKey: false } as React.MouseEvent);
+                                }}
+                              />
                               <LegendIcon k={b.bot ? 'botPath' : 'humanPath'} size={13} />
                               <span className="r-day">{b.bot ? `Bot ${b.id}` : `Player ${b.id.slice(0, 8)}`}</span>
                               <span className={`r-end ${b.died === null ? 'ok' : 'dead'}`}>{b.died === null ? 'Alive' : `Died ${formatDuration(b.died)}`}</span>

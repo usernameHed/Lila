@@ -13,6 +13,7 @@ import { Icon } from './components/Icon';
 import { Loader } from './components/Loader';
 import { MapTile, MapTiles } from './components/MapBadge';
 import { InstallOffer } from './components/InstallOffer';
+import { Tips } from './components/Tips';
 import { playNext } from './components/usePlayback';
 import { minimap } from './components/MapCanvas';
 import { record, redo, start, undo, type History } from './lib/history';
@@ -146,7 +147,7 @@ export function App() {
 
         {replay && (
           <>
-            <button className="data-line" onClick={() => update({ mode: 'data' })} title="Change the data">
+            <button className="data-line" onClick={() => update({ mode: 'data' })} data-tip="Change the data">
               <span className="muted">Data</span> <b>{sourceName}</b> <span className="change">Change</span>
             </button>
             <section>
@@ -210,10 +211,10 @@ export function App() {
             picked={view.picked}
             history={
               <span className="history-btns">
-                <button onClick={() => setHist(undo)} disabled={!hist.past.length} title="Undo (Cmd/Ctrl+Z)" aria-label="Undo">
+                <button onClick={() => setHist(undo)} disabled={!hist.past.length} data-tip="Undo (Cmd/Ctrl+Z)" aria-label="Undo">
                   <Icon name="undo" size={16} />
                 </button>
-                <button onClick={() => setHist(redo)} disabled={!hist.future.length} title="Redo (Shift+Cmd/Ctrl+Z)" aria-label="Redo">
+                <button onClick={() => setHist(redo)} disabled={!hist.future.length} data-tip="Redo (Shift+Cmd/Ctrl+Z)" aria-label="Redo">
                   <Icon name="redo" size={16} />
                 </button>
               </span>
@@ -226,6 +227,7 @@ export function App() {
       </main>
 
       <InstallOffer />
+      <Tips />
     </div>
   );
 }

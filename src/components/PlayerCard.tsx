@@ -57,7 +57,7 @@ export function PlayerCard({ story: s, title, active, onPoint, onSeek, onClose, 
                   {f.role === 'killer' ? 'Killed' : 'Killed by'} {f.otherBot ? 'a bot' : 'a player'} {Math.round(f.meters)} m away
                   {f.inferred && <span className="muted"> (inferred)</span>}
                 </button>
-                <button className="other" onClick={() => onFocusOther(f.other)} title="Open the other side of this fight">
+                <button className="other" onClick={() => onFocusOther(f.other)} data-tip="Open the other side of this fight">
                   {f.otherBot ? 'Bot' : 'Player'} →
                 </button>
               </li>

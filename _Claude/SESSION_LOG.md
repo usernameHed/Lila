@@ -19,7 +19,9 @@ about 300 lines, move the oldest entries word for word to `SESSION_HISTORY.md` (
 
 - Ugo: a filter for matches with 2 players (only 2, Ambrose 12 Feb). Game = No bots / Bots / 2 players (`multi`,
   humans > 1; counts in tooltips to fit one line). Rows "+1 player"; a picked match lists everyone (players then
-  bots, each with died at / alive); the card names the other player and the bots.
+  bots, each with died at / alive); the card names the other player and the bots. Then: native `title` tooltips
+  did not show in Ugo's app window -> instant `data-tip` tooltips (`Tips.tsx`); tick box on each "On the map" row
+  (and each player / bot under a match) to pick several without Ctrl.
 
 ## 2026-11-19 (desktop session): layers on the left, zoom by 2D / 3D, picked match alone
 

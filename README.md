@@ -18,7 +18,8 @@ live views. It doubles as the walkthrough of the features below.
 
 **Match replay**, in the order a designer works: map, day and layers on the left, the matches running on the map (an "On the
   map" list under the filters, with "+1 player" / "+N bots" when more than the player was recorded and the match colors switch:
-  click one for its player's card (on the right of the map) and only that match stays on the map; a picked
+  click one for its player's card (on the right of the map) and only that match stays on the map; the tick box at the
+  start of each row adds or removes a match (several at once); a picked
   match lists everyone recorded in it (players, then bots) to pick too (a bot picked: one click on its match goes back to the player, a second unpicks), Ctrl / Cmd adds or removes, Shift picks a
   range; the list and the card each span the map's height, the card's events scroll), the layers on the right.
 On a 16:9 screen (1366x768 to 1920x1080) everything fits without scrolling:
@@ -46,6 +47,7 @@ On a 16:9 screen (1366x768 to 1920x1080) everything fits without scrolling:
   Hovering a path in 2D highlights it; click it for the player's card (each event with its icon).
 - **Map picker**: the three maps as tiles (picture, name, matches), the same tiles on the Data page.
   Paths keep the same peak brightness whatever the number of matches shown.
+- **Instant tooltips** on every chip and button (`data-tip`, one listener for the page).
 - **Hover never hides**: what is pointed at stays bright and pulses, the rest fades back halfway, eased in and out.
 - **Everything is linked**: hover an event on the map, its tick on the timeline or its row in a player's card,
   and it pulses in all of them and in the layer list. Click a player or an event for its card (how it ended,

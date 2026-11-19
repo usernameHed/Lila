@@ -544,3 +544,6 @@ button.map-tile:not(.on) .map-thumb { opacity: 0.75; }
 .stage-tools .history-btns button { width: 26px; height: 24px; border: 1px solid var(--line); background: #1d2026; color: var(--text); }
 .stage-tools .history-btns button:disabled { opacity: 0.35; }
 .r-plus-player { color: var(--blue); }
+.pick-box { width: 13px; height: 13px; border-color: #5a606b; cursor: pointer; }
+.pick-box.on { background: var(--accent); border-color: var(--accent); }
+.pick-box:hover { border-color: var(--text); }

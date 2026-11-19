@@ -49,14 +49,14 @@ function FilterRow<T extends string>({ label, value, options, count, countInTip,
     <div className="filter-row" role="group" aria-label={label}>
       <span className="filter-label">{label}</span>
       <span className="chips one-line">
-        <button aria-pressed={value === 'any'} className={`chip ${value === 'any' ? 'on' : ''}`} title="Every match" onClick={() => onChange('any')}>
+        <button aria-pressed={value === 'any'} className={`chip ${value === 'any' ? 'on' : ''}`} data-tip="Every match" onClick={() => onChange('any')}>
           All
         </button>
         {options.map(([v, text, tip]) => {
           const n = count?.(v);
           const title = [tip, countInTip && n !== undefined ? `${n} matches` : null, v === value ? 'Click again to show every match' : null].filter(Boolean).join(' · ');
           return (
-            <button key={v} aria-pressed={v === value} title={title} className={`chip ${v === value ? 'on' : ''}`} onClick={() => onChange(v === value ? 'any' : v)}>
+            <button key={v} aria-pressed={v === value} data-tip={title} className={`chip ${v === value ? 'on' : ''}`} onClick={() => onChange(v === value ? 'any' : v)}>
               {text}
               {n !== undefined && !countInTip && <i>{n}</i>}
             </button>
@@ -81,9 +81,9 @@ export function ReplaySide(p: ReplayProps) {
           </span>
         </h2>
         <div className="filter-row" role="group" aria-label="Day">
-          <span className="filter-label" title="Day of the match (all in February 2026)">Feb</span>
+          <span className="filter-label" data-tip="Day of the match (all in February 2026)">Feb</span>
           <span className="chips one-line">
-            <button aria-pressed={view.day === 'all'} className={`chip ${view.day === 'all' ? 'on' : ''}`} title="Every day" onClick={() => update({ day: 'all' })}>
+            <button aria-pressed={view.day === 'all'} className={`chip ${view.day === 'all' ? 'on' : ''}`} data-tip="Every day" onClick={() => update({ day: 'all' })}>
               All
             </button>
             {p.days.map((d) => (
@@ -91,7 +91,7 @@ export function ReplaySide(p: ReplayProps) {
                 key={d}
                 aria-pressed={view.day === d}
                 className={`chip ${view.day === d ? 'on' : ''}`}
-                title={`${formatDay(d)} only${d === '2026-02-14' ? ' (partial day: the export stops mid-day)' : ''}${view.day === d ? ' · Click again for every day' : ''}`}
+                data-tip={`${formatDay(d)} only${d === '2026-02-14' ? ' (partial day: the export stops mid-day)' : ''}${view.day === d ? ' · Click again for every day' : ''}`}
                 onClick={() => update({ day: view.day === d ? 'all' : d })}
               >
                 {Number(d.slice(8))}
@@ -102,7 +102,7 @@ export function ReplaySide(p: ReplayProps) {
         <div className="filter-row" role="group" aria-label="How many matches">
           <span className="filter-label">Show</span>
           <span className="chips one-line">
-            <button aria-pressed={!custom && !view.recent} className={`chip ${!custom && !view.recent ? 'on' : ''}`} title="Every match of the day(s), replayed together" onClick={() => update({ matches: ALL, recent: 0 })}>
+            <button aria-pressed={!custom && !view.recent} className={`chip ${!custom && !view.recent ? 'on' : ''}`} data-tip="Every match of the day(s), replayed together" onClick={() => update({ matches: ALL, recent: 0 })}>
               All
             </button>
             {([10, 100] as const).map((n) => (
@@ -110,7 +110,7 @@ export function ReplaySide(p: ReplayProps) {
                 key={n}
                 aria-pressed={!custom && view.recent === n}
                 className={`chip ${!custom && view.recent === n ? 'on' : ''}`}
-                title={`${view.random ? `${n} matches drawn at random` : `The last ${n} matches`} of the day(s), replayed together${!custom && view.recent === n ? ' · Click again for every match' : ''}`}
+                data-tip={`${view.random ? `${n} matches drawn at random` : `The last ${n} matches`} of the day(s), replayed together${!custom && view.recent === n ? ' · Click again for every match' : ''}`}
                 onClick={() => update({ matches: ALL, recent: !custom && view.recent === n ? 0 : n })}
               >
                 {n}
@@ -119,17 +119,17 @@ export function ReplaySide(p: ReplayProps) {
             <button
               aria-pressed={custom}
               className={`chip ${custom ? 'on' : ''}`}
-              title={custom ? 'Click again for every match' : 'Pick the matches yourself, from the list'}
+              data-tip={custom ? 'Click again for every match' : 'Pick the matches yourself, from the list'}
               onClick={() => update(custom ? { matches: ALL } : { recent: 0, matches: selected.slice(0, 1).map((m) => m.id) })}
             >
               Custom
             </button>
-            <label className="random-box" title="10 or 100: drawn at random (ticked) or the last ones (unticked)">
+            <label className="random-box" data-tip="10 or 100: drawn at random (ticked) or the last ones (unticked)">
               <input type="checkbox" checked={view.random} onChange={(e) => update({ random: e.target.checked })} />
               Random
             </label>
             {view.random && !custom && view.recent > 0 && (
-              <button className="redraw" onClick={() => update({ seed: view.seed + 1 })} title="Draw other matches">
+              <button className="redraw" onClick={() => update({ seed: view.seed + 1 })} data-tip="Draw other matches">
                 ↻
               </button>
             )}
@@ -181,9 +181,9 @@ export function MatchFilters({ view, update, pool }: { view: View; update: Updat
   return (
       <section className="map-filters">
         <h2 className="with-actions">
-          <span title="Each match is one player's run: pick runs by how they went">Filters · player runs</span>
+          <span data-tip="Each match is one player's run: pick runs by how they went">Filters · player runs</span>
           <span className="actions">
-            <button onClick={clearAll} disabled={!filtered} title="Any game, any outcome, any length, all days">
+            <button onClick={clearAll} disabled={!filtered} data-tip="Any game, any outcome, any length, all days">
               Clear all filters
             </button>
           </span>
@@ -235,14 +235,14 @@ function LayerLine({ row, p, showTip }: { row: LayerRow; p: RightProps; showTip:
       </button>
       <span className="layer-switches">
         {k ? (
-          <button className={`tick-box ${iconsOn ? 'on' : ''}`} style={iconsOn ? { background: legendColor(k), borderColor: legendColor(k) } : { borderColor: legendColor(k) }} onClick={toggleIcons} aria-pressed={iconsOn} aria-label={`${label}: icons on the replay`} title="Icons on the replay" />
+          <button className={`tick-box ${iconsOn ? 'on' : ''}`} style={iconsOn ? { background: legendColor(k), borderColor: legendColor(k) } : { borderColor: legendColor(k) }} onClick={toggleIcons} aria-pressed={iconsOn} aria-label={`${label}: icons on the replay`} data-tip="Icons on the replay" />
         ) : (
           <span className="tick-none" />
         )}
         {row.heat && rowRgb ? (
-          <button className={`tick-box heat ${heatIsOn ? 'on' : ''}`} style={heatIsOn ? { background: rgbCss(rowRgb), borderColor: rgbCss(rowRgb) } : { borderColor: rgbCss(rowRgb, 0.8) }} onClick={toggleHeatRow} aria-pressed={heatIsOn} aria-label={`${label}: heatmap`} title={`Heatmap: ${HEAT_LAYERS[row.heat.layer].hint}`} />
+          <button className={`tick-box heat ${heatIsOn ? 'on' : ''}`} style={heatIsOn ? { background: rgbCss(rowRgb), borderColor: rgbCss(rowRgb) } : { borderColor: rgbCss(rowRgb, 0.8) }} onClick={toggleHeatRow} aria-pressed={heatIsOn} aria-label={`${label}: heatmap`} data-tip={`Heatmap: ${HEAT_LAYERS[row.heat.layer].hint}`} />
         ) : (
-          <span className="tick-none" title="No heatmap for this kind" />
+          <span className="tick-none" data-tip="No heatmap for this kind" />
         )}
       </span>
     </li>
@@ -268,10 +268,10 @@ export function RightPanel(p: RightProps) {
         </header>
         <div className="layer-head">
           <span />
-          <button onClick={() => update(anyIcons ? { hidden: [...LEGEND_KEYS] } : { replayOn: true, hidden: [] })} title={anyIcons ? 'Hide every icon and path' : 'Show every icon and path'}>
+          <button onClick={() => update(anyIcons ? { hidden: [...LEGEND_KEYS] } : { replayOn: true, hidden: [] })} data-tip={anyIcons ? 'Hide every icon and path' : 'Show every icon and path'}>
             Icons
           </button>
-          <button onClick={() => update(allHeat(!anyHeat))} title={anyHeat ? 'Hide every heatmap' : 'Show every heatmap'}>
+          <button onClick={() => update(allHeat(!anyHeat))} data-tip={anyHeat ? 'Hide every heatmap' : 'Show every heatmap'}>
             Heat
           </button>
         </div>
@@ -287,17 +287,17 @@ export function RightPanel(p: RightProps) {
           ))}
         </ul>
         <div className="layer-settings">
-          <label className="icon-size" title="Size of the icons on the map">
+          <label className="icon-size" data-tip="Size of the icons on the map">
             Icon size
             <input type="range" min={0.6} max={4} step={0.1} value={view.iconScale} onChange={(e) => update({ iconScale: Number(e.target.value) })} />
             <span>{Math.round(view.iconScale * 100)}%</span>
           </label>
-          <label className="icon-size" title="Thickness of the paths on the map">
+          <label className="icon-size" data-tip="Thickness of the paths on the map">
             Path width
             <input type="range" min={0.5} max={4} step={0.1} value={view.pathWidth} onChange={(e) => update({ pathWidth: Number(e.target.value) })} />
             <span>x{view.pathWidth.toFixed(1)}</span>
           </label>
-          <label className="icon-size" title="How solid the paths are (lower: see-through, higher: solid)">
+          <label className="icon-size" data-tip="How solid the paths are (lower: see-through, higher: solid)">
             Path opacity
             <input type="range" min={0.3} max={7.5} step={0.1} value={view.pathAlpha} onChange={(e) => update({ pathAlpha: Number(e.target.value) })} />
             <span>x{view.pathAlpha.toFixed(1)}</span>

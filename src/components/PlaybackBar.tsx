@@ -59,7 +59,7 @@ export function PlaybackBar({ t, duration, playing, speed, events, active, hover
 
   return (
     <div className="playback">
-      <button className="play" onClick={onToggle} aria-label={playing ? 'Pause' : 'Play'} title="Play / pause (Space)">
+      <button className="play" onClick={onToggle} aria-label={playing ? 'Pause' : 'Play'} data-tip="Play / pause (Space)">
         {playing ? (
           <svg viewBox="0 0 16 16" width="16" height="16"><rect x="3" y="2" width="3.5" height="12" rx="1" fill="currentColor" /><rect x="9.5" y="2" width="3.5" height="12" rx="1" fill="currentColor" /></svg>
         ) : (
@@ -74,7 +74,7 @@ export function PlaybackBar({ t, duration, playing, speed, events, active, hover
           <div
             className="storm-band"
             style={{ left: `${(STORM_FROM_MS / duration) * 100}%` }}
-            title="Storm deaths happen only from minute 10.9 on (seen in the data). Where the storm is, is not logged: it is needed in the telemetry next time."
+            data-tip="Storm deaths happen only from minute 10.9 on (seen in the data). Where the storm is, is not logged: it is needed in the telemetry next time."
           >
             storm
           </div>
@@ -90,7 +90,7 @@ export function PlaybackBar({ t, duration, playing, speed, events, active, hover
                 onMouseEnter={() => onPoint(e)}
                 onMouseLeave={() => onPoint(null)}
                 onClick={() => onSeek(e[0])}
-                title={`${formatDuration(e[0])} · ${EVENT_STYLE[e[1]].label}`}
+                data-tip={`${formatDuration(e[0])} · ${EVENT_STYLE[e[1]].label}`}
               />
             ))}
           {active && duration > 0 && !ticks.includes(active) && (
