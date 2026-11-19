@@ -80,7 +80,7 @@ export function PlayerCard({ story: s, title, active, onPoint, onSeek, onClose, 
       </ul>
       {onOnlyThisMatch && (
         <button className="go-btn" onClick={onOnlyThisMatch}>
-          Replay only this match
+          Replay this match
         </button>
       )}
     </aside>

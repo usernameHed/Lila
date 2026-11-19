@@ -138,7 +138,6 @@ interface StageProps {
   terrain: boolean;
   onView: (patch: { view3d?: boolean; exaggeration?: number; terrain?: boolean; mono?: boolean }) => void;
   /** Replay only this match (from the details card). */
-  onOnlyMatch: (id: string) => void;
   iconScale: number;
   pathWidth: number;
   pathAlpha: number;
@@ -219,7 +218,7 @@ function useLast<T>(value: T | null, fading: boolean): T | null {
 
 /** Every selected match on its map, all starting together at 0:00, with one playback. */
 export function ReplayStage(props: StageProps) {
-  const { summaries, uvUnits, mono, hidden, hover, onPointedKind, under, mapConfig, view3d, exaggeration, terrain, onView, onOnlyMatch, iconScale, pathWidth, pathAlpha, emptyHint, picked, onPicked } = props;
+  const { summaries, uvUnits, mono, hidden, hover, onPointedKind, under, mapConfig, view3d, exaggeration, terrain, onView, iconScale, pathWidth, pathAlpha, emptyHint, picked, onPicked } = props;
   const [loaded, setLoaded] = useState<Match[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -540,7 +539,14 @@ export function ReplayStage(props: StageProps) {
               setFocus(null);
               setPinned(null);
             }}
-            onOnlyThisMatch={summaries.length > 1 ? () => onOnlyMatch(focus.match) : undefined}
+            onOnlyThisMatch={() => {
+              // Picks this match's player (the other matches hide, the list stays) and plays it from 0:00.
+              const f = humanOf(focus.match);
+              if (f) onPicked([f]);
+              setPinned(null);
+              play.seek(0);
+              if (!play.playing) play.toggle();
+            }}
             note={(() => {
               const bots = focusMatch?.players.filter((x) => x.bot).length ?? 0;
               return bots && !story.bot ? `${bots} bots were recorded in this match too: pick one under the match in the list, or click a dashed orange path.` : undefined;
