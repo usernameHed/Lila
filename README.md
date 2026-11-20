@@ -42,8 +42,9 @@ On a 16:9 screen (1366x768 to 1920x1080) everything fits without scrolling:
   loot, bot kills, deaths by bot, deaths by player, power positions (kills per minute spent), raised kills (from 3 m
   above the ground). Each heatmap takes the color of its icons. Hover a row: it explains itself, its markers pulse
   on the map and their ticks light up on the timeline. Sliders for icon size, path width and path opacity.
-  Icons: the player with a crossed-out bot where a player killed a bot (where the player stood), a crosshair for other kills, a skull over crossed bones where
-  a player died, a dead monster for a bot's death, a diamond for loot and the storm.
+  Icons: an orange robot head under a crosshair where a player killed a bot (where the player stood), the same head
+  without the crosshair for a bot's death, a crosshair for other kills, a skull over crossed bones where a player
+  died, a diamond for loot and the storm.
   Hovering a path in 2D highlights it; click it for the player's card (each event with its icon).
 - **Map picker**: the three maps as tiles (picture, name, matches), the same tiles on the Data page.
   Paths keep the same peak brightness whatever the number of matches shown.

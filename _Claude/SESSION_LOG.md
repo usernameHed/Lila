@@ -15,6 +15,12 @@ about 300 lines, move the oldest entries word for word to `SESSION_HISTORY.md` (
 
 ---
 
+## 2026-11-20 (desktop session): bot icons, bot path hover
+
+- Ugo: "Bot death" = the "Bot killed" robot head without the crosshair (`botHead`); "Bot killed" in orange (#ff9f1c);
+  both bigger (8 and 7). Old monster / spider icons removed. Hovering "Bot path" in Elements now fades the player
+  paths (separate `fadeBots` in draw.ts); hovering "Player path" fades the bots. Checked in the browser.
+
 ## 2026-11-19 (desktop session): "Bot killed" icon, take three
 
 - Ugo: change the "Bot killed" icon. Showed 4 drawn options; he picked a white crosshair over a robot head

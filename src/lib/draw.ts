@@ -17,7 +17,8 @@ interface Look {
   hideHumans?: boolean;
   hideBots?: boolean;
   off?: ReadonlySet<number>; // players of this match unticked in the list
-  fade?: number; // something else is hovered: paths step back
+  fade?: number; // something else is hovered: player paths step back
+  fadeBots?: number; // the same for bot paths (hovering one path kind keeps only that kind bright)
   width: number; // path thickness factor (setting)
   alpha: number; // path opacity factor (setting)
 }
@@ -65,7 +66,8 @@ export function drawMatches(ctx: CanvasRenderingContext2D, matches: Match[], uvU
       hideHumans: hidden.has('humanPath'),
       hideBots: hidden.has('botPath'),
       off: offOf(o.offPlayers, m.id),
-      fade: 1 - HOVER_FADE.paths * (o.dim ?? 0) * (o.hover === 'humanPath' || o.hover === 'botPath' ? 0 : 1),
+      fade: o.hover === 'humanPath' ? 1 : 1 - HOVER_FADE.paths * (o.dim ?? 0),
+      fadeBots: o.hover === 'botPath' ? 1 : 1 - HOVER_FADE.paths * (o.dim ?? 0),
       width: o.pathWidth ?? 1,
       alpha: o.pathAlpha ?? 1,
     }),
@@ -118,7 +120,7 @@ function drawPaths(ctx: CanvasRenderingContext2D, match: Match, uvUnits: number,
     if (!n) continue;
     const color = p.bot ? PATH_COLOR.bot : look.human;
     const width = (p.bot ? 2 : 2.4) * (look.faint ? 0.8 : 1) * look.width;
-    const alpha = Math.min(1, (p.bot ? 0.85 : 0.95) * (look.faint ? (look.density ?? 0.22) : 1) * look.alpha) * (look.fade ?? 1);
+    const alpha = Math.min(1, (p.bot ? 0.85 : 0.95) * (look.faint ? (look.density ?? 0.22) : 1) * look.alpha) * ((p.bot ? look.fadeBots : look.fade) ?? 1);
     ctx.beginPath();
     for (let i = 0; i < n * 3; i += 3) {
       const { x, y } = px(p.path[i + 1], p.path[i + 2]);
