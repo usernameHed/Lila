@@ -409,6 +409,8 @@ select {
 .tick-box { position: relative; width: 14px; height: 14px; flex: none; border: 1.5px solid; border-radius: 4px; box-sizing: border-box; }
 .tick-box.on::after { content: ''; position: absolute; left: 3.5px; top: 0.5px; width: 3.5px; height: 7px; border: solid #0e0f12; border-width: 0 2px 2px 0; transform: rotate(45deg); }
 .legend .legend-icon { display: grid; place-items: center; width: 20px; height: 20px; flex: none; }
+/* Elements list: bigger icons (24 px) overflowing their 20 px slot, so rows keep their height */
+.layer-list .legend-icon { width: 24px; overflow: visible; }
 
 /* Filters: rows of one-click chips, each with the number of matches it would leave */
 .chips { display: flex; flex-wrap: wrap; gap: 3px; }

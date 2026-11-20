@@ -20,6 +20,7 @@ about 300 lines, move the oldest entries word for word to `SESSION_HISTORY.md` (
 - Ugo: "Bot death" = the "Bot killed" robot head without the crosshair (`botHead`); "Bot killed" in orange (#ff9f1c);
   both bigger (8 and 7). Old monster / spider icons removed. Hovering "Bot path" in Elements now fades the player
   paths (separate `fadeBots` in draw.ts); hovering "Player path" fades the bots. Checked in the browser.
+- Ugo: bigger icons in the Elements list only: 24 px (was 18), overflowing their 20 px slot so rows keep their height.
 
 ## 2026-11-19 (desktop session): "Bot killed" icon, take three
 

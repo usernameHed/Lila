@@ -228,7 +228,7 @@ function ElementLine({ k, p, showTip }: { k: LegendKey; p: RightProps; showTip: 
       <button className="layer-label" onClick={toggle} aria-pressed={on}>
         <span className={`tick-box ${on ? 'on' : ''}`} style={on ? { background: legendColor(k), borderColor: legendColor(k) } : { borderColor: legendColor(k) }} aria-hidden />
         <span className="legend-icon">
-          <LegendIcon k={k} />
+          <LegendIcon k={k} size={24} />
         </span>
         <span className="legend-label">{legendLabel(k)}</span>
         {count !== null && <span className="count">{count}</span>}
