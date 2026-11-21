@@ -1,11 +1,33 @@
-# Three things I learned about LILA BLACK with the tool
+# What I learned about LILA BLACK, and how I built the tool to see it
 
-**TL;DR:** the storm only kills after minute 10.9 and takes the fullest bags; in this data the game is played
-against bots, not players; and Ambrose Valley's center holds half the deaths for no better loot than the south.
+**TL;DR:** the storm only kills after minute 10.9 and takes the fullest bags; bots cause 91% of player deaths, and
+43% of players played a single match, most of them dying to a bot in it; Ambrose Valley's center holds half the
+deaths for no better loot than the south.
 
-Data: 796 matches, 3 maps, Feb 10-14 2026. Every number comes from `python3 pipeline/insights.py`, every chart
-from `pipeline/figures.py`, and every link opens the same view in the tool. A fourth finding, about players who
-never come back, and the full proposals table are in [PRODUCT.md](PRODUCT.md).
+## The tool
+
+I chose to make this a tool that is easy to use in the browser, hosted on my own website for now
+(https://lila.belfiore.me), rather than an artifact: it lets me manage the code and the data better. I built it to
+be usable straight away, in the simplest way possible. For that, people usually forget the basics, the things that
+make a tool robust and usable:
+
+- Runs in the browser, and installs as a Chromium web app (a real app later, if needed).
+- Works offline as much as possible after the first load.
+- Takes new data with a simple drag and drop (the Data tab).
+- Undo and redo for data, selection and settings: very important, and often forgotten.
+- Optimistic UI while things load in the background.
+- Responsive UI, on a phone as on a PC.
+
+## Main data
+
+- 796 matches
+- 248 players (and 92 bots recorded)
+- 89,016 events
+- 3 maps
+- 5 days (Feb 10-14, 2026)
+
+Every number below comes from `python3 pipeline/insights.py`, every chart from `pipeline/figures.py`, and every
+link opens the same view in the tool. The full proposals table is in [PRODUCT.md](PRODUCT.md).
 
 ---
 
@@ -41,7 +63,7 @@ telling them.
 
 ---
 
-## 2. In this data, LILA BLACK is a PvE game: bots make every fight
+## 2. Bots make every fight, and new players leave after dying to one
 
 **What caught my eye.** In the replays, the only other moving dots are bots, and nearly every kill icon is a bot
 kill. [See where bots kill players on Ambrose Valley](https://lila.belfiore.me/#mode=replay&map=AmbroseValley&match=all&layer=deaths&deaths=bots&under=1&replay=0).
@@ -54,19 +76,30 @@ kill. [See where bots kill players on Ambrose Valley](https://lila.belfiore.me/#
 - Players killed **2,240 bots and 3 players**: 99.9% of kills are bots.
 - Of 445 player deaths, **90.6% are to bots**, 8.8% to the storm and 0.7% (3) to another player.
 
-This is either the export (only one human per match kept) or the real matchmaking (few players online, rooms
+It may also cost players (a correlation to test, not proof). **43% of players (107 of 248) played a single match**, and that only match ended in a
+death to a bot 61.7% of the time; for players who came back, 48.5% of their matches did. Next-day return is 6% to
+18% depending on the day.
+
+![Players by matches played](public/figures/players.png)
+
+![New players per day and next-day return](public/figures/return.png)
+
+One human per match is either the export (only one kept) or the real matchmaking (few players online, rooms
 filled with bots). I would ask the data team first, because the two answers lead to very different actions.
 
 **What I would do.**
-- If it is real, bot spawns and patrols are the tool that decides where fights happen. Place them on purpose,
+- First matches: for a player's first 3 matches, fewer or softer bots near the spawn and the first POIs, and an
+  extraction point shown from minute 0. A/B test it on new players.
+- If one human per match is real, bot spawns and patrols are the tool that decides where fights happen. Place them on purpose,
   around the routes and POIs you want contested.
 - Check that PvP spaces (chokepoints, long sight lines over open ground) still have a reason to exist in a
   mostly PvE match, or give them one with bots.
-- Metrics: kills per match and time to the first fight, per area; once matches hold more humans, player vs
-  player fights per match.
+- Metrics: first-match survival, matches per player and next-day return (for new players); kills per match and
+  time to the first fight, per area; once matches hold more humans, player vs player fights per match.
 
 **Why a level designer should care.** An extraction map is built for players to run into each other. If they
-don't, the combat layout is really a bot layout, and should be designed as one.
+don't, the combat layout is really a bot layout, and should be designed as one. And where the first bots stand is
+level design too: it decides whether a new player's first match is their last.
 
 ---
 
@@ -108,6 +141,44 @@ becomes a trap for new players.
 
 ---
 
-*Limits: one human per match, 5 days, Feb 14 partial. "Survived" means no death was logged (the game does not
-log extraction). Time spent is counted from position samples (about one every 5 s), so it measures time, not
-distance. What the game should log next to answer more is in the tool's Overview and in PRODUCT.md.*
+---
+
+## What to log next
+
+For a more useful tool, we would need a few more data points. They could easily be added to the game code with a
+few prompts in Claude, and would help more than the current data. Today a kill holds only the killer's position
+and the time: **no victim, no aim**.
+
+- **Kills and deaths**: the other side's id and position, weapon, distance, line of sight → a line of fire for every fight.
+- **Facing** on position samples, 1-2 s sampling in combat → sightlines.
+- **Storm zone**: its edge or radius every few seconds. **Needed next time**: today only its victims are logged, so
+  the moving storm cannot be shown (the timeline marks when it starts killing, minute 10.9).
+- **Extraction** events → a real extraction rate (today "survived" = no death logged).
+- **Match start** (humans and bots in the match, spawn point) and **wall-clock time** → matchmaking and
+  first-match analysis.
+- **Level geometry** (collision mesh or navmesh export) → real line of sight with walls and cover, and whether each
+  power position can be reached from several routes.
+- **Loot value**, every bot logged, test accounts flagged.
+
+## Data we had to get right
+
+Notes from my Claude agent; the full list, with what I decided for each, is in [ARCHITECTURE.md](ARCHITECTURE.md).
+
+- **Coordinates.** `u = (x - originX) / scale`, `v = (z - originZ) / scale`, image y flipped; `y` is height.
+  Checked three ways: the README's worked example (pixel 78, 890) as a test, all 89,104 rows inside their map,
+  paths on roads. The minimaps are 4320, 2160 and 9000 px, not 1024: mapping in UV makes it harmless.
+- **Timestamps are seconds, typed as milliseconds.** Read as ms, matches last under 1 s; as seconds, 13 s to 15 min.
+- **Bots by movement, not by id.** 17 files with numeric (bot-style) ids move and loot like humans (mostly user
+  1429): classified as humans.
+- **Same event, two meanings.** A human's `BotKill` is "I killed a bot", a bot's is "this bot killed someone":
+  stored by meaning.
+- **One journey exported twice** (a match across midnight, Feb 10 and 11): read once.
+- **Killer → victim pairs**: 36 where both events are recorded, plus 6 inferred (drawn lighter). 95% of fights
+  happen in matches with no bot recorded: there, the data has no victim at all.
+- **Player vs player is 3 events**, each a Kill and a Killed of the same player at the same second and spot, at
+  the end of the match: a trade or a self-kill, the other player's file is missing.
+- **The terrain is an estimate**, from where players and bots walked; walls and buildings are not in the data.
+
+*Limits: one human per match, 5 days, Feb 14 partial. "Survived" means no death was logged. Time spent is counted
+from position samples (about one every 5 s), so it measures time, not distance. "First match" means a player's
+only match in the data: there is no wall clock to order matches within a day.*

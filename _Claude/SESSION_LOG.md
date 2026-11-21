@@ -15,6 +15,11 @@ about 300 lines, move the oldest entries word for word to `SESSION_HISTORY.md` (
 
 ---
 
+## 2026-11-21 (desktop session): INSIGHTS.md carries the Overview
+
+- Ugo: what the Overview says should be in INSIGHTS.md. Added his TL;DR and tool basics, main data, "What to log
+  next", "Data we had to get right"; the "played once" finding folded into insight 2 (bots), still three insights.
+
 ## 2026-11-21 (desktop session): opens on a hanging network
 
 - Ugo: with his VPN off the site hung instead of failing, so the offline copy never showed. Service worker: the page
