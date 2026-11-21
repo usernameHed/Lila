@@ -2,8 +2,8 @@
 // shows; a click reloads onto it, keeping the current view (it is in the URL).
 // Each build writes its name into the app (__BUILD__) and into /build.txt, and the open page compares the two on
 // open, when it comes back to the front, and every 5 minutes. The service worker (offline mode, see
-// src/offline/sw.template.js) never caches /build.txt and asks the network first for the page, so a reload
-// always lands on the new version.
+// src/offline/sw.template.js) never caches /build.txt and opens the page from its cache, so the Update button
+// puts the new page in that cache before reloading.
 import { useSyncExternalStore } from 'react';
 
 declare const __BUILD__: string;
@@ -48,7 +48,15 @@ export function useUpdateReady(): boolean {
   );
 }
 
-export const applyUpdate = () => location.reload();
+export async function applyUpdate() {
+  try {
+    const page = await fetch('/', { cache: 'no-store' });
+    if (page.ok && 'caches' in window) await (await caches.open('lila-offline')).put('/', page);
+  } catch {
+    // the network failed: reload anyway
+  }
+  location.reload();
+}
 
 /** Offline mode: after the first visit, every file of the site is kept in this browser (production only). */
 export function startOffline() {

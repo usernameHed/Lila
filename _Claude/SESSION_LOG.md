@@ -15,6 +15,12 @@ about 300 lines, move the oldest entries word for word to `SESSION_HISTORY.md` (
 
 ---
 
+## 2026-11-21 (desktop session): opens on a hanging network
+
+- Ugo: with his VPN off the site hung instead of failing, so the offline copy never showed. Service worker: the page
+  opens from the cache (no network wait); files not cached give up after 4 s; the Update button puts the fresh page in
+  the cache before reloading (no-store requests skip the worker). Tested on a server that never answers: opens in 41 ms.
+
 ## 2026-11-21 (desktop session): docs rewritten in Ugo's voice
 
 - Ugo: re-check the assignment, rewrite the insights and docs the way he wrote the Overview. INSIGHTS.md, README.md
