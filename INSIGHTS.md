@@ -1,16 +1,20 @@
-# Three things the data says about LILA BLACK
+# Three things I learned about LILA BLACK with the tool
 
-All numbers: 796 matches, Feb 10-14, 2026. Each one is reproducible with `python3 pipeline/insights.py` (charts:
-`pipeline/figures.py`), and every link below opens the matching view in the tool. What to do with these, and a
-fourth finding about players, are in [PRODUCT.md](PRODUCT.md).
+**TL;DR:** the storm only kills after minute 10.9 and takes the fullest bags; in this data the game is played
+against bots, not players; and Ambrose Valley's center holds half the deaths for no better loot than the south.
+
+Data: 796 matches, 3 maps, Feb 10-14 2026. Every number comes from `python3 pipeline/insights.py`, every chart
+from `pipeline/figures.py`, and every link opens the same view in the tool. A fourth finding, about players who
+never come back, and the full proposals table are in [PRODUCT.md](PRODUCT.md).
 
 ---
 
 ## 1. The storm is a clock, and it takes the fullest bags
 
-**What caught my eye.** Storm deaths never show up early. On the
-[storm deaths heatmap](https://lila.belfiore.me/#mode=heat&map=Lockdown&layer=storm) they are scattered all
-over the playable area, not piled up at one edge, as you would expect from a storm that pushes across the map.
+**What caught my eye.** While replaying long matches, storm deaths never showed up early, and they were not at
+the edge of the map, where I expected a closing storm to catch people. They are in the middle.
+[See them on Lockdown](https://lila.belfiore.me/#mode=replay&map=Lockdown&match=all&end=storm) (every run that
+ended in the storm).
 
 **The evidence.**
 
@@ -18,88 +22,92 @@ over the playable area, not piled up at one edge, as you would expect from a sto
 
 ![Storm deaths on each map](public/figures/storm_map.png)
 
-- 0 storm deaths before minute 10.9; all 39 happen between minutes 10.9 and 14.8, each one the last event of its match.
-- Of the 134 matches that last 11 minutes or more, 38 end in a storm death (28%).
-- Storm victims had looted a median of **18 items**, close to survivors (21.5) and more than twice
-  players killed by bots (8). They lose the longest runs: median 12.3 minutes of play.
-- Their death spots span 14% to 90% of the map's width: they were caught in the middle of the map, not at its edges.
+- 0 storm deaths before minute 10.9. All 39 happen between minutes 10.9 and 14.8, each one the last event of its match.
+- 28% of the matches that last 11 minutes or more end in a storm death (38 of 134).
+- Storm victims had looted 18 items (median), almost as much as survivors (21.5) and more than twice as much as
+  players killed by bots (8). They also lose the longest runs: 12.3 minutes of play.
+- Their death spots go from 14% to 90% of the map's width: caught in the middle, not at the edges.
 
-**What to do.**
-- Look at extraction points from where storm victims stood at minute 10: are they reachable in time, and visible?
-- Add a clear "extract now" cue around minute 10, or an extraction point closer to the mid-map areas where
-  late players are found.
-- Metrics: storm deaths per match (target: down), extraction rate of 10+ minute runs (up), retention after a
-  storm death (a 12-minute run lost with a full bag is the worst feeling the game can give).
+**What I would do.**
+- From where the storm victims stood at minute 10, check that an extraction point is reachable in time, and visible.
+- Add a clear "extract now" cue around minute 10, or an extraction point closer to the mid-map areas where late
+  players are.
+- Metrics: storm deaths per match (down), extraction rate of runs longer than 10 minutes (up), and whether players
+  come back after a storm death. Losing 12 minutes and a full bag is the worst feeling this game can give.
 
-**Why a level designer should care.** Extraction placement and routes are pure level design. A storm death is
-rarely the player's fault if they did not know where to go; it is a map that did not tell them.
+**Why a level designer should care.** Where the extraction points are, and how you reach them, is pure level
+design. A player who dies to the storm with a full bag usually did not know where to go: that is the map not
+telling them.
 
 ---
 
 ## 2. In this data, LILA BLACK is a PvE game: bots make every fight
 
-**What caught my eye.** Watching replays, the only other dots on the map are bots, and every red marker is a bot kill.
+**What caught my eye.** In the replays, the only other moving dots are bots, and nearly every kill icon is a bot
+kill. [See where bots kill players on Ambrose Valley](https://lila.belfiore.me/#mode=replay&map=AmbroseValley&match=all&layer=deaths&deaths=bots&under=1&replay=0).
 
 **The evidence.**
 
 ![Who players kill, and what kills them](public/figures/combat.png)
 
-- 794 of 796 matches carry exactly one human journey; 2 carry two.
-- Humans killed **2,240 bots and 3 humans**: 99.9% of kills are bots.
-- Of 445 human deaths, **90.6% are to bots**, 8.8% to the storm, 0.7% (3) to other humans.
+- 794 of 796 matches have exactly one human; 2 have two.
+- Players killed **2,240 bots and 3 players**: 99.9% of kills are bots.
+- Of 445 player deaths, **90.6% are to bots**, 8.8% to the storm and 0.7% (3) to another player.
 
-This is either the export (one human per match was kept) or real matchmaking (low concurrency, rooms filled
-with bots). Worth asking the data team first: the two readings lead to very different actions.
+This is either the export (only one human per match kept) or the real matchmaking (few players online, rooms
+filled with bots). I would ask the data team first, because the two answers lead to very different actions.
 
-**What to do.**
-- If it is real: bot spawns and patrols are the level design tool that decides where fights happen. Place
-  them on purpose, around the routes and POIs you want contested.
-- Check whether PvP-oriented spaces (chokepoints, sight lines across open ground) still earn their place in
-  a mostly PvE match, or need bots to give them a reason.
-- Metrics: kills per match and time to first fight per area; once more humans share a match, PvP encounter
-  rate per match.
+**What I would do.**
+- If it is real, bot spawns and patrols are the tool that decides where fights happen. Place them on purpose,
+  around the routes and POIs you want contested.
+- Check that PvP spaces (chokepoints, long sight lines over open ground) still have a reason to exist in a
+  mostly PvE match, or give them one with bots.
+- Metrics: kills per match and time to the first fight, per area; once matches hold more humans, player vs
+  player fights per match.
 
-**Why a level designer should care.** In an extraction shooter, the map is designed for players to run into
-each other. If they do not, the combat layout is really a bot layout, and should be designed as one.
+**Why a level designer should care.** An extraction map is built for players to run into each other. If they
+don't, the combat layout is really a bot layout, and should be designed as one.
 
 ---
 
 ## 3. Ambrose Valley: the center is a death trap that pays no better than the south
 
 **What caught my eye.** On Ambrose Valley (71% of all matches), the
-[kills heatmap](https://lila.belfiore.me/#mode=heat&map=AmbroseValley&layer=kills) is one bright blob in the
-middle, while the [loot heatmap](https://lila.belfiore.me/#mode=heat&map=AmbroseValley&layer=loot) is spread
-over many POIs, with strong spots in the south.
+[bot kills heatmap](https://lila.belfiore.me/#mode=replay&map=AmbroseValley&match=all&layer=kills&kills=bots&under=1&replay=0)
+is one bright blob in the middle, while the
+[loot heatmap](https://lila.belfiore.me/#mode=replay&map=AmbroseValley&match=all&layer=loot&under=1&replay=0)
+is spread over many POIs, with strong spots in the south.
 
-**The evidence** (map cut in 3 x 3 regions):
+**The evidence** (the map cut in 3 x 3 regions):
 
 ![Ambrose Valley: kills and loot](public/figures/ambrose_heat.png)
 
 ![Share of time, loot and deaths by region](public/figures/ambrose_regions.png)
 
-| Region | Share of time spent | Share of loot | Share of deaths | Deaths per unit of time |
+| Region | Time spent | Loot | Deaths | Deaths per minute spent |
 |---|---|---|---|---|
 | Center | 35.4% | 37.4% | 53.5% | 1.5x the map average |
 | South-center | 18.6% | 23.0% | 6.6% | 0.35x |
 | West-center | 17.9% | 16.2% | 24.4% | 1.4x |
 
-The south-center gives *more* loot per minute spent than the center (1.24 vs 1.06 of its share of time) at a
-quarter of the death rate. Across the whole map, the busiest 10% of visited cells hold 49% of the time spent
-and 77% of the loot.
+The south-center gives more loot per minute than the center (1.24 against 1.06 of its share of time), for a
+quarter of the death rate. Over the whole map, the busiest 10% of the visited ground holds 49% of the time
+spent and 77% of the loot.
 
-**What to do.**
-- Make risk pay: raise the value (not the count) of loot in the center, or add a reason to fight there (an
-  objective, a high-tier container), so dying there is a bet, not a tax.
-- Or tone down the bot pressure in the center (insight 2: bots cause 91% of deaths) and add some to the
-  south, where loot is nearly free.
-- Metrics: deaths per minute and loot per minute by region (the goal is that riskier areas pay more),
-  survival rate on Ambrose Valley (55.7% die now), and spread of time spent across POIs.
+**What I would do.**
+- Make risk pay: raise the value (not the number) of the items in the center, or add a reason to fight there
+  (an objective, a high-tier container), so that dying there is a bet, not a tax.
+- Or lower the bot pressure in the center (bots cause 91% of deaths, see insight 2) and add some in the south,
+  where loot is nearly free.
+- Metrics: deaths per minute and loot per minute by region (riskier areas should pay more), survival rate on
+  Ambrose Valley (55.7% of runs die today), and how evenly time is spread over the POIs.
 
-**Why a level designer should care.** Risk and reward by area is the core loop of an extraction map. Right
-now the safest route to a full bag is also the most rewarding one, so experienced players will find it, and
-the center becomes a trap for new ones.
+**Why a level designer should care.** Risk against reward, area by area, is the core loop of an extraction map.
+Today the safest route to a full bag is also the best one: experienced players will find it, and the center
+becomes a trap for new players.
 
 ---
 
-*Caveats: one human per match, 5 days, Feb 14 partial; "survived" means no death event (extraction is not
-logged), and time spent is position samples (every ~5 s), so it measures time, not distance.*
+*Limits: one human per match, 5 days, Feb 14 partial. "Survived" means no death was logged (the game does not
+log extraction). Time spent is counted from position samples (about one every 5 s), so it measures time, not
+distance. What the game should log next to answer more is in the tool's Overview and in PRODUCT.md.*

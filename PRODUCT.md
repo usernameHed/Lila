@@ -18,9 +18,9 @@ days rather than weeks.
 
 | Who | Decision it supports | Where in the tool |
 |---|---|---|
-| Level designers | Which POIs, routes and corners are used, ignored or deadly; whether players reach extraction before the storm; whether a layout change actually moved players | Heatmaps (traffic, loot, kills, deaths, storm) per day; compare the days before and after a change |
-| Game designers | Whether bots are too strong or badly placed: bots cause 91% of player deaths | "Position when killed: bots" heatmap; replays with bot paths and killer → victim lines |
-| Product | Why new players stop | Match replay, Players "Played only once", Select all |
+| Level designers | Which POIs, routes and corners are used, ignored or deadly; whether players reach extraction before the storm; whether a layout change actually moved players | Heatmaps (traffic, loot, bot kills, deaths) per day, storm deaths on the replay; compare the days before and after a change |
+| Game designers | Whether bots are too strong or badly placed: bots cause 91% of player deaths | "Deaths by bot" heatmap; replays with bot paths and killer → victim arrows (Game: Bots) |
+| Product | Why new players stop | Match replay of many matches at once, "Ended: killed by a bot" filter |
 | Everyone | A shared view instead of a screenshot in a meeting | Every view is a link (the links below open exactly the view shown) |
 
 ## Decision support: what the data says
@@ -44,7 +44,7 @@ days rather than weeks.
 | New players | 99 | 65 | 44 | 32 |
 | Back the next day | 16 (16%) | 4 (6%) | 8 (18%) | 2 (6%) |
 
-**See it**: [the 84 Ambrose Valley matches of players who never came back, all at once](https://lila.belfiore.me/#mode=replay&map=AmbroseValley&match=all&players=once)
+**See it**: [every Ambrose Valley run that ended in a death to a bot, all at once](https://lila.belfiore.me/#mode=replay&map=AmbroseValley&match=all&end=bot)
 (where they went, where they died).
 
 ### 2. Bots make every fight
@@ -57,7 +57,7 @@ days rather than weeks.
 | Killers of players | 403 (90.6%) | 39 (8.8%) | 3 (0.7%) |
 
 794 of 796 matches carry a single human. For a new player, the game *is* the bots.
-**See it**: [where players get killed by bots, Ambrose Valley](https://lila.belfiore.me/#mode=heat&map=AmbroseValley&layer=deaths&deaths=bots).
+**See it**: [where players get killed by bots, Ambrose Valley](https://lila.belfiore.me/#mode=replay&map=AmbroseValley&match=all&layer=deaths&deaths=bots&under=1&replay=0).
 
 ### 3. The storm is a clock, and it takes the fullest bags
 
@@ -72,7 +72,7 @@ days rather than weeks.
 
 28% of the matches that last 11 minutes or more end in a storm death. Storm victims had looted a median 18
 items (players killed by bots: 8), and died in the middle of the map, not at an edge.
-**See it**: [storm deaths over traffic, Lockdown](https://lila.belfiore.me/#mode=heat&map=Lockdown&layer=traffic,storm).
+**See it**: [every Lockdown run that ended in the storm, over traffic](https://lila.belfiore.me/#mode=replay&map=Lockdown&match=all&end=storm&layer=traffic&under=1).
 
 ### 4. Ambrose Valley's center is a death trap that pays no better than the south
 
@@ -86,7 +86,7 @@ items (players killed by bots: 8), and died in the middle of the map, not at an 
 | South-center | 18.6% | 23.0% | 6.6% | 0.35x |
 | West-center | 17.9% | 16.2% | 24.4% | 1.4x |
 
-**See it**: [kills over loot, Ambrose Valley](https://lila.belfiore.me/#mode=heat&map=AmbroseValley&layer=loot,kills).
+**See it**: [kills over loot, Ambrose Valley](https://lila.belfiore.me/#mode=replay&map=AmbroseValley&match=all&layer=loot,kills&kills=bots&under=1&replay=0).
 
 ## Proposals, most leverage first
 

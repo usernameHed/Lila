@@ -15,6 +15,12 @@ about 300 lines, move the oldest entries word for word to `SESSION_HISTORY.md` (
 
 ---
 
+## 2026-11-21 (desktop session): docs rewritten in Ugo's voice
+
+- Ugo: re-check the assignment, rewrite the insights and docs the way he wrote the Overview. INSIGHTS.md, README.md
+  (TL;DR, 10-step walkthrough, "Environment variables: none") and ARCHITECTURE.md rewritten first person, plain; numbers
+  re-run (unchanged). Dead links fixed (`mode=heat`, `layer=storm`, `players=once`) in INSIGHTS / PRODUCT; checked in Chrome.
+
 ## 2026-11-20 (desktop session): bot icons, bot path hover
 
 - Ugo: "Bot death" = the "Bot killed" robot head without the crosshair (`botHead`); "Bot killed" in orange (#ff9f1c);
