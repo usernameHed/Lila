@@ -1,8 +1,10 @@
 # LILA BLACK Player Journey Visualizer
 
-> [!IMPORTANT]
-> ## ▶ Live: [lila.belfiore.me](https://lila.belfiore.me)
-> Opens in the browser, no login, no setup. Works on a computer and on a phone.
+<p align="center">
+  <a href="https://lila.belfiore.me"><img alt="Open the live tool: lila.belfiore.me" height="56" src="https://img.shields.io/badge/%E2%96%B6%20Open%20the%20live%20tool-lila.belfiore.me-e5484d?style=for-the-badge&labelColor=16181d"></a>
+  <br>
+  <sub>Opens in the browser, no login, no setup. Works on a computer and on a phone.</sub>
+</p>
 
 A browser tool for Level Designers: open the link, pick a map, and see where players walk, fight, loot and die on
 LILA BLACK's three maps. Built from 5 days of production telemetry (Feb 10-14, 2026) for LILA Games' Product
