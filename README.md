@@ -1,7 +1,7 @@
 # LILA BLACK Player Journey Visualizer
 
 <p align="center">
-  <a href="https://lila.belfiore.me"><img alt="Open the live tool: lila.belfiore.me" height="56" src="https://img.shields.io/badge/%E2%96%B6%20Open%20the%20live%20tool-lila.belfiore.me-e5484d?style=for-the-badge&labelColor=16181d"></a>
+  <a href="https://lila.belfiore.me"><img alt="Open the live tool: lila.belfiore.me" width="520" src="https://img.shields.io/badge/%E2%96%B6%20Open%20the%20live%20tool-lila.belfiore.me-e5484d?style=for-the-badge&labelColor=16181d"></a>
   <br>
   <sub>Opens in the browser, no login, no setup. Works on a computer and on a phone.</sub>
 </p>
