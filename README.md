@@ -14,6 +14,28 @@ Read next: [INSIGHTS.md](INSIGHTS.md) (three things I learned about the game), [
 (how it is built, the coordinate mapping, my assumptions, the trade-offs) and [PRODUCT.md](PRODUCT.md) (who it is
 for, what I would change in the game, what the game should log next).
 
+## See it
+
+![Every path, every kill, every loot](docs/media/paths.gif)
+
+| 10 matches together, then in 3D | 100 matches on one clock |
+|---|---|
+| ![10 matches together, then in 3D](docs/media/replay-3d.gif) | ![100 matches on one clock](docs/media/replay-100.gif) |
+
+**Hover, zoom, open a player**: point at a death and its tick lights up on the timeline and in the player's card.
+
+![Hover, zoom, open a player](docs/media/events.gif)
+
+**Heatmaps**: traffic, loot, then kills and deaths, and the same heat in 3D.
+
+| Traffic, loot, then kills and deaths | Kill zones, then the same heat in 3D |
+|---|---|
+| ![Traffic, loot, then kills and deaths](docs/media/heatmaps.gif) | ![Kill zones, then the same heat in 3D](docs/media/heat-3d.gif) |
+
+**Ready for the next export**: drop a zip or a folder, processed in the browser and never uploaded.
+
+![The Data page: drop a zip or a folder; the three maps and their match counts](docs/media/data.jpg)
+
 ## Walkthrough (3 minutes)
 
 1. **Match replay** (the landing page): pick a map (Ambrose Valley, Grand Rift, Lockdown) and a day (or all five).
@@ -97,4 +119,5 @@ the "Edit Cloudflare Workers" template).
 | `src/workers/loadData.ts` | Reads dropped data in a Web Worker: unzip (fflate), parquet (hyparquet), pipeline |
 | `src/components/` | Screens and parts: replay, map canvas, 3D view, playback bar, panels |
 | `src/offline/` | The service worker that keeps the site working offline |
+| `docs/media/` | The GIFs and screenshot in this README (not deployed) |
 | `_Claude/`, `CLAUDE.md`, `.claude/agents/` | How I built it with Claude: the brief, data notes, decisions, session log |

@@ -15,6 +15,11 @@ about 300 lines, move the oldest entries word for word to `SESSION_HISTORY.md` (
 
 ---
 
+## 2026-11-21 (desktop session): GIFs in the README
+
+- Ugo: add the GIFs and screenshot from his website's page (Ugo repo, `projects/professional/player-journey/media`).
+  The 6 MP4 clips turned back into GIFs (480 px, 10 fps, 22 MB in all) + data.jpg in `docs/media/` (not deployed); "See it" section.
+
 ## 2026-11-21 (desktop session): Overview tab removed
 
 - Ugo: the Overview's content is INSIGHTS.md now, so the site drops it. Tabs = Match replay / Data; the site opens on
