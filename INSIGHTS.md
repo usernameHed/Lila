@@ -44,7 +44,7 @@ the edge of the map, where I expected a closing storm to catch people. They are 
 [See them on Lockdown](https://lila.belfiore.me/#mode=replay&map=Lockdown&match=all&end=storm) (every run that
 ended in the storm).
 
-![100 matches on one clock: the storm band starts at minute 10.9 on the timeline](docs/media/replay-100.gif)
+![100 matches on one clock](docs/media/replay-100.gif)
 
 **The evidence.**
 
