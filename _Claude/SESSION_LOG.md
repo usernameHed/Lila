@@ -19,6 +19,7 @@ about 300 lines, move the oldest entries word for word to `SESSION_HISTORY.md` (
 
 - Ugo: add the GIFs and screenshot from his website's page (Ugo repo, `projects/professional/player-journey/media`).
   The 6 MP4 clips turned back into GIFs (480 px, 10 fps, 22 MB in all) + data.jpg in `docs/media/` (not deployed); "See it" section.
+  Then the same GIFs in INSIGHTS.md: tool section, insight 1 (100 matches), insight 3 (heatmaps).
 
 ## 2026-11-21 (desktop session): Overview tab removed
 

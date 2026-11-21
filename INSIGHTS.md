@@ -18,6 +18,12 @@ make a tool robust and usable:
 - Optimistic UI while things load in the background.
 - Responsive UI, on a phone as on a PC.
 
+![Every path, every kill, every loot](docs/media/paths.gif)
+
+| 10 matches together, then in 3D | Hover, zoom, open a player |
+|---|---|
+| ![10 matches together, then in 3D](docs/media/replay-3d.gif) | ![Hover, zoom, open a player](docs/media/events.gif) |
+
 ## Main data
 
 - 796 matches
@@ -37,6 +43,8 @@ link opens the same view in the tool. The full proposals table is in [PRODUCT.md
 the edge of the map, where I expected a closing storm to catch people. They are in the middle.
 [See them on Lockdown](https://lila.belfiore.me/#mode=replay&map=Lockdown&match=all&end=storm) (every run that
 ended in the storm).
+
+![100 matches on one clock: the storm band starts at minute 10.9 on the timeline](docs/media/replay-100.gif)
 
 **The evidence.**
 
@@ -110,6 +118,10 @@ level design too: it decides whether a new player's first match is their last.
 is one bright blob in the middle, while the
 [loot heatmap](https://lila.belfiore.me/#mode=replay&map=AmbroseValley&match=all&layer=loot&under=1&replay=0)
 is spread over many POIs, with strong spots in the south.
+
+| Traffic, loot, then kills and deaths | Kill zones, then the same heat in 3D |
+|---|---|
+| ![Traffic, loot, then kills and deaths](docs/media/heatmaps.gif) | ![Kill zones, then the same heat in 3D](docs/media/heat-3d.gif) |
 
 **The evidence** (the map cut in 3 x 3 regions):
 
