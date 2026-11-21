@@ -15,6 +15,11 @@ about 300 lines, move the oldest entries word for word to `SESSION_HISTORY.md` (
 
 ---
 
+## 2026-11-21 (desktop session): Overview tab removed
+
+- Ugo: the Overview's content is INSIGHTS.md now, so the site drops it. Tabs = Match replay / Data; the site opens on
+  the replay (old `mode=overview` links land there). Removed Overview.tsx, its side panel, InstallButton and styles.
+
 ## 2026-11-21 (desktop session): INSIGHTS.md carries the Overview
 
 - Ugo: what the Overview says should be in INSIGHTS.md. Added his TL;DR and tool basics, main data, "What to log

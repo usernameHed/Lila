@@ -18,21 +18,6 @@ export function installText(way: InstallWay): string {
   return 'Its own window and icon, opens with no connection, and updates itself when a new version is out.';
 }
 
-/** The install button and its steps, for the Overview (phones included). Nothing once installed. */
-export function InstallButton() {
-  const install = useInstall();
-  const way = installWay(install);
-  if (install.installed) return <span className="install-done">Installed: you are in the app.</span>;
-  if (!way) return <span className="install-done">In Chrome, Edge or Safari.</span>;
-  return way === 'prompt' ? (
-    <button className="install-btn" onClick={() => void install.prompt()}>
-      <Icon name="download" size={14} /> Install the app
-    </button>
-  ) : (
-    <span className="install-done">{installText(way)}</span>
-  );
-}
-
 /** A small popup offering to install the tool on a computer, a few seconds after opening, as on Ugo's dashboard. */
 export function InstallOffer() {
   const install = useInstall();

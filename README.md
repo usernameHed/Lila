@@ -16,33 +16,33 @@ for, what I would change in the game, what the game should log next).
 
 ## Walkthrough (3 minutes)
 
-1. **Overview** (the landing page): the basics, the main numbers, what the data says in one line, what the game
-   should log next, and my Claude agent's notes on the data and the build.
-2. **Match replay**: pick a map (Ambrose Valley, Grand Rift, Lockdown) and a day (or all five). Show **All**,
-   **10** or **100** matches drawn at random (↻ draws again), or **Custom** to pick them one by one.
-3. **Filters** over the map, one line each, every chip showing how many matches it leaves: game (no bots
+1. **Match replay** (the landing page): pick a map (Ambrose Valley, Grand Rift, Lockdown) and a day (or all five).
+   Show **All**, **10** or **100** matches drawn at random (↻ draws again), or **Custom** to pick them one by one.
+2. **Filters** over the map, one line each, every chip showing how many matches it leaves: game (no bots
    recorded, bots recorded, 2 players), how the player's run ended (survived, killed by a bot, by a player, by the
    storm) and length. "Clear all filters" goes back to every match.
-4. **Watch it**: press Space or Play. Every selected match runs on one clock, at 10x, 30x or 60x; drag the
+3. **Watch it**: press Space or Play. Every selected match runs on one clock, at 10x, 30x or 60x; drag the
    timeline to scrub. It has a tick per fight and death, and a band where the storm kills (from minute 10.9).
-5. **Humans and bots**: players are solid lines, one color per match; bots are dashed. Event icons: an orange
+4. **Humans and bots**: players are solid lines, one color per match; bots are dashed. Event icons: an orange
    robot head under a crosshair where a player killed a bot, the robot head alone where a bot died, a skull over
    crossed bones where a player died (white: by a bot, red: by a player), a violet icon for a storm death, a
    yellow diamond for loot.
-6. **One match**: click it in the "On the map" list, or click a path. Only that match stays, it plays from 0:00,
+5. **One match**: click it in the "On the map" list, or click a path. Only that match stays, it plays from 0:00,
    and the player's card lists every event (click one to jump there). In the 52 matches with bots recorded, each
    bot can be picked too, and arrows go from killer to victim.
-7. **Elements and Heatmap** (bottom of the left panel): turn each kind of path or icon on and off; draw heatmaps
+6. **Elements and Heatmap** (bottom of the left panel): turn each kind of path or icon on and off; draw heatmaps
    of the whole selection: traffic, loot, bot kills, deaths by bot, deaths by player, power positions (kills per
    minute spent) and raised kills (made from 3 m above the ground). Hover a row: it explains itself and its icons
    pulse on the map.
-8. **3D**: the same replay on a terrain estimated from where players walked, with the real heights (x1 to x8).
-9. **Share**: the URL holds the whole view (map, day, matches, filters, layers, picked player, 2D / 3D). Copy it.
-10. **Data**: drop another export (`player_data.zip`, its folder or the parquet files) and the whole tool runs on
+7. **3D**: the same replay on a terrain estimated from where players walked, with the real heights (x1 to x8).
+8. **Share**: the URL holds the whole view (map, day, matches, filters, layers, picked player, 2D / 3D). Copy it.
+9. **Data**: drop another export (`player_data.zip`, its folder or the parquet files) and the whole tool runs on
     it, in the browser, nothing uploaded.
 
+What I learned with it, and why the tool is built this way, is in [INSIGHTS.md](INSIGHTS.md).
+
 Also: undo / redo (arrows next to the zoom, Cmd / Ctrl + Z), zoom and drag in 2D (pinch on a phone), Cmd / Ctrl + A
-to select every match, a green Update button when a new version is out, and an Install button.
+to select every match, a green Update button when a new version is out, and an offer to install it as an app.
 
 ## Tech stack
 
@@ -95,6 +95,6 @@ the "Edit Cloudflare Workers" template).
 | `public/minimaps/` | The three minimaps, 2048 px JPEG |
 | `src/lib/` | Pure logic with tests: coordinate mapping, playback clock, heatmaps, filters, URL view, drawing, the in-browser pipeline |
 | `src/workers/loadData.ts` | Reads dropped data in a Web Worker: unzip (fflate), parquet (hyparquet), pipeline |
-| `src/components/` | Screens and parts: Overview, replay, map canvas, 3D view, playback bar, panels |
+| `src/components/` | Screens and parts: replay, map canvas, 3D view, playback bar, panels |
 | `src/offline/` | The service worker that keeps the site working offline |
 | `_Claude/`, `CLAUDE.md`, `.claude/agents/` | How I built it with Claude: the brief, data notes, decisions, session log |

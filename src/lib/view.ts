@@ -2,7 +2,7 @@
 import type { Ended, Game, Length, SortBy } from './matchFilter';
 import type { HeatLayer, MapId, Who } from './types';
 
-export type Mode = 'overview' | 'replay' | 'data';
+export type Mode = 'replay' | 'data';
 
 export interface View {
   mode: Mode;
@@ -57,7 +57,7 @@ export interface View {
 export const ALL = 'all';
 export const NONE = 'none';
 
-export const DEFAULT_VIEW: View = { mode: 'overview', map: 'AmbroseValley', day: 'all', matches: [], recent: 0, random: true, seed: 0, picked: [], offMap: [], onlyMap: [], offPlayers: [], layers: ['traffic'], kills: 'both', deaths: 'both', mono: false, ended: 'any', length: 'any', game: 'any', sort: 'day', hidden: [], heatUnder: false, replayOn: true, iconScale: 1, pathWidth: 1.5, pathAlpha: 1.3, view3d: false, exaggeration: 4, terrain: true };
+export const DEFAULT_VIEW: View = { mode: 'replay', map: 'AmbroseValley', day: 'all', matches: [], recent: 0, random: true, seed: 0, picked: [], offMap: [], onlyMap: [], offPlayers: [], layers: ['traffic'], kills: 'both', deaths: 'both', mono: false, ended: 'any', length: 'any', game: 'any', sort: 'day', hidden: [], heatUnder: false, replayOn: true, iconScale: 1, pathWidth: 1.5, pathAlpha: 1.3, view3d: false, exaggeration: 4, terrain: true };
 
 const MAPS: MapId[] = ['AmbroseValley', 'GrandRift', 'Lockdown'];
 const LAYERS: HeatLayer[] = ['traffic', 'loot', 'power', 'raised', 'kills', 'deaths']; // drawing order (no line-of-fire or storm heatmap)
@@ -72,7 +72,7 @@ export function parseView(hash: string): View {
   // Old links: the Heatmaps tab is now the heatmap panel of Match replay, with paths hidden.
   const legacyHeat = q.get('mode') === 'heat';
   return {
-    mode: legacyHeat ? 'replay' : pick<Mode>('mode', ['overview', 'replay', 'data'], DEFAULT_VIEW.mode),
+    mode: legacyHeat ? 'replay' : pick<Mode>('mode', ['replay', 'data'], DEFAULT_VIEW.mode),
     map: pick('map', MAPS, DEFAULT_VIEW.map),
     day: day && /^\d{4}-\d{2}-\d{2}$/.test(day) ? day : 'all',
     matches: parseMatches(q.get('match')),

@@ -2,10 +2,9 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useHeat, useHeatDraw } from './components/Heat';
 import { LEGEND_KEYS } from './components/Legend';
 import { DataPage } from './components/DataPage';
-import { Overview } from './components/Overview';
 import { useSourceId } from './components/useSourceId';
 import { ReplayStage } from './components/Replay';
-import { MatchFilters, OverviewSide, ReplaySide, RightPanel } from './components/SidePanels';
+import { MatchFilters, ReplaySide, RightPanel } from './components/SidePanels';
 import { UpdateButton } from './components/UpdateButton';
 import { loadIndex } from './lib/data';
 import { BUILTIN_ID, listUploads, restoreSource } from './lib/sources';
@@ -26,7 +25,7 @@ import { parseView, resolveSelection, setMany, toggleMatch, viewHash, type Mode,
 /** Settings that change which matches are on the map. */
 const RESET_ON = new Set(['map', 'day', 'recent', 'random', 'seed', 'game', 'ended', 'length', 'matches']);
 
-const TAB_LABEL: Record<Mode, string> = { overview: 'Overview', replay: 'Match replay', data: 'Data' };
+const TAB_LABEL: Record<Mode, string> = { replay: 'Match replay', data: 'Data' };
 
 export function App() {
   const [index, setIndex] = useState<Index | null>(null);
@@ -143,7 +142,7 @@ export function App() {
         <UpdateButton />
 
         <div className="tabs" role="tablist">
-          {(['overview', 'replay', 'data'] as Mode[]).map((m) => (
+          {(['replay', 'data'] as Mode[]).map((m) => (
             <button key={m} role="tab" aria-selected={view.mode === m} className={view.mode === m ? 'on' : ''} onClick={() => update({ mode: m })}>
               {TAB_LABEL[m]}
             </button>
@@ -179,7 +178,6 @@ export function App() {
           </>
         )}
         {replay && <RightPanel view={view} update={update} heat={heat} days={days} counts={counts} pointedKind={pointedKind} onHover={setHover} />}
-        {view.mode === 'overview' && <OverviewSide />}
         {view.mode === 'data' && (
           <section>
             <h2>Showing now</h2>
@@ -190,9 +188,7 @@ export function App() {
       </aside>
 
       <main className={`stage ${replay ? '' : 'stage-page'}`}>
-        {view.mode === 'overview' ? (
-          <Overview index={index} />
-        ) : view.mode === 'data' ? (
+        {view.mode === 'data' ? (
           <DataPage onShow={() => update({ mode: 'replay' })} />
         ) : !index ? (
           <Loader label="Loading the matches" />

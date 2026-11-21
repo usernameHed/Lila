@@ -2,14 +2,12 @@ import { useState } from 'react';
 import { LAYER_ROWS, allHeat, heatOn, toggleHeat, type LayerRow } from '../lib/layers';
 import { applyFilter } from '../lib/matchFilter';
 import { EXPLAIN, formatDay, heatRgb, rgbCss } from '../lib/style';
-// The panels around the map: left (which matches), right (the layers: icons and heatmaps), and the Overview's
-// table of contents.
+// The panels around the map: which matches, and the layers (icons and heatmaps).
 // App owns the state; these only show it.
 import type { LegendKey } from '../lib/draw';
 import type { HeatData, MatchSummary } from '../lib/types';
 import { ALL, NONE, legendToggle, type View } from '../lib/view';
 import { LEGEND_KEYS, LegendIcon, legendColor, legendLabel } from './Legend';
-import { OVERVIEW_SECTIONS } from './Overview';
 import { MatchList } from './Replay';
 
 type Update = (patch: Partial<View>) => void;
@@ -320,24 +318,5 @@ export function RightPanel(p: RightProps) {
         </div>
       )}
     </aside>
-  );
-}
-
-/** Overview: the page's sections, as links. */
-export function OverviewSide() {
-  return (
-    <section>
-      <h2>On this page</h2>
-      <nav className="toc">
-        {OVERVIEW_SECTIONS.map(([id, label]) => (
-          <button
-            key={id}
-            onClick={() => document.getElementById(id)?.scrollIntoView({ behavior: 'smooth', block: 'start' })}
-          >
-            {label}
-          </button>
-        ))}
-      </nav>
-    </section>
   );
 }
